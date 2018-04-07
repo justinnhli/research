@@ -1,22 +1,22 @@
 # knowledge base packages
-rdflib
-rdflib-sqlalchemy
-SPARQLWrapper
+rdflib==4.2.2
+rdflib-sqlalchemy==0.3.8
+SPARQLWrapper==1.8.1
 
 # word embedding packages
 gensim==3.2.0
 
 # NLP packages
-spacy
-nltk
-PyDictionary
+spacy==2.0.11
+nltk==3.2.5
+PyDictionary==1.5.2
 
 # jupyter notebook packages
-jupyter
-bokeh
-pandas
-numpy
+jupyter==1.0.0
+bokeh==0.12.15
+pandas==0.22.0
+numpy==1.14.2
 
 # utility packages
-SQLAlchemy
-requests
+SQLAlchemy==1.2.6
+requests==2.18.4
