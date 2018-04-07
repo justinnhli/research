@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
+import sys
 from os import remove
 from os.path import dirname, exists as file_exists, realpath, join as join_path
 
 directory = dirname(realpath(__file__))
 
+sys.path.append(join_path(directory, '..'))
+
 from research.kb import KnowledgeFile
 from research.rdfsqlize import RDFSQLizer, read_dump
 
 def test_rdfsqlize():
+
     nt_file = join_path(directory, 'states.nt')
     sql_file = join_path(directory, 'states.sql')
     rdfsqlite_file = join_path(directory, 'states.rdfsqlite')
