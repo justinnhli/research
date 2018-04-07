@@ -1,0 +1,22 @@
+# knowledge base packages
+rdflib
+rdflib-sqlalchemy
+SPARQLWrapper
+
+# word embedding packages
+gensim==3.2.0
+
+# NLP packages
+spacy
+nltk
+PyDictionary
+
+# jupyter notebook packages
+jupyter
+bokeh
+pandas
+numpy
+
+# utility packages
+SQLAlchemy
+requests
