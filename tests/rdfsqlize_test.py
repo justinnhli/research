@@ -2,23 +2,23 @@
 
 import sys
 from os import remove
-from os.path import dirname, exists as file_exists, realpath, join as join_path
+from os.path import dirname, realpath, join as join_path
 
-directory = dirname(realpath(__file__))
+DIRECTORY = dirname(realpath(__file__))
 
-sys.path.append(join_path(directory, '..', '..'))
+sys.path.append(join_path(DIRECTORY, '..', '..'))
 
-from research.kb import KnowledgeFile
-from research.rdfsqlize import sqlize
+from research.kb import KnowledgeFile # pylint: disable=wrong-import-position
+from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
 
 def test_rdfsqlize():
 
-    nt_file = join_path(directory, 'states.nt')
+    nt_file = join_path(DIRECTORY, 'states.nt')
 
     output_file = sqlize(nt_file, 'states')
 
     results = []
-    kb = KnowledgeFile(rdfsqlite_file, kb_name='states')
+    kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
     for state in kb.query_sparql('SELECT ?state where {?state a dbo:State}'):
         results.append(str(state[0]).split('/')[-1])
     results = [state.replace('_', ' ') for state in results]
