@@ -9,23 +9,13 @@ directory = dirname(realpath(__file__))
 sys.path.append(join_path(directory, '..', '..'))
 
 from research.kb import KnowledgeFile
-from research.rdfsqlize import RDFSQLizer, read_dump
+from research.rdfsqlize import sqlize
 
 def test_rdfsqlize():
 
     nt_file = join_path(directory, 'states.nt')
-    sql_file = join_path(directory, 'states.sql')
-    rdfsqlite_file = join_path(directory, 'states.rdfsqlite')
 
-    if file_exists(rdfsqlite_file):
-        remove(rdfsqlite_file)
-
-    RDFSQLizer().sqlize(
-        nt_file,
-        'states',
-        sql_file,
-    )
-    read_dump(sql_file, rdfsqlite_file)
+    output_file = sqlize(nt_file, 'states')
 
     results = []
     kb = KnowledgeFile(rdfsqlite_file, kb_name='states')
@@ -48,5 +38,4 @@ def test_rdfsqlize():
 
     assert sorted(results) == answers
 
-    remove(sql_file)
-    remove(rdfsqlite_file)
+    remove(output_file)

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """A script to convert RDF files to SQL dumps."""
 
+import sqlite3
+from os import remove
+from os.path import exists as file_exists
 from hashlib import sha1
 from textwrap import dedent
-import sqlite3
 
 from .kb import URI
 
@@ -141,6 +143,7 @@ class RDFSQLizer:
         Arguments:
             filepath (str): Path to the RDF file.
             kb_id (str): The name of the KB and the output filename.
+            sql_file (str): The output filename to save to.
         """
         self._reset()
         self.kb_id = kb_id
@@ -259,12 +262,47 @@ class RDFSQLizer:
 
 
 def read_dump(sql_path, db_path):
+    """Read SQL into a SQLite file.
+
+    Arguments:
+        sql_path (str): Path to the input SQL file.
+        db_path (str): Path to the output SQLite file.
+    """
     conn = sqlite3.connect(db_path)
     with open(sql_path) as fd:
         dump = fd.read()
     conn.executescript(dump)
     conn.commit()
     conn.close()
+
+
+def sqlize(rdf_file, kb_name, binary=True):
+    """Convert an RDF file into a SQL dump.
+
+    Arguments:
+        rdf_file (str): Path to the input RDF file.
+        kb_name (str): The name of the KB. Used as the stem for the output filename.
+        binary (bool): Whether to save to a binary SQLite file. Defaults to True.
+
+    Returns:
+        str: Filename of the output file.
+
+    Raises:
+        FileExistsError: If any intermediate files already exist.
+    """
+    sql_file = kb_name + '.sql'
+    if file_exists(sql_file):
+        raise FileExistsError(sql_file)
+    RDFSQLizer().sqlize(rdf_file, kb_name, sql_file)
+    if binary:
+        rdfsqlite_file = kb_name + '.rdfsqlite'
+        if file_exists(rdfsqlite_file):
+            raise FileExistsError(sql_file)
+        read_dump(sql_file, rdfsqlite_file)
+        remove(sql_file)
+        return rdfsqlite_file
+    else:
+        return sql_file
 
 
 def main():
@@ -278,12 +316,7 @@ def main():
         exit(1)
     rdf_file = sys.argv[-2]
     kb_name = sys.argv[-1]
-    binary = (len(sys.argv) == 4)
-    sql_file = kb_name + '.sql'
-    RDFSQLizer().sqlize(rdf_file, kb_name, sql_file)
-    db_file = kb_name + '.rdfsqlite'
-    if binary:
-        read_dump(sql_file, db_file)
+    sqlize(rdf_file, kb_name, binary=(len(sys.argv) == 4))
 
 
 if __name__ == '__main__':
