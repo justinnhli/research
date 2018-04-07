@@ -17,4 +17,4 @@ script:
   - if [ "$SCRIPT" = "TEST" ]; then PYTHONPATH=. pytest; fi
   - if [ "$SCRIPT" = "LINT" ]; then pylint *.py; fi
   - if [ "$SCRIPT" = "DOCSTYLE" ]; then pydocstyle *.py; fi
-  - if [ "$SCRIPT" = "COVERAGE" ]; then PYTHONPATH=. coverage run -m pytest; coveralls; fi
+  - if [ "$SCRIPT" = "COVERAGE" ]; then PYTHONPATH=. python3 -m coverage run -m pytest; coveralls; fi
