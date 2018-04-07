@@ -6,7 +6,7 @@ from os.path import dirname, exists as file_exists, realpath, join as join_path
 
 directory = dirname(realpath(__file__))
 
-sys.path.append(join_path(directory, '..'))
+sys.path.append(join_path(directory, '..', '..'))
 
 from research.kb import KnowledgeFile
 from research.rdfsqlize import RDFSQLizer, read_dump
