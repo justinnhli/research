@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
+"""Reinforcement learning agents and environments."""
 
 from collections import defaultdict
 from copy import copy
 from random import random, choice
-import matplotlib.pyplot as plt
-import numpy
 
 
 class Environment:
     """A reinforcement learning environment."""
 
-    def get_state(self):
+    def get_state(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Get the current state.
 
         This is different from get_observation() in that the state includes
@@ -24,7 +23,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def get_observation(self):
+    def get_observation(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Get the current observation.
 
         See note on get_state() for the difference between the methods.
@@ -34,7 +33,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def get_actions(self):
+    def get_actions(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Get the available actions.
 
         Returns:
@@ -42,7 +41,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def reset(self):
+    def reset(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Reset the environment entirely.
 
         The result of calling this method should have the same effect as
@@ -51,14 +50,14 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def new_episode(self):
+    def new_episode(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Reset the environment for a new episode.
 
         See note on reset() for the difference between the methods.
         """
         raise NotImplementedError()
 
-    def react(self, action):
+    def react(self, action): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Update the environment to an agent action.
 
         Assumes the argument is one of the returned actions from get_actions().
@@ -71,7 +70,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def visualize(self):
+    def visualize(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Create visualization of the environment.
 
         Returns:
@@ -124,6 +123,7 @@ class AttrDict:
         return hash(tuple(sorted(self._attributes_.items())))
 
     def __eq__(self, other):
+        # pylint: disable=protected-access
         return type(self) is type(other) and self._attributes_ == other._attributes_
 
     def __str__(self):
@@ -136,6 +136,11 @@ class AttrDict:
         return str(self)
 
     def as_dict(self):
+        """Convert to dict.
+
+        Returns:
+            dict[str, any]: The internal dictionary.
+        """
         return copy(self._attributes_)
 
 
@@ -170,7 +175,7 @@ class State(AttrDict):
 class Agent:
     """A reinforcement learning agent."""
 
-    def get_value(self, observation, action):
+    def get_value(self, observation, action): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Get the Q value for an action at an observation.
 
         Arguments:
@@ -179,7 +184,7 @@ class Agent:
         """
         raise NotImplementedError()
 
-    def get_valued_actions(self, observation):
+    def get_valued_actions(self, observation): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Get all actions with stored values at an observation.
 
         Arguments:
@@ -192,6 +197,9 @@ class Agent:
 
         Arguments:
             observation (State): The observation.
+
+        Returns:
+            Action: The best action for the given observation.
         """
         actions = self.get_valued_actions(observation)
         if not actions:
@@ -204,34 +212,43 @@ class Agent:
 
         Arguments:
             observation (State): The observation.
+
+        Returns:
+            float: The value of the best action for the given observation.
         """
         return self.get_value(observation, self.get_best_action(observation))
 
-    def act(self, observation, actions, reward=None):
+    def act(self, observation, actions, reward=None): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Update the value function and decide on the next action.
 
         Arguments:
             observation (State): The observation of the environment.
-            actions ([Action]): List of available actions.
-            reward (float, optional): The reward from the previous action. If
+            actions (list[Action]): List of available actions.
+            reward (float): The reward from the previous action. If
                 not provided, the observation will be treated as the first in a
                 new episode.
+
+        Returns:
+            Action: The action the agent takes.
         """
         raise NotImplementedError()
 
-    def force_act(self, observation, action, reward=None):
+    def force_act(self, observation, action, reward=None): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Update the value function and return a specific action.
 
         Arguments:
             observation (State): The observation of the environment.
-            action ([Action]): The action to return.
-            reward (float, optional): The reward from the previous action. If
+            action (list[Action]): The action to return.
+            reward (float): The reward from the previous action. If
                 not provided, the observation will be treated as the first in a
                 new episode.
+
+        Returns:
+            Action: The action the agent takes.
         """
         raise NotImplementedError()
 
-    def print_value_function(self):
+    def print_value_function(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
         """Print the value function."""
         raise NotImplementedError()
 
@@ -240,11 +257,11 @@ class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
     def __init__(self, alpha, gamma):
-        """Get the Q value for an action at an observation.
+        """Construct a tabular Q-learning agent.
 
         Arguments:
-            observation (State): The observation
-            action (Action): The action
+            alpha (float): The learning rate.
+            gamma (float): The discount rate.
         """
         self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = alpha
