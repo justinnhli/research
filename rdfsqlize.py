@@ -160,7 +160,9 @@ class RDFSQLizer:
                     out_fd.write(sql + '\n')
                 out_fd.write('\n')
                 for line in in_fd.readlines():
-                    out_fd.write(self._dispatch_nt_line(line.strip()) + '\n')
+                    sql = self._dispatch_nt_line(line.strip())
+                    if sql is not None:
+                        out_fd.write(sql + '\n')
                 out_fd.write('\n')
                 out_fd.write(TRANSACTION_SQL_FOOTER + '\n')
 
@@ -199,6 +201,8 @@ class RDFSQLizer:
         Returns:
             str: The SQL insert statements.
         """
+        if line.strip().startswith('#'):
+            return None
         assert line.endswith(' .')
         line = line[:-2]
         parent, relation, child = line.split(' ', maxsplit=2)
