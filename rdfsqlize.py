@@ -16,48 +16,48 @@ BEGIN TRANSACTION;
 
 CREATE_TABLES_SQL = '''
 CREATE TABLE {interned_id}_asserted_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT NOT NULL, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT NOT NULL,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_type_statements (
-	id INTEGER NOT NULL, 
-	member TEXT NOT NULL, 
-	klass TEXT NOT NULL, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
+	id INTEGER NOT NULL,
+	member TEXT NOT NULL,
+	klass TEXT NOT NULL,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_literal_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
-	objlanguage VARCHAR(255), 
-	objdatatype VARCHAR(255), 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
+	objlanguage VARCHAR(255),
+	objdatatype VARCHAR(255),
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_quoted_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
-	objlanguage VARCHAR(255), 
-	objdatatype VARCHAR(255), 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
+	objlanguage VARCHAR(255),
+	objdatatype VARCHAR(255),
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_namespace_binds (
-	prefix VARCHAR(20) NOT NULL, 
-	uri TEXT, 
-	PRIMARY KEY (prefix), 
+	prefix VARCHAR(20) NOT NULL,
+	uri TEXT,
+	PRIMARY KEY (prefix),
 	UNIQUE (prefix)
 );
 '''.strip()
