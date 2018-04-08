@@ -11,6 +11,7 @@ sys.path.append(join_path(DIRECTORY, '..', '..'))
 from research.kb import KnowledgeFile # pylint: disable=wrong-import-position
 from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
 
+
 def test_rdfsqlize():
 
     nt_file = join_path(DIRECTORY, 'states.nt')
@@ -19,10 +20,11 @@ def test_rdfsqlize():
 
     results = []
     kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
-    for state in kb.query_sparql('SELECT ?state where {?state a dbo:State}'):
+    sparql = 'SELECT ?state where {?state a dbo:State}'
+    for state in kb.query_sparql(sparql):
         results.append(str(state[0]).split('/')[-1])
-    results = [state.replace('_', ' ') for state in results]
 
+    results = [state.replace('_', ' ') for state in results]
     answers = [
         'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
         'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',
@@ -35,7 +37,15 @@ def test_rdfsqlize():
         'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
         'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
     ]
-
     assert sorted(results) == answers
+
+    results = []
+    kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
+    sparql = 'SELECT ?state where {?state <http://dbpedia.org/property/AdmittanceDate> "1889-11-02"}'
+    for state in kb.query_sparql(sparql):
+        results.append(str(state[0]).split('/')[-1])
+
+    results = [state.replace('_', ' ') for state in results]
+    assert sorted(results) == ['North Dakota', 'South Dakota']
 
     remove(output_file)
