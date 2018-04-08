@@ -309,14 +309,14 @@ def main():
     """Provide a CLI command to convert RDF files."""
     import sys
     if len(sys.argv) not in [3, 4]:
-        print('usage: {} [--binary] <rdf_file> <kb_name>')
+        print('usage: {} [--sql] <rdf_file> <kb_name>')
         exit(1)
-    if len(sys.argv) == 4 and sys.argv[1] != '--binary':
-        print('usage: {} [--binary] <rdf_file> <kb_name>')
+    if len(sys.argv) == 4 and sys.argv[1] != '--sql':
+        print('usage: {} [--sql] <rdf_file> <kb_name>')
         exit(1)
     rdf_file = sys.argv[-2]
     kb_name = sys.argv[-1]
-    sqlize(rdf_file, kb_name, binary=(len(sys.argv) == 4))
+    sqlize(rdf_file, kb_name, binary=(len(sys.argv) != 4))
 
 
 if __name__ == '__main__':
