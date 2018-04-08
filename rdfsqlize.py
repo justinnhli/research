@@ -170,6 +170,7 @@ class RDFSQLizer:
         """Reset the function."""
         self.type_id = 1
         self.triple_id = 1
+        self.literal_id = 1
         self.kb_id = ''
         self.interned_id = ''
 
@@ -206,13 +207,24 @@ class RDFSQLizer:
         assert line.endswith(' .')
         line = line[:-2]
         parent, relation, child = line.split(' ', maxsplit=2)
+        # standardize parent
         parent = standardize_uri(parent)
-        child = standardize_uri(child)
+        # standardize relation
         if relation == 'a':
-            return self._sqlize_nt_type(parent, child)
+            relation = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
         else:
             relation = standardize_uri(relation)
-            return self._sqlize_nt_triple(parent, relation, child)
+        # create sql
+        # standardize child
+        if child.startswith('"') and child.endswith('"'):
+            child = child[1:-1]
+            return self._sqlize_nt_literal(parent, relation, child)
+        else:
+            child = standardize_uri(child)
+            if relation == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                return self._sqlize_nt_type(parent, child)
+            else:
+                return self._sqlize_nt_triple(parent, relation, child)
 
     def _sqlize_nt_type(self, instance, classname):
         """Generate the SQL dump for type statements.
@@ -264,6 +276,31 @@ class RDFSQLizer:
         self.triple_id += 1
         return result
 
+    def _sqlize_nt_literal(self, parent, relation, child):
+        """Generate the SQL dump for literal statements.
+
+        Arguments:
+            parent (str): The parent URI.
+            relation (str): The relation URI.
+            child (str): The child literal.
+
+        Returns:
+            str: The SQL insert statement.
+        """
+        sql_template = dedent('''
+            INSERT INTO {interned_id}_literal_statements
+            VALUES({id},{parent},{relation},{child},{identifier},9,NULL,NULL);
+        ''').strip().replace('\n', ' ')
+        result = sql_template.format(
+            interned_id=self.interned_id,
+            id=self.literal_id,
+            parent=repr(parent),
+            relation=repr(relation),
+            child=repr(child),
+            identifier=repr(self.kb_id),
+        )
+        self.literal_id += 1
+        return result
 
 def read_dump(sql_path, db_path):
     """Read SQL into a SQLite file.
