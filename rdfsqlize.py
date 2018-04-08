@@ -16,48 +16,48 @@ BEGIN TRANSACTION;
 
 CREATE_TABLES_SQL = '''
 CREATE TABLE {interned_id}_asserted_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT NOT NULL, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT NOT NULL,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_type_statements (
-	id INTEGER NOT NULL, 
-	member TEXT NOT NULL, 
-	klass TEXT NOT NULL, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
+	id INTEGER NOT NULL,
+	member TEXT NOT NULL,
+	klass TEXT NOT NULL,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_literal_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
-	objlanguage VARCHAR(255), 
-	objdatatype VARCHAR(255), 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
+	objlanguage VARCHAR(255),
+	objdatatype VARCHAR(255),
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_quoted_statements (
-	id INTEGER NOT NULL, 
-	subject TEXT NOT NULL, 
-	predicate TEXT NOT NULL, 
-	object TEXT, 
-	context TEXT NOT NULL, 
-	termcomb INTEGER NOT NULL, 
-	objlanguage VARCHAR(255), 
-	objdatatype VARCHAR(255), 
+	id INTEGER NOT NULL,
+	subject TEXT NOT NULL,
+	predicate TEXT NOT NULL,
+	object TEXT,
+	context TEXT NOT NULL,
+	termcomb INTEGER NOT NULL,
+	objlanguage VARCHAR(255),
+	objdatatype VARCHAR(255),
 	PRIMARY KEY (id)
 );
 CREATE TABLE {interned_id}_namespace_binds (
-	prefix VARCHAR(20) NOT NULL, 
-	uri TEXT, 
-	PRIMARY KEY (prefix), 
+	prefix VARCHAR(20) NOT NULL,
+	uri TEXT,
+	PRIMARY KEY (prefix),
 	UNIQUE (prefix)
 );
 '''.strip()
@@ -160,7 +160,9 @@ class RDFSQLizer:
                     out_fd.write(sql + '\n')
                 out_fd.write('\n')
                 for line in in_fd.readlines():
-                    out_fd.write(self._dispatch_nt_line(line.strip()) + '\n')
+                    sql = self._dispatch_nt_line(line.strip())
+                    if sql is not None:
+                        out_fd.write(sql + '\n')
                 out_fd.write('\n')
                 out_fd.write(TRANSACTION_SQL_FOOTER + '\n')
 
@@ -168,6 +170,7 @@ class RDFSQLizer:
         """Reset the function."""
         self.type_id = 1
         self.triple_id = 1
+        self.literal_id = 1
         self.kb_id = ''
         self.interned_id = ''
 
@@ -199,16 +202,29 @@ class RDFSQLizer:
         Returns:
             str: The SQL insert statements.
         """
+        if line.strip().startswith('#'):
+            return None
         assert line.endswith(' .')
         line = line[:-2]
         parent, relation, child = line.split(' ', maxsplit=2)
+        # standardize parent
         parent = standardize_uri(parent)
-        child = standardize_uri(child)
+        # standardize relation
         if relation == 'a':
-            return self._sqlize_nt_type(parent, child)
+            relation = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
         else:
             relation = standardize_uri(relation)
-            return self._sqlize_nt_triple(parent, relation, child)
+        # create sql
+        # standardize child
+        if child.startswith('"') and child.endswith('"'):
+            child = child[1:-1]
+            return self._sqlize_nt_literal(parent, relation, child)
+        else:
+            child = standardize_uri(child)
+            if relation == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                return self._sqlize_nt_type(parent, child)
+            else:
+                return self._sqlize_nt_triple(parent, relation, child)
 
     def _sqlize_nt_type(self, instance, classname):
         """Generate the SQL dump for type statements.
@@ -260,6 +276,31 @@ class RDFSQLizer:
         self.triple_id += 1
         return result
 
+    def _sqlize_nt_literal(self, parent, relation, child):
+        """Generate the SQL dump for literal statements.
+
+        Arguments:
+            parent (str): The parent URI.
+            relation (str): The relation URI.
+            child (str): The child literal.
+
+        Returns:
+            str: The SQL insert statement.
+        """
+        sql_template = dedent('''
+            INSERT INTO {interned_id}_literal_statements
+            VALUES({id},{parent},{relation},{child},{identifier},9,NULL,NULL);
+        ''').strip().replace('\n', ' ')
+        result = sql_template.format(
+            interned_id=self.interned_id,
+            id=self.literal_id,
+            parent=repr(parent),
+            relation=repr(relation),
+            child=repr(child),
+            identifier=repr(self.kb_id),
+        )
+        self.literal_id += 1
+        return result
 
 def read_dump(sql_path, db_path):
     """Read SQL into a SQLite file.
@@ -309,14 +350,14 @@ def main():
     """Provide a CLI command to convert RDF files."""
     import sys
     if len(sys.argv) not in [3, 4]:
-        print('usage: {} [--binary] <rdf_file> <kb_name>')
+        print('usage: {} [--sql] <rdf_file> <kb_name>')
         exit(1)
-    if len(sys.argv) == 4 and sys.argv[1] != '--binary':
-        print('usage: {} [--binary] <rdf_file> <kb_name>')
+    if len(sys.argv) == 4 and sys.argv[1] != '--sql':
+        print('usage: {} [--sql] <rdf_file> <kb_name>')
         exit(1)
     rdf_file = sys.argv[-2]
     kb_name = sys.argv[-1]
-    sqlize(rdf_file, kb_name, binary=(len(sys.argv) == 4))
+    sqlize(rdf_file, kb_name, binary=(len(sys.argv) != 4))
 
 
 if __name__ == '__main__':
