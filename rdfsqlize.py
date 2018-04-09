@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """A script to convert RDF files to SQL dumps."""
 
+import re
 import sqlite3
 from os import remove
 from os.path import exists as file_exists
@@ -214,11 +215,21 @@ class RDFSQLizer:
             relation = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
         else:
             relation = standardize_uri(relation)
-        # create sql
         # standardize child
-        if child.startswith('"') and child.endswith('"'):
-            child = child[1:-1]
-            return self._sqlize_nt_literal(parent, relation, child)
+        if child.startswith('"'):
+            if child.endswith('"'):
+                child = child[1:-1]
+                lang = None
+                datatype = None
+            else:
+                child, metadata = child[1:].rsplit('"', maxsplit=1)
+                lang = re.search('@([^@^]*)', metadata)
+                if lang:
+                    lang = lang.group(1)
+                datatype = re.search(r'\^\^([^@^]*)', metadata)
+                if datatype:
+                    datatype = datatype.group(1)[1:-1]
+            return self._sqlize_nt_literal(parent, relation, child, lang, datatype)
         else:
             child = standardize_uri(child)
             if relation == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
@@ -276,7 +287,7 @@ class RDFSQLizer:
         self.triple_id += 1
         return result
 
-    def _sqlize_nt_literal(self, parent, relation, child):
+    def _sqlize_nt_literal(self, parent, relation, child, lang=None, datatype=None):
         """Generate the SQL dump for literal statements.
 
         Arguments:
@@ -289,7 +300,7 @@ class RDFSQLizer:
         """
         sql_template = dedent('''
             INSERT INTO {interned_id}_literal_statements
-            VALUES({id},{parent},{relation},{child},{identifier},9,NULL,NULL);
+            VALUES({id},{parent},{relation},{child},{identifier},9,{lang},{datatype});
         ''').strip().replace('\n', ' ')
         result = sql_template.format(
             interned_id=self.interned_id,
@@ -298,6 +309,8 @@ class RDFSQLizer:
             relation=repr(relation),
             child=repr(child),
             identifier=repr(self.kb_id),
+            lang=(repr(lang) if lang else 'NULL'),
+            datatype=(repr(datatype) if datatype else 'NULL'),
         )
         self.literal_id += 1
         return result

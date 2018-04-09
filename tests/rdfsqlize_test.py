@@ -17,10 +17,14 @@ def test_rdfsqlize():
     nt_file = join_path(DIRECTORY, 'states.nt')
 
     output_file = sqlize(nt_file, 'states')
+    #output_file = 'states.rdfsqlite'
+
+    kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
+    #kb = KnowledgeFile(output_file, kb_name='rdflib_test') # pylint: disable=invalid-name
 
     results = []
-    kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
     sparql = 'SELECT ?state where {?state a dbo:State}'
+    #sparql = 'SELECT ?state where {?state a <http://dbpedia.org/ontology/State>}'
     for state in kb.query_sparql(sparql):
         results.append(str(state[0]).split('/')[-1])
 
@@ -37,15 +41,18 @@ def test_rdfsqlize():
         'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
         'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
     ]
-    assert sorted(results) == answers
+    if sorted(results) != answers:
+        remove(output_file)
+        assert False, 'Failed to query for all states'
 
     results = []
-    kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
     sparql = 'SELECT ?state where {?state <http://dbpedia.org/property/AdmittanceDate> "1889-11-02"}'
     for state in kb.query_sparql(sparql):
         results.append(str(state[0]).split('/')[-1])
 
     results = [state.replace('_', ' ') for state in results]
-    assert sorted(results) == ['North Dakota', 'South Dakota']
+    if not sorted(results) == ['North Dakota', 'South Dakota']:
+        remove(output_file)
+        assert False, 'Failed to query for the Dakotas'
 
     remove(output_file)
