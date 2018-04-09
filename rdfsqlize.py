@@ -294,6 +294,8 @@ class RDFSQLizer:
             parent (str): The parent URI.
             relation (str): The relation URI.
             child (str): The child literal.
+            lang (str): The language of the literal. Defaults to None.
+            datatype (str): The datatype of the literal. Defaults to None.
 
         Returns:
             str: The SQL insert statement.
