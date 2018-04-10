@@ -126,6 +126,18 @@ def standardize_uri(uri):
         uri = URI(identifier, prefix)
     return uri.uri
 
+def escape_sql_string(string):
+    """Convert a string to a SQL-escaped format.
+    
+    Arguments:
+        string (str): The string to convert.
+
+    Returns:
+        str: The converted string.
+    """
+    for char in r"\'":
+        string = string.replace(char, char + char)
+    return "'" + string + "'"
 
 class RDFSQLizer:
     """A class to convert triples into a SQL dump."""
@@ -309,7 +321,7 @@ class RDFSQLizer:
             id=self.literal_id,
             parent=repr(parent),
             relation=repr(relation),
-            child=repr(child),
+            child=escape_sql_string(child),
             identifier=repr(self.kb_id),
             lang=(repr(lang) if lang else 'NULL'),
             datatype=(repr(datatype) if datatype else 'NULL'),
