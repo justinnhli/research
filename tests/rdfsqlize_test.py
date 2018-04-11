@@ -8,7 +8,7 @@ DIRECTORY = dirname(realpath(__file__))
 
 sys.path.append(join_path(DIRECTORY, '..', '..'))
 
-from research.kb import KnowledgeFile # pylint: disable=wrong-import-position
+from research.knowledge_base import KnowledgeFile # pylint: disable=wrong-import-position
 from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
 
 

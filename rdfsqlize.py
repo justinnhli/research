@@ -8,7 +8,7 @@ from os.path import exists as file_exists
 from hashlib import sha1
 from textwrap import dedent
 
-from .kb import URI
+from .knowledge_base import URI
 
 TRANSACTION_SQL_HEADER = '''
 PRAGMA foreign_keys=OFF;
