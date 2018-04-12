@@ -8,7 +8,7 @@ DIRECTORY = dirname(realpath(__file__))
 
 sys.path.append(join_path(DIRECTORY, '..', '..'))
 
-from research.kb import KnowledgeFile # pylint: disable=wrong-import-position
+from research.knowledge_base import KnowledgeFile # pylint: disable=wrong-import-position
 from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
 
 
@@ -17,14 +17,11 @@ def test_rdfsqlize():
     nt_file = join_path(DIRECTORY, 'states.nt')
 
     output_file = sqlize(nt_file, 'states')
-    #output_file = 'states.rdfsqlite'
 
     kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
-    #kb = KnowledgeFile(output_file, kb_name='rdflib_test') # pylint: disable=invalid-name
 
     results = []
     sparql = 'SELECT ?state where {?state a dbo:State}'
-    #sparql = 'SELECT ?state where {?state a <http://dbpedia.org/ontology/State>}'
     for state in kb.query_sparql(sparql):
         results.append(str(state[0]).split('/')[-1])
 
