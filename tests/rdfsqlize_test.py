@@ -5,8 +5,7 @@ from os import remove
 from os.path import dirname, realpath, join as join_path
 
 DIRECTORY = dirname(realpath(__file__))
-
-sys.path.append(join_path(DIRECTORY, '..', '..'))
+sys.path.insert(0, dirname(DIRECTORY))
 
 from research.knowledge_base import KnowledgeFile # pylint: disable=wrong-import-position
 from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
