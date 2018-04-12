@@ -78,12 +78,12 @@ def main():
         try:
             parent_vector = get_vectors(vector_model, [parent])[0]
             child_vector = get_vectors(vector_model, [child])[0]
-            print('parent vector:', parent_vector)
-            print('child vector:', parent_vector)
         except KeyError:
             print('cannot find vector for at least one word; skipping')
-        finally:
             print()
+            continue
+        print()
+        # your code here
 
 
 if __name__ == '__main__':
