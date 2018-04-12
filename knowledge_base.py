@@ -5,7 +5,7 @@ import re
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 from textwrap import indent, dedent
 
-from SPARQLWrapper import SPARQLWrapper, N3
+from SPARQLWrapper import SPARQLWrapper2, N3
 from rdflib import Graph, Literal, URIRef, plugin
 from rdflib.plugins.sparql import prepareQuery
 from rdflib.store import Store
@@ -321,36 +321,14 @@ class KnowledgeFile(KnowledgeSource):
 class SparqlEndpoint(KnowledgeSource):
 
     def __init__(self, url):
-        self.endpoint = SPARQLWrapper(url, returnFormat=N3)
+        self.endpoint = SPARQLWrapper2(url)
 
     def query_sparql(self, sparql):
         self.endpoint.setQuery(sparql)
-        return self.endpoint.queryAndConvert()
+        results = []
+        for bindings in self.endpoint.query().bindings:
+            results.append({key:value.value for key, value in bindings.items()})
+        return results
 
     def query(self, query, *constraints, **bindings):
-        results = self.query_sparql(query.to_select(*constraints, **bindings))
-        result_graph = Graph()
-        result_graph.parse(data=results, format='n3')
-        variable_paths = []
-        for variable in query.variable_names(list(bindings.keys())):
-            variable = variable.strip('?')
-            variable_paths.append(
-                V(
-                    'solution',
-                    res__binding=V(
-                        variable + '_binding',
-                        res__variable=L(variable),
-                        res__value=V(variable),
-                    ),
-                )
-            )
-        res_qry = Query(V('root', res__solution=V('solution')), *variable_paths)
-        triples = set()
-        for values in result_graph.query(res_qry.to_select()):
-            val_dict = dict(zip(res_qry.variable_names(), values))
-            result_bindings = {}
-            for variable, value in val_dict.items():
-                result_bindings[variable] = Node.from_str(value.n3())
-            triples |= set(query.to_triples_str(**bindings, **result_bindings).split('\n'))
-        triples = '\n'.join(sorted(triples))
-        return triples
+        return self.query_sparql(query.to_select(*constraints, **bindings))
