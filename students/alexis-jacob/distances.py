@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
+"""Semantic relation/word embedding code.
 
-# semantic relation/word embedding code
-# the goal here is to see the degree to which relations in a semantic network also have vectors that are tightly clustered.
+The goal here is to see the degree to which relations in a semantic
+network also have vectors that are tightly clustered.
+"""
 
-from knowledge_base import SparqlEndpoint
-from word_embedding import load_model
+import sys
+from os.path import dirname, realpath
+
+# make sure research library code is available
+sys.path.insert(0, dirname(dirname(dirname(realpath(__file__)))))
+
+from research.knowledge_base import SparqlEndpoint
+from research.word_embedding import load_model
+
 
 def get_ave_sigma(model, word_pairs):
     """Compute the average sigma between word pairs.
