@@ -1,3 +1,5 @@
+from os.path import splitext, exists as file_exists
+
 import gensim
 
 def load_model(model_path):
@@ -9,7 +11,7 @@ def load_model(model_path):
     Returns:
         GenSimModel: A GenSim word vector model.
     """
-    cache_path = split_ext(model_path)[0] + '.cache'
+    cache_path = splitext(model_path)[0] + '.cache'
     if file_exists(cache_path):
         # use the cached version if it exists
         model = gensim.models.KeyedVectors.load(cache_path)
