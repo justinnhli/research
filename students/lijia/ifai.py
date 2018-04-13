@@ -1,7 +1,7 @@
 import time
 import sys
 from collections import OrderedDict
-from os.path import dirname, realpath
+from os.path import dirname, realpath, join as join_path
 
 import numpy as np
 import requests
@@ -12,7 +12,8 @@ from nltk.corpus import wordnet as wn
 from PyDictionary import PyDictionary
 
 # make sure research library code is available
-sys.path.insert(0, dirname(dirname(dirname(realpath(__file__)))))
+ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
+sys.path.insert(0, ROOT_DIRECTORY)
 
 from research.knowledge_base import KnowledgeFile, Query, Node, U, V
 from research.word_embedding import load_model
@@ -20,9 +21,10 @@ from research.word_embedding import load_model
 # download wordnet
 nltk.download('wordnet')
 
-DEFAULT_MODEL_PATH = 'models/GoogleNews-vectors-negative300.bin'
+GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
+UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 
-UMBEL = KnowledgeFile('kbs/umbel-concepts-typology.rdfsqlite')
+UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
 DICTIONARY = PyDictionary()
 
@@ -363,7 +365,7 @@ def possible_actions(model, text):
 
 
 def main():
-    model = load_model(DEFAULT_MODEL_PATH)
+    model = load_model(GOOGLE_NEWS_MODEL_PATH)
 
     # start timing
     tic = time.time()
