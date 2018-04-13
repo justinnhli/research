@@ -26,7 +26,6 @@ UMBEL = KnowledgeFile('kbs/umbel-concepts-typology.rdfsqlite')
 
 DICTIONARY = PyDictionary()
 
-
 # Utility Functions
 
 
@@ -76,15 +75,11 @@ def w2v_get_verbs_for_noun(model, noun):
 
     # set operations
     affordant_verbs = list(set(verb_list) & set(word2vec_words))
-    final_verbs = list(set(navigation_verbs) | set(essential_manipulation_verbs) | set(affordant_verbs))
-
-    # -----------test lines (uncomment below four lines to view different set of verbs)-------------
-    #     print("-"*10, noun, "-"*10)
-    #     print("word2vec words: ", word2vec_words)
-    #     print("affordant verbs: ", affordant_verbs)
-    #     print("final verbs: ", final_verbs)
 
     return affordant_verbs
+
+    # uncomment to include generic verbs
+    #return list(set(navigation_verbs) | set(essential_manipulation_verbs) | set(affordant_verbs))
 
 
 def w2v_get_adjectives_for_noun(model, noun):
