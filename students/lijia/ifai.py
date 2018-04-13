@@ -1,24 +1,21 @@
 import time
 import sys
 from collections import OrderedDict
-from os.path import exists as file_exists, splitext as split_ext, dirname, realpath
- 
-# make sure research library code is available
-sys.path.insert(0, dirname(dirname(dirname(realpath(__file__)))))
- 
-from research.knowledge_base import KnowledgeFile, Query, Node, U, V
-from research.word_embedding import load_model
+from os.path import dirname, realpath
 
-import gensim
 import numpy as np
 import requests
 import spacy
 import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
-# import sense2vec
 from PyDictionary import PyDictionary
 
+# make sure research library code is available
+sys.path.insert(0, dirname(dirname(dirname(realpath(__file__)))))
+
+from research.knowledge_base import KnowledgeFile, Query, Node, U, V
+from research.word_embedding import load_model
 
 # download wordnet
 nltk.download('wordnet')
