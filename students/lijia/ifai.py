@@ -48,6 +48,11 @@ def prepare_list_from_file(file_name):
     return canons
 
 
+def cosine_distance(v1, v2):
+    """calculate the cosine distance of two vectors"""
+    return np.dot(v1, v2) / (np.sqrt(np.dot(v1, v1)) * np.sqrt(np.dot(v2, v2)))
+
+
 def w2v_get_verbs_for_noun(model, noun):
     """return a list of lemmatized verbs that the noun can afford from a given word2vec model"""
     # load word lists
@@ -132,6 +137,38 @@ def w2v_get_tools_for_verb(model, verb):
     model_tools = model.most_similar([verb], [sigma], topn=10)
     tools = [tool[0] for tool in model_tools]
     return tools
+
+
+def rank_tools_cos(model, verb, tools):
+    """rank tool with regard to verb by measuring the cosine distance from the verb-tool-pair vector to canonical vector"""
+    canons = prepare_list_from_file('word_lists/verb_tool_list.txt')
+    sigma = get_ave_sigma(model, canons)
+    tool_dic = {}
+
+    # Calculate cosine distance of two vectors
+    for tool in tools:
+        verb_tool_vec = model.word_vec(verb) - model.word_vec(tool)
+        tool_dic[tool] = cosine_distance(sigma, verb_tool_vec)
+
+    sorted_list = sorted(tool_dic.items(), key=(lambda kv: kv[1]), reverse=True)
+
+    return sorted_list
+
+
+def rank_tool_l2(model, verb, tools):
+    """rank tool with regard to verb by measuring the euclidean distance from the verb-tool-pair vector to canonical vector"""
+    canons = prepare_list_from_file('word_lists/verb_tool_list.txt')
+    sigma = get_ave_sigma(model, canons)
+    tool_dic = {}
+
+    # Calculate cosine distance of two vectors
+    for tool in tools:
+        verb_tool_vec = model.word_vec(verb) - model.word_vec(tool)
+        tool_dic[tool] = np.linalg.norm(sigma - verb_tool_vec)
+
+    sorted_list = sorted(tool_dic.items(), key=(lambda kv: kv[1]))
+
+    return sorted_list
 
 
 def w2v_rank_manipulability(model, nouns):
@@ -381,6 +418,14 @@ def main():
         "This is a dimly lit forest, with large trees all around.  One particularly large tree with some low branches stands here.",
         "You open the mailbox, revealing a small leaflet.",
     ]
+
+    verbs = ["cut", "open", "write", "drink"]
+    tools = ["knife", "ax", "brain", "neuron", "cup","computer", "lamp", "pen", "needle", "scissors", "door", "key", "box", "building", "life", "glass", "water", "computer"]
+
+    for verb in verbs:
+        print(verb, ":")
+        print("cosine distance: ", rank_tools_cos(model, verb, tools))
+        print("euclidean distance: ", rank_tool_l2(model, verb, tools))
 
     toc = time.time()
     print("total time spend:", toc - tic, "s")
