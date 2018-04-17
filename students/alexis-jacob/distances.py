@@ -6,10 +6,11 @@ network also have vectors that are tightly clustered.
 """
 
 import sys
-from os.path import dirname, realpath
+from os.path import dirname, realpath, join as join_path
 
 # make sure research library code is available
-sys.path.insert(0, dirname(dirname(dirname(realpath(__file__)))))
+ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
+sys.path.insert(0, ROOT_DIRECTORY)
 
 from research.knowledge_base import SparqlEndpoint
 from research.word_embedding import load_model
@@ -72,7 +73,7 @@ def main():
     """Get vectors associated with parent-child pairs in a KB"""
     relation = 'dbp:capital'
     pairs = get_relation_pairs(relation)
-    vector_model = load_model('data/models/GoogleNews-vectors-negative300.bin')
+    vector_model = load_model(join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin'))
     for parent, child in pairs:
         print('pair: {}'.format([parent, child]))
         try:
