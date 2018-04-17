@@ -1,0 +1,2 @@
+This is a dimly lit forest, with large trees all around.  One particularly large tree with some low branches stands here.
+# put valid actions below

@@ -1,0 +1,2 @@
+You are in a 20-foot depression floored with bare dirt. Set into the dirt is a strong steel grate mounted in concrete. A dry streambed leads into the depression. The grate is locked.
+# put valid actions below

@@ -1,0 +1,2 @@
+The path takes you up a hill, a little higher than most of the treetops. The moon casts its pale light around you. You can see a column of smoke nearby. At its base, you see the faint flicker of a campfire.
+# put valid actions below

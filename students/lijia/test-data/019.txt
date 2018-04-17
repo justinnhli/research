@@ -1,0 +1,2 @@
+This is a forest, with trees in all directions around you.
+# put valid actions below

@@ -1,0 +1,2 @@
+This is a large forest, with trees obstructing all views except to the east, where a small clearing may be seen through the trees.
+# put valid actions below
