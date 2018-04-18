@@ -9,7 +9,8 @@ gensim==3.2.0
 # NLP packages
 spacy==2.0.11
 nltk==3.2.5
-PyDictionary==1.5.2
+# Justin's less chatty fork of pydictionary
+git+https://github.com/justinnhli/PyDictionary.git
 
 # jupyter notebook packages
 jupyter==1.0.0
