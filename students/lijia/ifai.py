@@ -40,6 +40,8 @@ def get_ave_sigma(model, canons):
     ave_sigma = (1 / len(canons)) * sigma
     return ave_sigma
 
+def get_word_list_path(word_list_file):
+    return join_path(dirname(realpath(__file__)), 'word_lists', word_list_file)
 
 def prepare_list_from_file(file_name):
     """extract a list of word(s) from a file"""
@@ -56,8 +58,8 @@ def cosine_distance(v1, v2):
 def w2v_get_verbs_for_noun(model, noun):
     """return a list of lemmatized verbs that the noun can afford from a given word2vec model"""
     # load word lists
-    canons = prepare_list_from_file('word_lists/verb_noun_pair.txt')
-    verb_list = prepare_list_from_file('./word_lists/top_1000_verbs.txt')
+    canons = prepare_list_from_file(get_word_list_path('verb_noun_pair.txt'))
+    verb_list = prepare_list_from_file(get_word_list_path('top_1000_verbs.txt'))
 
     # compute average sigma
     sigma = get_ave_sigma(model, canons)
@@ -92,7 +94,7 @@ def w2v_get_verbs_for_noun(model, noun):
 def w2v_get_adjectives_for_noun(model, noun):
     """return a list of adjectives that describe the given noun"""
     # get average sigma of the adj_noun canonical pairs
-    canons = prepare_list_from_file('./word_lists/adj_noun_pair.txt')
+    canons = prepare_list_from_file(get_word_list_path('adj_noun_pair.txt'))
     sigma = get_ave_sigma(model, canons)
 
     # extract adjectives from w2v model with the sigma
@@ -105,7 +107,7 @@ def w2v_get_adjectives_for_noun(model, noun):
 def w2v_get_nouns_for_adjective(model, noun):
     """return a list of nouns that can be describes in adjectives way"""
     # get average sigma of the noun_adj canonical pairs
-    canons = prepare_list_from_file('./word_lists/noun_adj_pair.txt')
+    canons = prepare_list_from_file(get_word_list_path('noun_adj_pair.txt'))
     sigma = get_ave_sigma(model, canons)
 
     # extract nouns from w2v model with the sigma
@@ -118,7 +120,7 @@ def w2v_get_nouns_for_adjective(model, noun):
 def w2v_get_verbs_for_adjective(model, adj):
     """return a list of verbs that the given adj can be used in such way"""
     # get average sigma of the verb_adj canonical pairs
-    canons = prepare_list_from_file('word_lists/verb_adj_pair.txt')
+    canons = prepare_list_from_file(get_word_list_path('verb_adj_pair.txt'))
     sigma = get_ave_sigma(model, canons)
 
     # extract verbs from w2v model with the sigma
@@ -130,7 +132,7 @@ def w2v_get_verbs_for_adjective(model, adj):
 def w2v_get_tools_for_verb(model, verb):
     """get possible tools to realize the intended action"""
     # get average sigma of the verb_noun canonical pairs
-    canons = prepare_list_from_file('./word_lists/verb_noun_pair.txt')
+    canons = prepare_list_from_file(get_word_list_path('verb_noun_pair.txt'))
     sigma = get_ave_sigma(model, canons)
 
     # extract verbs from w2v model with the sigma
@@ -141,7 +143,7 @@ def w2v_get_tools_for_verb(model, verb):
 
 def rank_tools_cos(model, verb, tools):
     """rank tool with regard to verb by measuring the cosine distance from the verb-tool-pair vector to canonical vector"""
-    canons = prepare_list_from_file('word_lists/verb_tool_list.txt')
+    canons = prepare_list_from_file(get_word_list_path('verb_tool_list.txt'))
     sigma = get_ave_sigma(model, canons)
     tool_dic = {}
 
@@ -157,7 +159,7 @@ def rank_tools_cos(model, verb, tools):
 
 def rank_tool_l2(model, verb, tools):
     """rank tool with regard to verb by measuring the euclidean distance from the verb-tool-pair vector to canonical vector"""
-    canons = prepare_list_from_file('word_lists/verb_tool_list.txt')
+    canons = prepare_list_from_file(get_word_list_path('verb_tool_list.txt'))
     sigma = get_ave_sigma(model, canons)
     tool_dic = {}
 
