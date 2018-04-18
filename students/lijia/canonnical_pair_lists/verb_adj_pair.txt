@@ -1,0 +1,7 @@
+cut sharp
+attack sharp
+light bright
+burn burning
+lit hot
+hit bulky
+open closed
