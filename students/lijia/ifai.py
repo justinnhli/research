@@ -1,6 +1,7 @@
 import time
 import sys
 from collections import OrderedDict
+from functools import lru_cache as memoize
 from os.path import dirname, realpath, join as join_path
 
 import numpy as np
@@ -40,9 +41,13 @@ def get_ave_sigma(model, canons):
     ave_sigma = (1 / len(canons)) * sigma
     return ave_sigma
 
+
+@memoize
 def get_word_list_path(word_list_file):
     return join_path(dirname(realpath(__file__)), 'word_lists', word_list_file)
 
+
+@memoize
 def prepare_list_from_file(file_name):
     """extract a list of word(s) from a file"""
     with open(file_name) as fd:
@@ -251,6 +256,7 @@ def cn_get_locations(noun):
     return loca_list
 
 
+@memoize
 def get_synonyms(word, pos=None):
     """return a list of synonym of the noun from PyDictionary and wordnet
 
