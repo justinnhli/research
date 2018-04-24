@@ -2,3 +2,5 @@ This is an open field west of a white house, with a boarded front door. There is
 # put valid actions below
 open door
 open mailbox
+enter door
+push door

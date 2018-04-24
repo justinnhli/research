@@ -4,3 +4,4 @@ enter building
 enter forest
 climb tree
 follow gully
+burn forest

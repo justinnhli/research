@@ -12,3 +12,5 @@ roll curtain
 wear gown
 open window
 break window
+sit carpet
+take carpet

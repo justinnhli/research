@@ -1,2 +1,3 @@
 The trophy case is securely fastened to the wall (perhaps to foil any attempt by robbers to remove it.
 # put valid actions below
+break wall

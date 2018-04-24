@@ -2,3 +2,4 @@ You are a hunter. The townsfolk tell of a beast that roams the woods at night. P
 # put valid actions below
 hunt beast
 stalk beast
+burn wood

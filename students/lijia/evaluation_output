@@ -1,0 +1,196 @@
+/Library/Frameworks/Python.framework/Versions/3.6/bin/python3.6 /Users/Lisa/Dropbox/personal/code/IFAI_research/students/lijia/evaluation.py
+[nltk_data] Error loading wordnet: <urlopen error [SSL:
+[nltk_data]     CERTIFICATE_VERIFY_FAILED] certificate verify failed
+[nltk_data]     (_ssl.c:777)>
+/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/bs4/__init__.py:181: UserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
+
+The code that caused this warning is on line 96 of the file /Users/Lisa/Dropbox/personal/code/IFAI_research/students/lijia/evaluation.py. To get rid of this warning, change code that looks like this:
+
+ BeautifulSoup(YOUR_MARKUP})
+
+to this:
+
+ BeautifulSoup(YOUR_MARKUP, "lxml")
+
+  markup_type=markup_type))
+stream has no Synonyms in the API
+you has no Synonyms in the API
+building has no Synonyms in the API
+road has no Synonyms in the API
+Scenario 1
+    True Positives: 1 ['burn forest']
+    False Positives: 4 ['enter building', 'enter forest', 'follow gully', 'climb tree']
+    False Negatives: 20 ['be building', 'bring building', 'build building', 'building building', 'cast building', 'convert building', 'develop building', 'face building', 'fall building', 'housing building', 'protecting building', 'providing building', 'shelter building', 'weather building', 'be forest', 'cutting forest', 'nest forest', 'pick forest', 'take forest', 'wear forest']
+rock has no Synonyms in the API
+foot has no Synonyms in the API
+streambed has no Synonyms in the API
+Scenario 2
+    True Positives: 0 []
+    False Positives: 1 ['climb rock']
+    False Negatives: 0 []
+concrete has no Synonyms in the API
+lead has no Synonyms in the API
+grate has no Synonyms in the API
+Scenario 3
+    True Positives: 0 []
+    False Positives: 4 ['observe depression', 'open grate', 'open grate with key', 'find key']
+    False Negatives: 8 ['advantage lead', 'block lead', 'give lead', 'lead lead', 'poison lead', 'push lead', 'take lead', 'weight lead']
+wallpaper has no Synonyms in the API
+curtain has no Synonyms in the API
+exit has no Synonyms in the API
+gown has no Synonyms in the API
+chair has no Synonyms in the API
+Scenario 4
+    True Positives: 4 ['sit carpet', 'take carpet', 'wear gown', 'break window']
+    False Positives: 10 ['observe carpet', 'open carpet', 'throw chair', 'roll curtain', 'take curtain', 'leave exit', 'check phone', 'take phone', 'tear wallpaper', 'open window']
+    False Negatives: 65 ['decorating bedroom', 'eat bedroom', 'gather bedroom', 'go bedroom', 'have bedroom', 'having bedroom', 'putting bedroom', 'relax bedroom', 'sex bedroom', 'sit bedroom', 'sleeping bedroom', 'storing bedroom', 'used bedroom', 'wash bedroom', 'carpet carpet', 'cover carpet', 'covering carpet', 'decorate carpet', 'decorating carpet', 'dog carpet', 'flooring carpet', 'give carpet', 'go carpet', 'laying carpet', 'protecting carpet', 'walking carpet', 'wear carpet', 'be chair', 'block chair', 'chair chair', 'electrocuting chair', 'head chair', 'hold chair', 'people chair', 'resting chair', 'seat chair', 'sit chair', 'sitting chair', 'stand chair', 'take chair', 'calling phone', 'communicating phone', 'listen phone', 'make phone', 'phone phone', 'ring phone', 'talking phone', 'telephone phone', 'write phone', 'be window', 'face window', 'get window', 'give window', 'go window', 'grab window', 'keep window', 'letting window', 'listen window', 'look window', 'looking window', 'providing window', 'seeing window', 'sit window', 'stick window', 'take window']
+Scenario 5
+    True Positives: 0 []
+    False Positives: 2 ['sharpen screwdriver', 'take screwdriver']
+    False Negatives: 12 ['be screwdriver', 'building screwdriver', 'fixing screwdriver', 'inserting screwdriver', 'open screwdriver', 'pull screwdriver', 'putting screwdriver', 'screw screwdriver', 'tighten screwdriver', 'turn screwdriver', 'unscrewing screwdriver', 'wear screwdriver']
+Scenario 6
+    True Positives: 1 ['take toothbrush']
+    False Positives: 2 ['collect DNA', 'brush teeth']
+    False Negatives: 11 ['brushing toothbrush', 'clean toothbrush', 'cleaning toothbrush', 'eat toothbrush', 'get toothbrush', 'keeping toothbrush', 'preventing toothbrush', 'removing toothbrush', 'rest toothbrush', 'scrubbing toothbrush', 'wear toothbrush']
+wall has no Synonyms in the API
+surprise has no Synonyms in the API
+ceiling has no Synonyms in the API
+way has no Synonyms in the API
+ship has no Synonyms in the API
+earth has no Synonyms in the API
+bypass has no Synonyms in the API
+Scenario 7
+    True Positives: 0 []
+    False Positives: 0 []
+    False Negatives: 64 ['be bulldozer', 'clear bulldozer', 'dig bulldozer', 'even bulldozer', 'move bulldozer', 'pull bulldozer', 'push bulldozer', 'shore bulldozer', 'take bulldozer', 'be ceiling', 'being ceiling', 'closing ceiling', 'cover ceiling', 'covering ceiling', 'hang ceiling', 'leak ceiling', 'mounting ceiling', 'painting ceiling', 'pour ceiling', 'sag ceiling', 'wear ceiling', 'earth earth', 'generating earth', 'go earth', 'grow earth', 'live earth', 'living earth', 'orbit earth', 'receive earth', 'revolve earth', 'rotate earth', 'suck earth', 'take earth', 'wear earth', 'be ship', 'carry ship', 'course ship', 'fair ship', 'give ship', 'go ship', 'hold ship', 'list ship', 'near ship', 'sail ship', 'ship ship', 'take ship', 'travel ship', 'weather ship', 'containing wall', 'designating wall', 'divide wall', 'dividing wall', 'go wall', 'hang wall', 'holding wall', 'keeping wall', 'leaning wall', 'run wall', 'separate wall', 'sit wall', 'stop wall', 'take wall', 'wall wall', 'wear wall']
+path has no Synonyms in the API
+tree has no Synonyms in the API
+bird has no Synonyms in the API
+orchestra has no Synonyms in the API
+Scenario 8
+    True Positives: 1 ['burn forest']
+    False Positives: 5 ['hunt bird', 'watch bird', 'build camp', 'leave forest', 'climb tree']
+    False Negatives: 24 ['be bird', 'build bird', 'chirp bird', 'eat bird', 'fly bird', 'head bird', 'land bird', 'learn bird', 'sing bird', 'spread bird', 'take bird', 'watching bird', 'be forest', 'cutting forest', 'nest forest', 'pick forest', 'take forest', 'wear forest', 'climb mountain', 'climbing mountain', 'crash mountain', 'create mountain', 'divide mountain', 'present mountain']
+beast has no Synonyms in the API
+townsfolk has no Synonyms in the API
+hunter has no Synonyms in the API
+wood has no Synonyms in the API
+Scenario 9
+    True Positives: 1 ['burn wood']
+    False Positives: 2 ['hunt beast', 'stalk beast']
+    False Negatives: 26 ['suck beast', 'bag hunter', 'belong hunter', 'circle hunter', 'corner hunter', 'cover hunter', 'fire hunter', 'hunt hunter', 'kill hunter', 'spot hunter', 'use hunter', 'wear hunter', 'be wood', 'build wood', 'building wood', 'burning wood', 'drive wood', 'feel wood', 'fence wood', 'float wood', 'go wood', 'hang wood', 'make wood', 'sit wood', 'take wood', 'wear wood']
+pathway has no Synonyms in the API
+lake has no Synonyms in the API
+Scenario 10
+    True Positives: 0 []
+    False Positives: 2 ['go left', 'go right']
+    False Negatives: 0 []
+shrub has no Synonyms in the API
+Scenario 11
+    True Positives: 0 []
+    False Positives: 1 ['hunt fireflies']
+    False Negatives: 0 []
+base has no Synonyms in the API
+column has no Synonyms in the API
+light has no Synonyms in the API
+treetop has no Synonyms in the API
+Scenario 12
+    True Positives: 0 []
+    False Positives: 3 ['look around', 'observe campfire', 'take weapon']
+    False Negatives: 44 ['base base', 'reach base', 'take base', 'be campfire', 'burn campfire', 'eat campfire', 'enjoy campfire', 'gather campfire', 'relax campfire', 'start campfire', 'adding column', 'be column', 'conveying column', 'express column', 'hold column', 'holding column', 'marching column', 'organize column', 'read column', 'support column', 'supporting column', 'write column', 'circle moon', 'eclipse moon', 'eclipsing moon', 'gain moon', 'inspire moon', 'keep moon', 'keeping moon', 'light moon', 'quarter moon', 'shine moon', 'take moon', 'burn smoke', 'cake smoke', 'cloud smoke', 'eat smoke', 'kill smoke', 'smell smoke', 'smoke smoke', 'stream smoke', 'wear smoke', 'enjoy treetop', 'take treetop']
+chorus has no Synonyms in the API
+owl has no Synonyms in the API
+beat has no Synonyms in the API
+Scenario 13
+    True Positives: 1 ['eat owl']
+    False Positives: 2 ['hunt owl', 'climb tree']
+    False Negatives: 5 ['hear owl', 'rest owl', 'see owl', 'take owl', 'wear owl']
+arrow has no Synonyms in the API
+something has no Synonyms in the API
+Scenario 14
+    True Positives: 0 []
+    False Positives: 0 []
+    False Negatives: 23 ['be arrow', 'denote arrow', 'fly arrow', 'give arrow', 'go arrow', 'hit arrow', 'miss arrow', 'pierce arrow', 'point arrow', 'shoot arrow', 'take arrow', 'target arrow', 'turn arrow', 'wear arrow', 'wound arrow', 'dig bush', 'eat bush', 'go bush', 'hide bush', 'shade bush', 'take bush', 'wear bush', 'win bush']
+flight has no Synonyms in the API
+guardian has no Synonyms in the API
+Scenario 15
+    True Positives: 0 []
+    False Positives: 1 ['climb tree']
+    False Negatives: 11 ['circle moon', 'eclipse moon', 'eclipsing moon', 'gain moon', 'inspire moon', 'keep moon', 'keeping moon', 'light moon', 'quarter moon', 'shine moon', 'take moon']
+north has no Synonyms in the API
+passage has no Synonyms in the API
+chasm has no Synonyms in the API
+Scenario 16
+    True Positives: 0 []
+    False Positives: 1 ['climb rock']
+    False Negatives: 6 ['pull bottom', 'push bottom', 'put bottom', 'sink bottom', 'sit bottom', 'take bottom']
+mailbox has no Synonyms in the API
+Scenario 17
+    True Positives: 3 ['enter door', 'open door', 'push door']
+    False Positives: 1 ['open mailbox']
+    False Negatives: 32 ['be door', 'close door', 'enclose door', 'entering door', 'exit door', 'get door', 'give door', 'go door', 'keep door', 'keeping door', 'separating door', 'sit door', 'take door', 'wear door', 'be house', 'belong house', 'burn house', 'cost house', 'eat house', 'face house', 'go house', 'hold house', 'house house', 'keeping house', 'settle house', 'shelter house', 'sit house', 'stay house', 'take house', 'weather house', 'write house', 'go west']
+Scenario 18
+    True Positives: 1 ['burn forest']
+    False Positives: 1 ['collect branches']
+    False Negatives: 14 ['branch branch', 'carry branch', 'go branch', 'hold branch', 'operate branch', 'take branch', 'wear branch', 'write branch', 'be forest', 'cutting forest', 'nest forest', 'pick forest', 'take forest', 'wear forest']
+direction has no Synonyms in the API
+Scenario 19
+    True Positives: 1 ['burn forest']
+    False Positives: 1 ['climb tree']
+    False Negatives: 6 ['be forest', 'cutting forest', 'nest forest', 'pick forest', 'take forest', 'wear forest']
+northwest has no Synonyms in the API
+canyon has no Synonyms in the API
+Scenario 20
+    True Positives: 1 ['sit wall']
+    False Positives: 0 []
+    False Negatives: 32 ['generate dam', 'still dam', 'stop dam', 'take dam', 'wear dam', 'drop fall', 'fall fall', 'go fall', 'pull fall', 'rise fall', 'slip fall', 'bone top', 'push top', 'right top', 'spin top', 'take top', 'containing wall', 'designating wall', 'divide wall', 'dividing wall', 'go wall', 'hang wall', 'holding wall', 'keeping wall', 'leaning wall', 'run wall', 'separate wall', 'stop wall', 'take wall', 'wall wall', 'wear wall', 'go west']
+clearing has no Synonyms in the API
+Scenario 21
+    True Positives: 1 ['go west']
+    False Positives: 3 ['collect leaves', 'light leaves', 'go south']
+    False Negatives: 31 ['be forest', 'burn forest', 'cutting forest', 'nest forest', 'pick forest', 'take forest', 'wear forest', 'carry ground', 'freeze ground', 'go ground', 'hold ground', 'push ground', 'take ground', 'wear ground', 'budding leaf', 'capturing leaf', 'collecting leaf', 'converting leaf', 'cover leaf', 'decomposing leaf', 'fall leaf', 'float leaf', 'making leaf', 'shine leaf', 'take leaf', 'turn leaf', 'wear leaf', 'dig pile', 'dump pile', 'hang pile', 'pour pile']
+Scenario 22
+    True Positives: 1 ['break window']
+    False Positives: 2 ['enter window', 'open window']
+    False Negatives: 50 ['be door', 'close door', 'enclose door', 'enter door', 'entering door', 'exit door', 'get door', 'give door', 'go door', 'keep door', 'keeping door', 'open door', 'push door', 'separating door', 'sit door', 'take door', 'wear door', 'be house', 'belong house', 'burn house', 'cost house', 'eat house', 'face house', 'go house', 'hold house', 'house house', 'keeping house', 'settle house', 'shelter house', 'sit house', 'stay house', 'take house', 'weather house', 'write house', 'be window', 'face window', 'get window', 'give window', 'go window', 'grab window', 'keep window', 'letting window', 'listen window', 'look window', 'looking window', 'providing window', 'seeing window', 'sit window', 'stick window', 'take window']
+basket has no Synonyms in the API
+Scenario 23
+    True Positives: 1 ['carry basket']
+    False Positives: 2 ['look basket', 'take basket']
+    False Negatives: 18 ['accept basket', 'buying basket', 'carrying basket', 'gather basket', 'hold basket', 'holding basket', 'include basket', 'kitten basket', 'looking basket', 'pull bottom', 'push bottom', 'put bottom', 'sink bottom', 'sit bottom', 'take bottom', 'dig shaft', 'turn shaft', 'wear shaft']
+entry has no Synonyms in the API
+dungeon has no Synonyms in the API
+yourself has no Synonyms in the API
+sens has no Synonyms in the API
+gate has no Synonyms in the API
+Scenario 24
+    True Positives: 0 []
+    False Positives: 0 []
+    False Negatives: 0 []
+food has no Synonyms in the API
+east has no Synonyms in the API
+staircase has no Synonyms in the API
+preparation has no Synonyms in the API
+Scenario 25
+    True Positives: 1 ['sit staircase']
+    False Positives: 2 ['go chimney', 'go staircase']
+    False Negatives: 61 ['burn chimney', 'direct chimney', 'hang chimney', 'smoke chimney', 'take chimney', 'wear chimney', 'be house', 'belong house', 'burn house', 'cost house', 'eat house', 'face house', 'go house', 'hold house', 'house house', 'keeping house', 'settle house', 'shelter house', 'sit house', 'stay house', 'take house', 'weather house', 'write house', 'baking kitchen', 'cook kitchen', 'cooking kitchen', 'counter kitchen', 'eat kitchen', 'eating kitchen', 'sink kitchen', 'sit kitchen', 'storing kitchen', 'washing kitchen', 'access staircase', 'accessing staircase', 'ascend staircase', 'ascending staircase', 'climb staircase', 'climbing staircase', 'exercise staircase', 'get staircase', 'getting staircase', 'going staircase', 'go west', 'be window', 'break window', 'face window', 'get window', 'give window', 'go window', 'grab window', 'keep window', 'letting window', 'listen window', 'look window', 'looking window', 'providing window', 'seeing window', 'sit window', 'stick window', 'take window']
+Scenario 26
+    True Positives: 0 []
+    False Positives: 1 ['break wall']
+    False Negatives: 29 ['argue case', 'case case', 'ignore case', 'take case', 'bag robber', 'case robber', 'demand robber', 'force robber', 'leave robber', 'shake robber', 'steal robber', 'stick robber', 'use robber', 'containing wall', 'designating wall', 'divide wall', 'dividing wall', 'go wall', 'hang wall', 'holding wall', 'keeping wall', 'leaning wall', 'run wall', 'separate wall', 'sit wall', 'stop wall', 'take wall', 'wall wall', 'wear wall']
+reach has no Synonyms in the API
+Scenario 27
+    True Positives: 0 []
+    False Positives: 1 ['cut branch']
+    False Negatives: 21 ['branch branch', 'carry branch', 'go branch', 'hold branch', 'operate branch', 'take branch', 'wear branch', 'write branch', 'carry ground', 'freeze ground', 'go ground', 'hold ground', 'push ground', 'take ground', 'wear ground', 'achieve reach', 'bring reach', 'get reach', 'pull reach', 'push reach', 'reach reach']
+beak has no Synonyms in the API
+what has no Synonyms in the API
+wing has no Synonyms in the API
+jewel has no Synonyms in the API
+Scenario 28
+    True Positives: 3 ['breed egg', 'eat egg', 'take egg']
+    False Positives: 2 ['hide egg', 'twist mainspring']
+    False Negatives: 74 ['eat beak', 'wear beak', 'detect canary', 'eat canary', 'ignore canary', 'listen canary', 'sing canary', 'wear canary', 'bake egg', 'break egg', 'cooking egg', 'egg egg', 'hiding egg', 'make egg', 'nurturing egg', 'rolling egg', 'scrambling egg', 'stick egg', 'throwing egg', 'wear egg', 'blink eye', 'blinking eye', 'cry eye', 'focus eye', 'go eye', 'knowing eye', 'looking eye', 'miss eye', 'perceiving eye', 'see eye', 'sense eye', 'staring eye', 'take eye', 'viewing eye', 'watch eye', 'wear eye', 'be machinery', 'carry machinery', 'function machinery', 'help machinery', 'make machinery', 'perform machinery', 'take machinery', 'wear machinery', 'work machinery', 'take mainspring', 'be window', 'break window', 'face window', 'get window', 'give window', 'go window', 'grab window', 'keep window', 'letting window', 'listen window', 'look window', 'looking window', 'providing window', 'seeing window', 'sit window', 'stick window', 'take window', 'bird wing', 'counting wing', 'flapping wing', 'flight wing', 'fly wing', 'flying wing', 'form wing', 'providing wing', 'raise wing', 'supporting wing', 'wear wing']
+
+Process finished with exit code 0

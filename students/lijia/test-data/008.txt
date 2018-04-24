@@ -2,6 +2,7 @@ You are walking down a path through a forest. An endless orchestra of whispering
 # put valid actions below
 climb tree
 hunt bird
-talk to bird
-sleep, build camp
+build camp
 leave forest
+watch bird
+burn forest

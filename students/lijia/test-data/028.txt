@@ -2,4 +2,6 @@ here is a golden clockwork canary nestled in the egg. It seems to have recently 
 # put valid actions below
 eat egg
 take egg
+breed egg
+hide egg
 twist mainspring
