@@ -42,12 +42,12 @@ def get_ave_sigma(model, canons):
     return ave_sigma
 
 
-@memoize
+@memoize(maxsize=None)
 def get_word_list_path(word_list_file):
     return join_path(dirname(realpath(__file__)), 'word_lists', word_list_file)
 
 
-@memoize
+@memoize(maxsize=None)
 def prepare_list_from_file(file_name):
     """extract a list of word(s) from a file"""
     with open(file_name) as fd:
@@ -196,6 +196,7 @@ def w2v_rank_manipulability(model, nouns):
 def cn_get_verbs_for_noun(noun):
     """return a list of possible verbs with weight for the given noun from conceptNet"""
     v_dic = {}
+    wnl = WordNetLemmatizer()
 
     # query conceptNet
     rel_list = ["CapableOf", "UsedFor"]
@@ -208,6 +209,7 @@ def cn_get_verbs_for_noun(noun):
 
             # use wordnet to assert verb (can be a verb)
             if wn.morphy(verb, wn.VERB):
+                verb = wnl.lemmatize(str(verb.lower()))
 
                 # add to dic with weight
                 if verb not in v_dic:
@@ -256,7 +258,7 @@ def cn_get_locations(noun):
     return loca_list
 
 
-@memoize
+@memoize(maxsize=None)
 def get_synonyms(word, pos=None):
     """return a list of synonym of the noun from PyDictionary and wordnet
 
@@ -373,8 +375,7 @@ def get_noun_from_text(text):
     doc = nlp(text)
     # collect lemmatized nouns from tokens
     wnl = WordNetLemmatizer()
-    nouns = [wnl.lemmatize(chunk.root.text) for chunk in doc.noun_chunks]
-    nouns_set = set(nouns)
+    nouns = set([wnl.lemmatize(str(chunk.root.text.lower())) for chunk in doc.noun_chunks])
     nouns = list(OrderedDict.fromkeys(nouns))
 
     # filter out non-tangible nouns
