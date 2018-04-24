@@ -56,7 +56,7 @@ def get_scenario(scene_num):
     with open(scene_path) as fd:
         lines = [('' if line.strip().startswith('#') else line) for line in fd.readlines()]
         description, actions = '\n'.join(lines).split('\n\n', maxsplit=1)
-        actions = set([action for action in actions if action.strip()])
+        actions = set([action for action in actions.split("\n") if action.split()])
         return Scenario(description, actions)
 
 
@@ -89,7 +89,7 @@ def run_scenario(scene_num, model):
 def main():
     """Evaluate all scenarios."""
     model = load_model(GOOGLE_NEWS_MODEL_PATH)
-    for scene_num in range(1, 31):
+    for scene_num in range(1, 29):
         run_scenario(scene_num, model)
 
 if __name__ == '__main__':
