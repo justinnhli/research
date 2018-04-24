@@ -1,2 +1,4 @@
 You stop at an intersection of forked pathways. The path on the right winds up a hill. The path on the left curves down to where a lake lies.
 # put valid actions below
+go right
+go left

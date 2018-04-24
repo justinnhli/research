@@ -1,2 +1,4 @@
 This is an open field west of a white house, with a boarded front door. There is a small mailbox here.
 # put valid actions below
+open door
+open mailbox

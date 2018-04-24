@@ -1,2 +1,5 @@
 There is a toothbrush here.
 # put valid actions below
+brush teeth
+take toothbrush
+collect DNA

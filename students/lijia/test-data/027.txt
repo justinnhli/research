@@ -1,2 +1,4 @@
 You are about ten feet above the ground nestled among some large branches. The nearest branch above you is beyond your reach.
 # put valid actions below
+cut branch
+swing
