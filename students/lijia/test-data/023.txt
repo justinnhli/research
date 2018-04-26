@@ -3,3 +3,5 @@ The basket is lowered to the bottom of the shaft.
 take basket
 carry basket
 look basket
+fall into shaft
+drop into shaft

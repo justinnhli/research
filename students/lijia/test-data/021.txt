@@ -2,5 +2,3 @@ You are in a clearing, with a forest surrounding you on the west and south. Ther
 # put valid actions below
 collect leaves
 light leaves
-go west
-go south

@@ -1,16 +1,23 @@
 It is a small bedroom with a faded carpet and old wallpaper. There is a washbasin, a chair with a tatty dressing gown slung over it, and a window with the curtains drawn. Near the exit leading south is a phone.
 # put valid actions below
-tear wallpaper
-open carpet
-observe carpet
-check phone
-take phone
-leave exit
-throw chair
-take curtain
-roll curtain
-wear gown
-open window
-break window
-sit carpet
+tear carpet
+sit on carpet
 take carpet
+roll up carpet
+move carpet
+throw chair
+sit on chair
+move chair
+roll up curtain
+take curtain
+open curtain
+wear gown
+take gown
+pick up gown
+tear gown
+throw gown
+pick up phone
+take phone
+tear wallpaper
+break window
+open window

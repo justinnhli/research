@@ -4,3 +4,5 @@ open door
 open mailbox
 enter door
 push door
+punch board
+break mailbox

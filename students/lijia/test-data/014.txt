@@ -1,2 +1,11 @@
 Suddenly, you hear something speed through the nearby bushes. You instinctively ready your bow and arrow. You hear it again. It sounds like its coming towards you.
 # put valid actions below
+draw bow
+break bow
+break arrow
+snap bow
+snap arrow
+ready bow
+eat bushes
+throw bow
+throw arrow
