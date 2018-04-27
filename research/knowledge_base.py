@@ -38,12 +38,6 @@ class URI:
     )
 
     def __init__(self, uri, prefix=None):
-        """Example function with types documented in the docstring.
-
-        Arguments:
-            uri (str): Either the fully qualified URI, or the fragment that comes after the prefix
-            prefix (str): The second parameter.
-        """
         if prefix:
             self.prefix = prefix
             self.fragment = uri
