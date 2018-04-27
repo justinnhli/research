@@ -1,6 +1,5 @@
 import time
 import sys
-from collections import OrderedDict
 from functools import lru_cache as memoize
 from os.path import dirname, realpath, join as join_path
 
@@ -78,36 +77,16 @@ def w2v_get_verbs_for_noun(model, noun):
     """return a list of lemmatized verbs that the noun can afford from a given word2vec model"""
     # load word lists
     canons = prepare_list_from_file(get_word_list_path('verb_noun_pair.txt'))
-    verb_list = prepare_list_from_file(get_word_list_path('top_1000_verbs.txt'))
 
     # compute average sigma
     sigma = get_ave_sigma(model, canons)
 
-    # list of common used verbs
-    navigation_verbs = [
-        "north", "south", "east", "west", "northeast", "southeast", "southwest", "northwest", "up", "down", "enter",
-        "exit"
-    ]
-    essential_manipulation_verbs = ["get", "drop", "push", "pull", "open", "close"]
-
     # extract words from word2vec model & append lemmatized word to list
-    model_verb = model.most_similar([sigma, noun], [], topn=10)
-    word2vec_words = []
-    wnl = WordNetLemmatizer()
-    for verb in model_verb:
-        verb = wnl.lemmatize(str(verb[0].lower()))
+    model_verbs = model.most_similar([sigma, noun], [], topn=10)
+    word2vec_words = [to_imperative(verb[0].lower()) for verb in model_verbs]
+    word2vec_words = [verb for verb in word2vec_words if verb]
 
-        # use wordnet to assert verb (can be a verb)
-        if wn.morphy(verb, wn.VERB):
-            word2vec_words.append(verb)
-
-    # set operations
-    affordant_verbs = list(set(verb_list) & set(word2vec_words))
-
-    return affordant_verbs
-
-    # uncomment to include generic verbs
-    #return list(set(navigation_verbs) | set(essential_manipulation_verbs) | set(affordant_verbs))
+    return word2vec_words
 
 
 def w2v_get_adjectives_for_noun(model, noun):
@@ -208,11 +187,10 @@ def w2v_rank_manipulability(model, nouns):
 
 
 def cn_get_verbs_for_noun(noun):
-    """return a list of possible verbs with weight for the given noun from conceptNet"""
+    """return a list of possible verbs with weight for the given noun from ConceptNet"""
     v_dic = {}
-    wnl = WordNetLemmatizer()
 
-    # query conceptNet
+    # query ConceptNet
     rel_list = ["CapableOf", "UsedFor"]
     for rel in rel_list:
         obj = requests.get('http://api.conceptnet.io/query?node=/c/en/' + noun + '&rel=/r/' + rel).json()
@@ -220,16 +198,14 @@ def cn_get_verbs_for_noun(noun):
 
             # get the verb from the edge
             verb = edge["end"]["label"].split()[0]
+            verb = to_imperative(verb)
+            if not verb:
+                continue
 
-            # use wordnet to assert verb (can be a verb)
-            if wn.morphy(verb, wn.VERB):
-                verb = wnl.lemmatize(str(verb.lower()))
-
-                # add to dic with weight
-                if verb not in v_dic:
-                    v_dic[verb] = edge["weight"]
-                if verb in v_dic:
-                    v_dic[verb] += edge["weight"]
+            # add to dic with weight
+            if verb not in v_dic:
+                v_dic[verb] = 0
+            v_dic[verb] += edge["weight"]
 
     sorted_list = sorted(v_dic.items(), key=(lambda kv: kv[1]), reverse=True)
     return sorted_list[:10]
@@ -388,9 +364,7 @@ def get_noun_from_text(text):
     nlp = spacy.load('en')
     doc = nlp(text)
     # collect lemmatized nouns from tokens
-    wnl = WordNetLemmatizer()
-    nouns = set([wnl.lemmatize(str(chunk.root.text.lower())) for chunk in doc.noun_chunks])
-    nouns = list(OrderedDict.fromkeys(nouns))
+    nouns = set([LEMMATIZER.lemmatize(chunk.root.text.lower(), wn.NOUN) for chunk in doc.noun_chunks])
 
     # filter out non-tangible nouns
     nouns = filter_nouns(nouns)
