@@ -33,8 +33,13 @@ def object_verb_tool_key(action_str):
     """
     words = action_str.split()
     if len(words) == 2:
+        # verb noun
         return (words[1], words[0])
+    elif len(words) == 3:
+        # verb preposition noun
+        return (words[2], ' '.join(words[0:2]))
     elif len(words) == 4 and words[2] == 'with':
+        # verb noun with tool
         return (words[1], words[0], words[3])
     else:
         raise ValueError('Cannot sort action: "{}"'.format(action_str))
