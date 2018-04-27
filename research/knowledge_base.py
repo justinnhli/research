@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
-import logging
 import re
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 from textwrap import indent, dedent
 
-from SPARQLWrapper import SPARQLWrapper2, N3
+from SPARQLWrapper import SPARQLWrapper2
 from rdflib import Graph, Literal, URIRef, plugin
 from rdflib.plugins.sparql import prepareQuery
 from rdflib.store import Store
 from rdflib.util import guess_format
 from rdflib_sqlalchemy import registerplugins
-from rdflib_sqlalchemy.store import SQLAlchemy
-from sqlalchemy import create_engine
 
 registerplugins()
 
@@ -35,29 +32,21 @@ class URI:
         'umbel-rc': 'http://umbel.org/umbel/rc/',
         'umbel': 'http://umbel.org/umbel#',
     }
-    REVERSED = None
+    REVERSED = sorted(
+        ([namespace, prefix] for prefix, namespace in PREFIXES.items()),
+        key=(lambda kv: -len(kv[0])),
+    )
 
     def __init__(self, uri, prefix=None):
-        """Example function with types documented in the docstring.
-
-        Arguments:
-            uri (str): Either the fully qualified URI, or the fragment that comes after the prefix
-            prefix (str): The second parameter.
-        """
         if prefix:
             self.prefix = prefix
             self.fragment = uri
             self.uri = URI.PREFIXES[prefix] + uri
         else:
             self.uri = uri
-            if URI.REVERSED is None:
-                URI.REVERSED = sorted(
-                    ([namespace, prefix] for prefix, namespace in URI.PREFIXES.items()),
-                    key=(lambda kv: -len(kv[0])),
-                )
-            for namespace, prefix in URI.REVERSED:
+            for namespace, alias in URI.REVERSED:
                 if uri.startswith(namespace):
-                    self.prefix = prefix
+                    self.prefix = alias
                     self.fragment = uri[len(namespace):]
 
     def __str__(self):
@@ -118,6 +107,7 @@ class Node:
                     return L(float(string))
                 except ValueError:
                     return U(*reversed(string.split(':', maxsplit=1)))
+        raise ValueError('unable to parse "{}"'.format(string))
 
 
 class V(Node):
@@ -195,7 +185,7 @@ class Query:
             {constraints}
         ''').strip()
         variables = self.variables()
-        for bound in bindings.keys():
+        for bound in bindings:
             if '?' + bound in variables:
                 variables.remove('?' + bound)
         return template.format(
@@ -217,7 +207,7 @@ def create_sqlite_graph(path, create=True, identifier=None):
         identifier (str): The identifier of the graph. Defaults to 'rdflib_sqlalchemy_graph'
 
     Returns:
-        an RDF Graph that uses the specified sqlite-db at the path
+        Graph: An RDF Graph that uses the specified sqlite-db at the path
     """
     if identifier is None:
         identifier = 'rdflib_sqlalchemy_graph'
@@ -229,8 +219,18 @@ def create_sqlite_graph(path, create=True, identifier=None):
 
 
 class KnowledgeSource:
+    """Abstract class to represent a knowledge source."""
+    # pylint: disable=redundant-returns-doc, missing-raises-doc
 
     def query_sparql(self, sparql):
+        """Query the KB with SPARQL.
+
+        Arguments:
+            sparql (str): The SPARQL query.
+
+        Returns:
+            list[dict[str:str]]: A list of variable bindings.
+        """
         raise NotImplementedError
 
     def query(self, query, *constraints, **bindings):
@@ -266,12 +266,9 @@ class KnowledgeSource:
 
 class KnowledgeFile(KnowledgeSource):
 
-    def __init__(self, source=None, kb_name=None, sqlize=True):
+    def __init__(self, source=None, kb_name='rdflib_test', sqlize=True):
         super().__init__()
-        if kb_name is None:
-            ident = URIRef('rdflib_test')
-        else:
-            ident = URIRef(kb_name)
+        ident = URIRef(kb_name)
         store = plugin.get('SQLAlchemy', Store)(identifier=ident)
         self.graph = Graph(store, identifier=ident)
         if source is None:
@@ -282,8 +279,6 @@ class KnowledgeFile(KnowledgeSource):
             raise OSError('Cannot find file {}'.format(source))
         filepath, ext = split_ext(source)
         rdf_format = guess_format(source)
-        if rdf_format == 'turtle':
-            rdf_format = 'nt'
         if rdf_format is not None:
             if sqlize:
                 sql_uri = 'sqlite:///' + filepath + '.rdfsqlite'
@@ -302,7 +297,10 @@ class KnowledgeFile(KnowledgeSource):
         self.graph.close()
 
     def query_sparql(self, sparql):
-        return self.graph.query(sparql)
+        results = []
+        for result in self.graph.query(sparql).bindings:
+            results.append({str(variable):str(uri) for variable, uri in result.items()})
+        return results
 
     def query(self, query, *constraints, **bindings):
         results = self.query_sparql(query.to_select(*constraints, **bindings))

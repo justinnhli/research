@@ -128,7 +128,7 @@ def standardize_uri(uri):
 
 def escape_sql_string(string):
     """Convert a string to a SQL-escaped format.
-    
+
     Arguments:
         string (str): The string to convert.
 

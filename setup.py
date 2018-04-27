@@ -1,3 +1,5 @@
+"""Setup for Justin's research code."""
+
 from setuptools import setup
 
 setup(
@@ -10,7 +12,7 @@ setup(
 
     author='Justin Li',
     author_email='justinnhli@oxy.edu',
-    url='https://github.com/justinnhli/research']
+    url='https://github.com/justinnhli/research',
     entry_points={
         'console_scripts': [
             'rdfsqlize = research.rdfsqlize:main',
