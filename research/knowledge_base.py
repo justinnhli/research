@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""A module to handle local and remote knowledge bases."""
 
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 
@@ -12,6 +12,8 @@ registerplugins()
 
 
 class URI:
+    """A class to represent URIs and their namespaces."""
+
     PREFIXES = {
         '_': '_',
         'db': 'http://dbpedia.org/',
@@ -51,6 +53,11 @@ class URI:
 
     @property
     def short_str(self):
+        """The prefixed representation of this URI.
+
+        Returns:
+            str: The prefixed string.
+        """
         return self.prefix + ':' + self.fragment
 
 
@@ -64,12 +71,18 @@ def create_sqlite_graph(path, create=True, identifier=None):
 
     Returns:
         Graph: An RDF Graph that uses the specified sqlite-db at the path
+
+    Raises:
+        FileNotFoundError: If the path doesn't exist and create is False.
     """
+    path = realpath(expanduser(path))
     if identifier is None:
         identifier = 'rdflib_sqlalchemy_graph'
     identifier = URIRef(identifier)
     store = plugin.get("SQLAlchemy", Store)(identifier=identifier)
     graph = Graph(store, identifier=identifier)
+    if not create and not file_exists(path):
+        raise FileNotFoundError('cannot open non-existent file {}'.format(path))
     graph.open(Literal('sqlite:///' + realpath(expanduser(path))))
     return graph
 
@@ -91,6 +104,7 @@ class KnowledgeSource:
 
 
 class KnowledgeFile(KnowledgeSource):
+    """A knowledge base in a local file."""
 
     def __init__(self, source=None, kb_name='rdflib_test', sqlize=True):
         super().__init__()
@@ -130,6 +144,7 @@ class KnowledgeFile(KnowledgeSource):
 
 
 class SparqlEndpoint(KnowledgeSource):
+    """A knowledge base from a remote SPARQL endpoint."""
 
     def __init__(self, url):
         self.endpoint = SPARQLWrapper2(url)
