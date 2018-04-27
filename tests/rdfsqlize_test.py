@@ -20,9 +20,9 @@ def test_rdfsqlize():
     kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
 
     results = []
-    sparql = 'SELECT ?state where {?state a dbo:State}'
-    for state in kb.query_sparql(sparql):
-        results.append(str(state[0]).split('/')[-1])
+    sparql = 'SELECT ?state WHERE {?state a dbo:State}'
+    for bindings in kb.query_sparql(sparql):
+        results.append(bindings['state'].split('/')[-1])
 
     results = [state.replace('_', ' ') for state in results]
     answers = [
@@ -43,8 +43,8 @@ def test_rdfsqlize():
 
     results = []
     sparql = 'SELECT ?state where {?state <http://dbpedia.org/property/AdmittanceDate> "1889-11-02"}'
-    for state in kb.query_sparql(sparql):
-        results.append(str(state[0]).split('/')[-1])
+    for bindings in kb.query_sparql(sparql):
+        results.append(bindings['state'].split('/')[-1])
 
     results = [state.replace('_', ' ') for state in results]
     if not sorted(results) == ['North Dakota', 'South Dakota']:
