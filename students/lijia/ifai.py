@@ -27,6 +27,7 @@ UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfs
 
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
+SPACY_NLP = spacy.load('en')
 LEMMATIZER = WordNetLemmatizer()
 DICTIONARY = PyDictionary()
 
@@ -273,17 +274,6 @@ def get_synonyms(word, pos=None):
         return set(syn_list)
 
 
-def combine_list(w2v_ls, cn_ls):
-    """combine word2vec list and knowledge base list"""
-    combine_ls = w2v_ls
-    for element in cn_ls:
-        word = element[0]
-        if word not in combine_ls:
-            combine_ls.append(word)
-
-    return combine_ls
-
-
 def filter_nouns(nouns):
 
     def get_all_ancestors(kb, relation, concept):
@@ -345,24 +335,21 @@ def get_verbs_for_noun(model, noun):
     """get list of verb that the noun can afford"""
     w2v_ls = w2v_get_verbs_for_noun(model, noun)
     cn_ls = cn_get_verbs_for_noun(noun)
-    combine_ls = combine_list(w2v_ls, cn_ls)
-    return combine_ls
+    return set(w2v_ls) | set(kv[0] for kv in cn_ls)
 
 
 def get_adjectives_for_noun(model, noun):
     """get list of adj that describe the noun"""
     w2v_ls = w2v_get_adjectives_for_noun(model, noun)
     cn_ls = cn_get_adjectives_for_noun(noun)
-    combine_ls = combine_list(w2v_ls, cn_ls)
-    return combine_ls
+    return set(w2v_ls) | set(kv[0] for kv in cn_ls)
 
 
 def get_noun_from_text(text):
     """extract noun from given text"""
 
     # tokenize the given text with SpaCy
-    nlp = spacy.load('en')
-    doc = nlp(text)
+    doc = SPACY_NLP(text)
     # collect lemmatized nouns from tokens
     nouns = set([LEMMATIZER.lemmatize(chunk.root.text.lower(), wn.NOUN) for chunk in doc.noun_chunks])
 
