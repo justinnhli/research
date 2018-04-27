@@ -302,7 +302,10 @@ class KnowledgeFile(KnowledgeSource):
         self.graph.close()
 
     def query_sparql(self, sparql):
-        return self.graph.query(sparql)
+        results = []
+        for result in self.graph.query(sparql).bindings:
+            results.append({str(variable):str(uri) for variable, uri in result.items()})
+        return results
 
     def query(self, query, *constraints, **bindings):
         results = self.query_sparql(query.to_select(*constraints, **bindings))
