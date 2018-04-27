@@ -1,3 +1,5 @@
+"""A module to handle word embeddings."""
+
 from os.path import splitext, exists as file_exists
 
 import gensim
