@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from os import remove
-from os.path import dirname, realpath, join as join_path
+from os.path import dirname, realpath
 
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
