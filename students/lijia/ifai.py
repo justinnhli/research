@@ -9,7 +9,7 @@ import requests
 import spacy
 import nltk
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet as wn
+from nltk.corpus import wordnet as wn, words
 from PyDictionary import PyDictionary
 
 # make sure research library code is available
@@ -21,12 +21,14 @@ from research.word_embedding import load_model
 
 # download wordnet
 nltk.download('wordnet')
+nltk.download('words')
 
 GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
+LEMMATIZER = WordNetLemmatizer()
 DICTIONARY = PyDictionary()
 
 # Utility Functions
@@ -58,6 +60,18 @@ def prepare_list_from_file(file_name):
 def cosine_distance(v1, v2):
     """calculate the cosine distance of two vectors"""
     return np.dot(v1, v2) / (np.sqrt(np.dot(v1, v1)) * np.sqrt(np.dot(v2, v2)))
+
+
+@memoize(maxsize=None)
+def is_word(word):
+    return word.lower() in words.words()
+
+
+@memoize(maxsize=None)
+def to_imperative(verb):
+    if not is_word(verb):
+        return None
+    return LEMMATIZER.lemmatize('running', wn.VERB)
 
 
 def w2v_get_verbs_for_noun(model, noun):
