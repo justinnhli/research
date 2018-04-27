@@ -98,10 +98,22 @@ def print_scenario_result(result):
     Arguments:
         result (TestRest): The test results for a scenario.
     """
-    print('Scenario {} ({}...)'.format(result.scenario.id, result.scenario.description[:20]))
-    print('    True Positives: {} {}'.format(len(result.true_positives), result.true_positives))
-    print('    False Positives: {} {}'.format(len(result.false_positives), result.false_positives))
-    print('    False Negatives: {} {}'.format(len(result.false_negatives), result.false_negatives))
+    print('Scenario {} ({}...)'.format(
+        result.scenario.id,
+        ' '.join(result.scenario.description.split()[:5]),
+    ))
+    print('    True Positives: {} {}'.format(
+        len(result.true_positives),
+        result.true_positives,
+    ))
+    print('    False Positives: {} {}'.format(
+        len(result.false_positives),
+        result.false_positives,
+    ))
+    print('    False Negatives: {} {}'.format(
+        len(result.false_negatives),
+        result.false_negatives,
+    ))
 
 
 def main():
