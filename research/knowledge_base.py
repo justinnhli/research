@@ -11,47 +11,47 @@ from rdflib_sqlalchemy import registerplugins
 registerplugins()
 
 
-class URI: 
-    PREFIXES = { 
-        '_': '_', 
-        'db': 'http://dbpedia.org/', 
-        'dbo': 'http://dbpedia.org/ontology/', 
-        'dbp': 'http://dbpedia.org/property/', 
-        'dbr': 'http://dbpedia.org/resource/', 
-        'dc': 'http://purl.org/dc/elements/1.1/', 
-        'foaf': 'http://xmlns.com/foaf/0.1/', 
-        'owl': 'http://www.w3.org/2002/07/owl#', 
-        'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 
-        'rdfs': 'http://www.w3.org/2000/01/rdf-schema#', 
-        'res': 'http://www.w3.org/2005/sparql-results#', 
-        'skos': 'http://www.w3.org/2004/02/skos/core#', 
-        'xsd': 'http://www.w3.org/2001/XMLSchema#', 
-        'umbel-rc': 'http://umbel.org/umbel/rc/', 
-        'umbel': 'http://umbel.org/umbel#', 
-    } 
-    REVERSED = sorted( 
-        ([namespace, prefix] for prefix, namespace in PREFIXES.items()), 
-        key=(lambda kv: -len(kv[0])), 
-    ) 
- 
-    def __init__(self, uri, prefix=None): 
-        if prefix: 
-            self.prefix = prefix 
-            self.fragment = uri 
-            self.uri = URI.PREFIXES[prefix] + uri 
-        else: 
-            self.uri = uri 
-            for namespace, alias in URI.REVERSED: 
-                if uri.startswith(namespace): 
-                    self.prefix = alias 
-                    self.fragment = uri[len(namespace):] 
- 
-    def __str__(self): 
-        return '<' + self.uri + '>' 
- 
-    @property 
-    def short_str(self): 
-        return self.prefix + ':' + self.fragment 
+class URI:
+    PREFIXES = {
+        '_': '_',
+        'db': 'http://dbpedia.org/',
+        'dbo': 'http://dbpedia.org/ontology/',
+        'dbp': 'http://dbpedia.org/property/',
+        'dbr': 'http://dbpedia.org/resource/',
+        'dc': 'http://purl.org/dc/elements/1.1/',
+        'foaf': 'http://xmlns.com/foaf/0.1/',
+        'owl': 'http://www.w3.org/2002/07/owl#',
+        'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+        'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
+        'res': 'http://www.w3.org/2005/sparql-results#',
+        'skos': 'http://www.w3.org/2004/02/skos/core#',
+        'xsd': 'http://www.w3.org/2001/XMLSchema#',
+        'umbel-rc': 'http://umbel.org/umbel/rc/',
+        'umbel': 'http://umbel.org/umbel#',
+    }
+    REVERSED = sorted(
+        ([namespace, prefix] for prefix, namespace in PREFIXES.items()),
+        key=(lambda kv: -len(kv[0])),
+    )
+
+    def __init__(self, uri, prefix=None):
+        if prefix:
+            self.prefix = prefix
+            self.fragment = uri
+            self.uri = URI.PREFIXES[prefix] + uri
+        else:
+            self.uri = uri
+            for namespace, alias in URI.REVERSED:
+                if uri.startswith(namespace):
+                    self.prefix = alias
+                    self.fragment = uri[len(namespace):]
+
+    def __str__(self):
+        return '<' + self.uri + '>'
+
+    @property
+    def short_str(self):
+        return self.prefix + ':' + self.fragment
 
 
 def create_sqlite_graph(path, create=True, identifier=None):
