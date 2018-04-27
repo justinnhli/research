@@ -315,13 +315,17 @@ class TabularQLearningAgent(Agent):
 
 
 def epsilon_greedy(cls, epsilon):
-    """Decorate an Agent class to be epsilon-greedy.
+    """Decorate an Agent to be epsilon-greedy.
 
     This decorator function takes a class (and a value of epsilon) and, on the
-    fly, creates a sub-class which acts in an epsilon-greedy manner.
+    fly, creates a subclass which acts in an epsilon-greedy manner.
+    Specifically, it overrides Agent.act() to select a random action with
+    epsilon probability.
     """
 
     class EpsilonGreedyMetaAgent(cls):
+        """A subclass to make an Agent epsilon greedy."""
+        # pylint: disable = missing-docstring
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -337,6 +341,7 @@ def epsilon_greedy(cls, epsilon):
 
 
 class GridWorld(Environment):
+    """A simple, obstacle-free GridWorld environment."""
 
     def __init__(self, width, height, start, goal):
         self.width = width
@@ -389,10 +394,36 @@ class GridWorld(Environment):
                 self.col = min(self.width - 1, self.col + 1)
             return -1
 
+    def visualize(self):
+        raise NotImplementedError
 
-def gating_memory(cls, reward, num_memory_slots=1):
+
+def gating_memory(cls, num_memory_slots=1, reward=0):
+    """Decorate an Environment to be contain a gating memory.
+
+    This decorator function takes a class (and some parameters) and, on the
+    fly, creates a subclass with additional "memory" elements. Specifically, it
+    augments the observation with additional attributes, which the agent can
+    use as part of its state. The subclass also provides an additional "gate"
+    action which the agent can use to change the contents of memory.
+
+    Since the gating of memory is an "internal" action, a different reward may
+    be given for the "gate" action.
+
+    Arguments:
+        cls (class): The Environment superclass.
+        num_memory_slots (int): The amount of memory. Defaults to 1.
+        reward (float): The reward for an internal action. Defaults to 0.
+
+    Returns:
+        class: A subclass with a gating memory.
+    """
+
+    assert isinstance(cls, Environment)
 
     class GatingMemoryMetaEnvironment(cls):
+        """A subclass to add a gating memory to an Environment."""
+        # pylint: disable = missing-docstring
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -459,6 +490,7 @@ def gating_memory(cls, reward, num_memory_slots=1):
 
 
 class TMaze(Environment):
+    """A T-maze environment, with hints on which direction to go."""
 
     def __init__(self, length, hint_pos, hint_pos_2=None, redundant=False):
         assert 0 <= hint_pos <= length
@@ -570,6 +602,14 @@ class TMaze(Environment):
 
 
 def run_interactive_episode(env, agent, num_episodes):
+    """Print out a run of an Agent in an Environment.
+
+    Arguments:
+        env (Environment): The environment.
+        agent (Agent): The agent.
+        num_episodes (int): The number of episodes to run.
+
+    """
     for _ in range(num_episodes):
         env.new_episode()
         episodic_return = 0
