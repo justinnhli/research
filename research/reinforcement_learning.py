@@ -169,6 +169,7 @@ class Action(AttrDict):
 
 class State(AttrDict):
     """A state or observation in a reinforcement learning environment."""
+
     pass
 
 
@@ -321,17 +322,24 @@ def epsilon_greedy(cls, epsilon):
     fly, creates a subclass which acts in an epsilon-greedy manner.
     Specifically, it overrides Agent.act() to select a random action with
     epsilon probability.
-    """
 
+    Arguments:
+        cls (class): The Agent superclass.
+        epsilon (float): The probability of random action.
+
+    Returns:
+        class: A subclass with a gating memory.
+    """
     class EpsilonGreedyMetaAgent(cls):
         """A subclass to make an Agent epsilon greedy."""
+
         # pylint: disable = missing-docstring
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs): # noqa: D102
             super().__init__(*args, **kwargs)
             self.epsilon = epsilon
 
-        def act(self, observation, actions, reward=None):
+        def act(self, observation, actions, reward=None): # noqa: D102
             if random() < self.epsilon:
                 return super().force_act(observation, choice(actions), reward)
             else:
@@ -344,6 +352,14 @@ class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
 
     def __init__(self, width, height, start, goal):
+        """Construct the GridWorld.
+
+        Arguments:
+            width (int): The width of the grid.
+            height (int): The height of the grid.
+            start (list[int]): The starting location.
+            goal (list[int]): The goal location.
+        """
         self.width = width
         self.height = height
         self.start = list(start)
@@ -351,16 +367,16 @@ class GridWorld(Environment):
         self.row = start[0]
         self.col = start[1]
 
-    def get_state(self):
+    def get_state(self): # noqa: D102
         if [self.row, self.col] == self.goal:
             return None
         else:
             return State(row=self.row, col=self.col)
 
-    def get_observation(self):
+    def get_observation(self): # noqa: D102
         return self.get_state()
 
-    def get_actions(self):
+    def get_actions(self): # noqa: D102
         actions = []
         if self.row >= 0:
             actions.append(Action('up'))
@@ -372,14 +388,14 @@ class GridWorld(Environment):
             actions.append(Action('right'))
         return actions
 
-    def reset(self):
+    def reset(self): # noqa: D102
         self.new_episode()
 
-    def new_episode(self):
+    def new_episode(self): # noqa: D102
         self.row = self.start[0]
         self.col = self.start[1]
 
-    def react(self, action):
+    def react(self, action): # noqa: D102
         assert action in self.get_actions()
         if [self.row, self.col] == self.goal:
             return 1
@@ -394,7 +410,7 @@ class GridWorld(Environment):
                 self.col = min(self.width - 1, self.col + 1)
             return -1
 
-    def visualize(self):
+    def visualize(self): # noqa: D102
         raise NotImplementedError
 
 
@@ -418,11 +434,11 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
     Returns:
         class: A subclass with a gating memory.
     """
-
     assert isinstance(cls, Environment)
 
     class GatingMemoryMetaEnvironment(cls):
         """A subclass to add a gating memory to an Environment."""
+
         # pylint: disable = missing-docstring
 
         def __init__(self, *args, **kwargs):
@@ -493,6 +509,16 @@ class TMaze(Environment):
     """A T-maze environment, with hints on which direction to go."""
 
     def __init__(self, length, hint_pos, hint_pos_2=None, redundant=False):
+        """Construct the TMaze.
+
+        Arguments:
+            length (int): The length of the hallway before the choice point.
+            hint_pos (int): The location of the hint.
+            hint_pos_2 (int): The location of the second hint. Defaults to
+                None.
+            redundant (bool): If True, the second hint will present the same
+                information as the first but in a different representation.
+        """
         assert 0 <= hint_pos <= length
         if hint_pos_2 is not None:
             assert 0 <= hint_pos_2 <= length
@@ -515,7 +541,7 @@ class TMaze(Environment):
             self.redundant_connective = -1 * self.logical_connective
             self.redundant_direction = -1 * self.direction
 
-    def get_state(self):
+    def get_state(self): # noqa: D102
         if self.y == self.length and self.x != 0:
             return None
         if self.hint_pos_2 is None:
@@ -538,10 +564,10 @@ class TMaze(Environment):
                     return State(x=self.x, y=self.y, symbol=self.direction)
         return State(x=self.x, y=self.y, symbol=0)
 
-    def get_observation(self):
+    def get_observation(self): # noqa: D102
         return self.get_state()
 
-    def get_actions(self):
+    def get_actions(self): # noqa: D102
         actions = []
         if self.x == 0:
             if self.y < self.length:
@@ -553,10 +579,10 @@ class TMaze(Environment):
             actions.append(Action('halt'))
         return actions
 
-    def reset(self):
+    def reset(self): # noqa: D102
         self.new_episode()
 
-    def new_episode(self):
+    def new_episode(self): # noqa: D102
         self.x = 0
         self.y = 0
         self.goal_x = choice([-1, 1])
@@ -568,7 +594,7 @@ class TMaze(Environment):
             self.redundant_connective = -1 * self.logical_connective
             self.redundant_direction = -1 * self.direction
 
-    def react(self, action):
+    def react(self, action): # noqa: D102
         assert action in self.get_actions()
         if action.name == 'up':
             self.y += 1
@@ -588,7 +614,7 @@ class TMaze(Environment):
         else:
             return -1
 
-    def visualize(self):
+    def visualize(self): # noqa: D102
         lines = []
         for _ in range(self.length + 1):
             lines.append([' ', '_', ' '])
