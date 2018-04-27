@@ -15,7 +15,7 @@ from PyDictionary import PyDictionary
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
-from research.knowledge_base import KnowledgeFile, Query, Node, URI
+from research.knowledge_base import KnowledgeFile, URI
 from research.word_embedding import load_model
 
 # download wordnet
@@ -141,7 +141,11 @@ def w2v_get_tools_for_verb(model, verb):
 
 
 def rank_tools_cos(model, verb, tools):
-    """rank tool with regard to verb by measuring the cosine distance from the verb-tool-pair vector to canonical vector"""
+    """Rank tools using cosine distance.
+
+    Specifically, the cosine distance from the verb-tool-pair vector to
+    canonical vector.
+    """
     canons = prepare_list_from_file(get_word_list_path('verb_tool_list.txt'))
     sigma = get_ave_sigma(model, canons)
     tool_dic = {}
@@ -157,7 +161,7 @@ def rank_tools_cos(model, verb, tools):
 
 
 def rank_tool_l2(model, verb, tools):
-    """rank tool with regard to verb by measuring the euclidean distance from the verb-tool-pair vector to canonical vector"""
+    """Rank tools using L2 distance."""
     canons = prepare_list_from_file(get_word_list_path('verb_tool_list.txt'))
     sigma = get_ave_sigma(model, canons)
     tool_dic = {}
@@ -254,8 +258,11 @@ def get_synonyms(word, pos=None):
     """return a list of synonym of the noun from PyDictionary and wordnet
 
     Arguments:
-        word (str): the word to find synonyms for
-        pos (FIXME): WordNet part-of-speech constant
+        word (str): The word to find synonyms for.
+        pos (int): WordNet part-of-speech constant.
+
+    Returns:
+        set[str]: The set of synonyms.
     """
     syn_list = []
 
@@ -266,7 +273,7 @@ def get_synonyms(word, pos=None):
             if syn != word:
                 syn_list.append(syn)
 
-    # add theraurus synonyms
+    # add thesaurus synonyms
     dict_syns = DICTIONARY.synonym(word)
     if dict_syns:
         return set(syn_list) | set(dict_syns)
@@ -279,14 +286,10 @@ def umbel_is_manipulable_noun(noun):
     def get_all_superclasses(kb, concept):
         superclasses = set()
         queue = [str(URI(concept, 'umbel-rc'))]
-        visited = set()
         query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
         while queue:
             child = queue.pop(0)
-            query = query_template.format(
-                child=child,
-                relation=URI('subClassOf', 'rdfs')
-            )
+            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
             for bindings in kb.query_sparql(query):
                 parent = str(bindings['parent'])
                 if parent not in superclasses:
@@ -320,7 +323,7 @@ def wn_is_manipulable_noun(noun):
                     hypernyms.add(hypernym.name())
                     queue.append(hypernym)
         return hypernyms
-    
+
     for synset in wn.synsets(noun, pos=wn.NOUN):
         if 'physical_entity.n.01' in get_all_hypernyms(synset):
             return True
@@ -328,23 +331,22 @@ def wn_is_manipulable_noun(noun):
 
 
 def filter_nouns(nouns):
-    return [
-        noun for noun in nouns
-        if wn_is_manipulable_noun(noun) or umbel_is_manipulable_noun(noun)
-    ]
+    return [noun for noun in nouns if wn_is_manipulable_noun(noun) or umbel_is_manipulable_noun(noun)]
 
 
 # MAIN FUNCTIONS
 
 
-def get_verb_for_adj(model, adj):
-    """get list of verb that can be caused by the adj(e.g.: sharp -> cut)"""
-
+def get_verbs_for_adj(model, adj):
+    """Get verbs that can be caused by the adjective.
+    
+    For example, sharp -> cut
+    """
     return w2v_get_verbs_for_adjective(model, adj)
 
 
 def get_verbs_for_noun(model, noun):
-    """get list of verb that the noun can afford"""
+    """Get list of verb that the noun can afford."""
     w2v_ls = w2v_get_verbs_for_noun(model, noun)
     cn_ls = cn_get_verbs_for_noun(noun)
     return set(w2v_ls) | set(kv[0] for kv in cn_ls)
@@ -357,7 +359,7 @@ def get_adjectives_for_noun(model, noun):
     return set(w2v_ls) | set(kv[0] for kv in cn_ls)
 
 
-def get_noun_from_text(text):
+def get_nouns_from_text(text):
     """extract noun from given text"""
 
     # tokenize the given text with SpaCy
@@ -373,7 +375,7 @@ def get_noun_from_text(text):
 
 def possible_actions(model, text):
     """return a list of possible actions that can be done to nouns in the text"""
-    nouns = get_noun_from_text(text)
+    nouns = get_nouns_from_text(text)
 
     # rank nouns in terms of manipulatbility [most manipulative-----less manipulative]
     sorted_list = w2v_rank_manipulability(model, nouns)
@@ -416,7 +418,10 @@ def main():
     ]
 
     verbs = ["cut", "open", "write", "drink"]
-    tools = ["knife", "ax", "brain", "neuron", "cup","computer", "lamp", "pen", "needle", "scissors", "door", "key", "box", "building", "life", "glass", "water", "computer"]
+    tools = [
+        "knife", "ax", "brain", "neuron", "cup", "computer", "lamp", "pen", "needle", "scissors", "door", "key", "box",
+        "building", "life", "glass", "water", "computer"
+    ]
 
     for verb in verbs:
         print(verb, ":")
