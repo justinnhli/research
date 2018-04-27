@@ -6,17 +6,33 @@ from os.path import dirname, realpath
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
+from research.knowledge_base import URI, SparqlEndpoint # pylint: disable=wrong-import-position
 
-from research.knowledge_base import SparqlEndpoint # pylint: disable=wrong-import-position
 
 def test_sparql_endpoint():
-    dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
+    dbo_country = URI(URI.NAMESPACES['dbo'] + 'country')
+    dbr_us = URI(URI.NAMESPACES['dbr'] + 'United_States')
+    dct_subject = URI('http://purl.org/dc/terms/subject')
+    dbc_us = URI('http://dbpedia.org/resource/Category:States_of_the_United_States')
     query = '''
+        SELECT DISTINCT ?state WHERE {{
+            ?state {dbo_country} {dbr_us} .
+            ?state {dct_subject} {dbc_us} .
+        }} LIMIT 100
+    '''.format(
+        dbo_country=('<' + str(dbo_country) + '>'),
+        dbr_us=dbr_us.short_str,
+        dct_subject=('<' + str(dct_subject) + '>'),
+        dbc_us=dbc_us.short_str,
+    ).strip()
+    assert query == '''
         SELECT DISTINCT ?state WHERE {
-            ?state dbo:country dbr:United_States .
-            ?state dct:subject dbc:States_of_the_United_States .
+            ?state <http://dbpedia.org/ontology/country> dbr:United_States .
+            ?state <http://purl.org/dc/terms/subject> dbc:States_of_the_United_States .
         } LIMIT 100
-    '''
+    '''.strip()
+
+    dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
     result = [binding['state'] for binding in dbpedia.query_sparql(query)]
     assert sorted(result) == [
         'http://dbpedia.org/resource/Alabama',
