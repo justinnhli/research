@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Tests for knowledge_base.py."""
 
 import sys
 from os import remove
@@ -12,7 +13,7 @@ from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
 
 
 def test_rdfsqlize():
-
+    """Test rdfsqlize and knowledge bases."""
     nt_file = join_path(DIRECTORY, 'states.nt')
 
     output_file = sqlize(nt_file, 'states')

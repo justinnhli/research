@@ -197,7 +197,7 @@ class RDFSQLizer:
             INSERT INTO {interned_id}_namespace_binds
             VALUES({prefix},{uri});
         ''').strip().replace('\n', ' ')
-        for prefix, uri in URI.PREFIXES.items():
+        for prefix, uri in URI.NAMESPACES.items():
             if not uri.startswith('http'):
                 continue
             yield sql_template.format(

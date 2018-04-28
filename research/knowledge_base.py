@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""A module to handle local and remote knowledge bases."""
 
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 
@@ -12,13 +12,17 @@ registerplugins()
 
 
 class URI:
-    PREFIXES = {
+    """A class to represent URIs and their namespaces."""
+
+    NAMESPACES = {
         '_': '_',
         'db': 'http://dbpedia.org/',
+        'dbc': 'http://dbpedia.org/resource/Category:',
         'dbo': 'http://dbpedia.org/ontology/',
         'dbp': 'http://dbpedia.org/property/',
         'dbr': 'http://dbpedia.org/resource/',
         'dc': 'http://purl.org/dc/elements/1.1/',
+        'dct': 'http://purl.org/dc/terms/',
         'foaf': 'http://xmlns.com/foaf/0.1/',
         'owl': 'http://www.w3.org/2002/07/owl#',
         'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
@@ -29,33 +33,62 @@ class URI:
         'umbel-rc': 'http://umbel.org/umbel/rc/',
         'umbel': 'http://umbel.org/umbel#',
     }
-    REVERSED = sorted(
-        ([namespace, prefix] for prefix, namespace in PREFIXES.items()),
+    PREFIXES = sorted(
+        ([namespace, prefix] for prefix, namespace in NAMESPACES.items()),
         key=(lambda kv: -len(kv[0])),
     )
 
-    def __init__(self, uri, prefix=None):
-        if prefix:
-            self.prefix = prefix
+    def __init__(self, uri, namespace=None):
+        """Construct the URI.
+
+        Arguments:
+            uri (str): The full URI, or the after-prefix fragment.
+            namespace (str): The namespace. Defaults to None.
+        """
+        if namespace:
+            self.namespace = namespace
+            self.prefix = URI.NAMESPACES[namespace]
             self.fragment = uri
-            self.uri = URI.PREFIXES[prefix] + uri
+            self.uri = self.prefix + self.fragment
         else:
+            self.namespace = None
+            self.prefix = None
+            self.fragment = None
             self.uri = uri
-            for namespace, alias in URI.REVERSED:
-                if uri.startswith(namespace):
-                    self.prefix = alias
-                    self.fragment = uri[len(namespace):]
+            prefix_order = sorted(
+                URI.NAMESPACES.items(),
+                key=(lambda kv: len(kv[1])),
+                reverse=True,
+            )
+            # pylint: disable = redefined-argument-from-local
+            for namespace, prefix in prefix_order:
+                if uri.startswith(prefix):
+                    self.namespace = namespace
+                    self.prefix = prefix
+                    self.fragment = uri[len(prefix):]
+                    break
 
     def __str__(self):
-        return '<' + self.uri + '>'
+        return self.uri
 
     @property
     def short_str(self):
-        return self.prefix + ':' + self.fragment
+        """Get the namespace:fragment representation of this URI.
+
+        Returns:
+            str: The prefixed string.
+
+        Raises:
+            ValueError: If no namespace was specified or found.
+        """
+        if self.namespace:
+            return self.namespace + ':' + self.fragment
+        else:
+            raise ValueError('No namespace found for URI: ' + self.uri)
 
 
 def create_sqlite_graph(path, create=True, identifier=None):
-    """Creates a sqlite-backed graph at the given path
+    """Create a sqlite-backed graph at the given path.
 
     Args:
         path (str): Either the fully qualified URI, or the fragment that comes after the prefix
@@ -64,18 +97,25 @@ def create_sqlite_graph(path, create=True, identifier=None):
 
     Returns:
         Graph: An RDF Graph that uses the specified sqlite-db at the path
+
+    Raises:
+        FileNotFoundError: If the path doesn't exist and create is False.
     """
+    path = realpath(expanduser(path))
     if identifier is None:
         identifier = 'rdflib_sqlalchemy_graph'
     identifier = URIRef(identifier)
     store = plugin.get("SQLAlchemy", Store)(identifier=identifier)
     graph = Graph(store, identifier=identifier)
+    if not create and not file_exists(path):
+        raise FileNotFoundError('cannot open non-existent file {}'.format(path))
     graph.open(Literal('sqlite:///' + realpath(expanduser(path))))
     return graph
 
 
 class KnowledgeSource:
     """Abstract class to represent a knowledge source."""
+
     # pylint: disable=redundant-returns-doc, missing-raises-doc
 
     def query_sparql(self, sparql):
@@ -91,8 +131,24 @@ class KnowledgeSource:
 
 
 class KnowledgeFile(KnowledgeSource):
+    """A knowledge base in a local file."""
 
     def __init__(self, source=None, kb_name='rdflib_test', sqlize=True):
+        """Construct the KnowledgeFile.
+
+        Arguments:
+            source (str): Path to the knowledge base. If None, an in-memory
+                knowledge base will be created. Defaults to None.
+            kb_name (str): The name of the knowledge base. This must match the
+                name used to create the knowledge base, if the source is an
+                rdfsqlite file. Defaults to 'rdflib_test'.
+            sqlize (bool): Whether to create a sqlite version of the knowledge
+                base for faster future access. Defaults to True.
+
+        Raises:
+            FileNotFoundError: If the specified source is not found.
+            ValueError: If the format of the source cannot be determined.
+        """
         super().__init__()
         ident = URIRef(kb_name)
         store = plugin.get('SQLAlchemy', Store)(identifier=ident)
@@ -102,7 +158,7 @@ class KnowledgeFile(KnowledgeSource):
             return
         source = realpath(expanduser(source))
         if not file_exists(source):
-            raise OSError('Cannot find file {}'.format(source))
+            raise FileNotFoundError(source)
         filepath, ext = split_ext(source)
         rdf_format = guess_format(source)
         if rdf_format is not None:
@@ -122,7 +178,7 @@ class KnowledgeFile(KnowledgeSource):
         self.graph.commit()
         self.graph.close()
 
-    def query_sparql(self, sparql):
+    def query_sparql(self, sparql): # noqa: D102
         results = []
         for result in self.graph.query(sparql).bindings:
             results.append({str(variable):str(uri) for variable, uri in result.items()})
@@ -130,11 +186,17 @@ class KnowledgeFile(KnowledgeSource):
 
 
 class SparqlEndpoint(KnowledgeSource):
+    """A knowledge base from a remote SPARQL endpoint."""
 
     def __init__(self, url):
+        """Construct the SparqlEndpoint.
+
+        Arguments:
+            url (str): The URL to the SPARQL endpoint.
+        """
         self.endpoint = SPARQLWrapper2(url)
 
-    def query_sparql(self, sparql):
+    def query_sparql(self, sparql): # noqa: D102
         self.endpoint.setQuery(sparql)
         results = []
         for bindings in self.endpoint.query().bindings:
