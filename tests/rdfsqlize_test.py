@@ -8,8 +8,9 @@ from os.path import dirname, realpath, join as join_path
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
-from research.knowledge_base import KnowledgeFile # pylint: disable=wrong-import-position
-from research.rdfsqlize import sqlize # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from research.knowledge_base import KnowledgeFile
+from research.rdfsqlize import sqlize
 
 
 def test_rdfsqlize():
