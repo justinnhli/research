@@ -357,8 +357,8 @@ class GridWorld(Environment):
         Arguments:
             width (int): The width of the grid.
             height (int): The height of the grid.
-            start (list[int]): The starting location.
-            goal (list[int]): The goal location.
+            start (list[int]): The starting location. Origin is top left.
+            goal (list[int]): The goal location. Origin is top left.
         """
         self.width = width
         self.height = height
@@ -377,12 +377,14 @@ class GridWorld(Environment):
         return self.get_state()
 
     def get_actions(self): # noqa: D102
+        if [self.row, self.col] == self.goal:
+            return []
         actions = []
-        if self.row >= 0:
+        if self.row > 0:
             actions.append(Action('up'))
         if self.row < self.height - 1:
             actions.append(Action('down'))
-        if self.col >= 0:
+        if self.col > 0:
             actions.append(Action('left'))
         if self.col < self.width - 1:
             actions.append(Action('right'))
@@ -395,11 +397,11 @@ class GridWorld(Environment):
         self.row = self.start[0]
         self.col = self.start[1]
 
-    def react(self, action): # noqa: D102
-        assert action in self.get_actions()
+    def react(self, action=None): # noqa: D102
         if [self.row, self.col] == self.goal:
             return 1
         else:
+            assert action in self.get_actions()
             if action.name == 'up':
                 self.row = max(0, self.row - 1)
             elif action.name == 'down':
