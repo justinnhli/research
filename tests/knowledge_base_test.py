@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Tests for knowledge_base.py."""
 
 import sys
 from os.path import dirname, realpath
@@ -10,6 +11,7 @@ from research.knowledge_base import URI, SparqlEndpoint # pylint: disable=wrong-
 
 
 def test_sparql_endpoint():
+    """Test URIs and SPARQL endpoints with dbpedia."""
     dbo_country = URI(URI.NAMESPACES['dbo'] + 'country')
     dbr_us = URI(URI.NAMESPACES['dbr'] + 'United_States')
     dct_subject = URI('http://purl.org/dc/terms/subject')
