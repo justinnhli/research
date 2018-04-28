@@ -508,6 +508,8 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 class TMaze(Environment):
     """A T-maze environment, with hints on which direction to go."""
 
+    # FIXME clean up class logic
+
     def __init__(self, length, hint_pos, hint_pos_2=None, redundant=False):
         """Construct the TMaze.
 
