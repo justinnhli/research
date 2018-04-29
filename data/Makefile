@@ -30,13 +30,9 @@ models/GoogleNews-vectors-negative300.bin: models
 	gunzip $@.gz
 
 models:
-	if [ ! -d 'models' ]; then
-		mkdir 'models'
-	fi
+	if [ ! -d 'models' ]; then mkdir 'models'; fi
 
 kbs:
-	if [ ! -d 'kbs' ]; then
-		mkdir 'kbs'
-	fi
+	if [ ! -d 'kbs' ]; then mkdir 'kbs'; fi
 
 # opencyc-latest.owl
