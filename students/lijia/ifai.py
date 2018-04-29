@@ -72,7 +72,7 @@ def is_word(word):
 def to_imperative(verb):
     if not is_word(verb):
         return None
-    return LEMMATIZER.lemmatize('running', wn.VERB)
+    return LEMMATIZER.lemmatize(verb, wn.VERB)
 
 
 def w2v_get_verbs_for_noun(model, noun):
