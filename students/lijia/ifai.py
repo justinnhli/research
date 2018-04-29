@@ -99,9 +99,7 @@ def w2v_get_adjectives_for_noun(model, noun):
 
     # extract adjectives from w2v model with the sigma
     model_adjectives = model.most_similar([sigma, noun], [], topn=10)
-    adjectives = [adj[0] for adj in model_adjectives if wn.morphy(adj[0], wn.ADJ)]
-
-    return adjectives
+    return  [adj[0] for adj in model_adjectives if wn.morphy(adj[0], wn.ADJ)]
 
 
 def w2v_get_nouns_for_adjective(model, noun):
@@ -112,9 +110,7 @@ def w2v_get_nouns_for_adjective(model, noun):
 
     # extract nouns from w2v model with the sigma
     model_nouns = model.most_similar([sigma, noun], [], topn=10)
-    nouns = [noun[0] for noun in model_nouns if wn.morphy(noun[0], wn.NOUN)]
-
-    return nouns
+    return [noun[0] for noun in model_nouns if wn.morphy(noun[0], wn.NOUN)]
 
 
 def w2v_get_verbs_for_adjective(model, adj):
@@ -125,8 +121,7 @@ def w2v_get_verbs_for_adjective(model, adj):
 
     # extract verbs from w2v model with the sigma
     model_verbs = model.most_similar([sigma, adj], [], topn=10)
-    verbs = [verb[0] for verb in model_verbs]
-    return verbs
+    return [verb[0] for verb in model_verbs]
 
 
 def w2v_get_tools_for_verb(model, verb):
@@ -137,8 +132,7 @@ def w2v_get_tools_for_verb(model, verb):
 
     # extract verbs from w2v model with the sigma
     model_tools = model.most_similar([verb], [sigma], topn=10)
-    tools = [tool[0] for tool in model_tools]
-    return tools
+    return [tool[0] for tool in model_tools]
 
 
 def rank_tools_cos(model, verb, tools):
@@ -156,9 +150,7 @@ def rank_tools_cos(model, verb, tools):
         verb_tool_vec = model.word_vec(verb) - model.word_vec(tool)
         tool_dic[tool] = cosine_distance(sigma, verb_tool_vec)
 
-    sorted_list = sorted(tool_dic.items(), key=(lambda kv: kv[1]), reverse=True)
-
-    return sorted_list
+    return sorted(tool_dic.items(), key=(lambda kv: kv[1]), reverse=True)
 
 
 def rank_tool_l2(model, verb, tools):
@@ -172,9 +164,7 @@ def rank_tool_l2(model, verb, tools):
         verb_tool_vec = model.word_vec(verb) - model.word_vec(tool)
         tool_dic[tool] = np.linalg.norm(sigma - verb_tool_vec)
 
-    sorted_list = sorted(tool_dic.items(), key=(lambda kv: kv[1]))
-
-    return sorted_list
+    return sorted(tool_dic.items(), key=(lambda kv: kv[1]))
 
 
 def w2v_rank_manipulability(model, nouns):
