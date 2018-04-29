@@ -102,6 +102,7 @@ def print_scenario_result(result):
         result.scenario.id,
         ' '.join(result.scenario.description.split()[:5]),
     ))
+    print('    Expected Actions: {}'.format(result.scenario.actions))
     print('    True Positives: {} {}'.format(
         len(result.true_positives),
         result.true_positives,
