@@ -26,8 +26,10 @@ kbs/mappingbased_literals_en.ttl: kbs
 	bunzip2 $@.bz2
 
 models/GoogleNews-vectors-negative300.bin: models
-	wget --output-document $@.gz 'https://github.com/mmihaltz/word2vec-GoogleNews-vectors/raw/master/GoogleNews-vectors-negative300.bin.gz'
-	gunzip $@.gz
+	# linked from 
+	echo 'Google Drive restrictions prevent this file from being downloaded automatically.'
+	echo 'Instead, go to https://github.com/mmihaltz/word2vec-GoogleNews-vectors/'
+	exit 1
 
 models:
 	if [ ! -d 'models' ]; then mkdir 'models'; fi
