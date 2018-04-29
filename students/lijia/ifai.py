@@ -170,16 +170,14 @@ def rank_tool_l2(model, verb, tools):
 def w2v_rank_manipulability(model, nouns):
     """rank inputs nouns from most manipulative to least manipulative"""
     # anchor x_axis by using forest & tree vector difference
-    x_axis = model.word_vec("forest") - model.word_vec("tree")
-    dic = {}
-
+    manipulable_basis = model.word_vec("forest") - model.word_vec("tree")
     # map the noun's vectors to the x_axis and spit out a list from small to big
-    for noun in nouns:
-        if noun not in dic:
-            vec = model.word_vec(noun)
-            dic[noun] = np.dot(vec, x_axis)
-    sorted_list = sorted(dic.items(), key=(lambda kv: kv[1]))
-    return sorted_list
+    word_cosine_list = [
+        [noun, np.dot(model.word_vec(noun), manipulable_basis)]
+        for noun in set(nouns)
+    ]
+
+    return sorted(word_cosine_list, key=(lambda kv: kv[1]))
 
 
 def cn_get_relations_for_concept(concept, relations, limit=None):
