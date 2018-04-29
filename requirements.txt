@@ -4,7 +4,7 @@ rdflib-sqlalchemy==0.3.8
 SPARQLWrapper==1.8.1
 
 # word embedding packages
-gensim==3.2.0
+gensim==3.4.0
 
 # NLP packages
 spacy==2.0.11
