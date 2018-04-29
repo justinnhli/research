@@ -246,6 +246,11 @@ def cn_get_adjectives_for_noun(noun):
     ][:10]
 
 
+def cn_get_materials_for_noun(noun):
+    """return a list of possible materials with weight for the given noun from ConceptNet"""
+    return cn_get_relations_for_concept(noun, ['HasProperty'])[:10]
+
+
 def cn_get_locations(noun):
     """return a list of locations that the noun possibly locate in"""
     raw_results = cn_get_relations_for_concept(noun, ['AtLocation', 'LocatedNear', 'PartOf'])
