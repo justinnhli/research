@@ -1,5 +1,6 @@
 import time
 import sys
+from collections import defaultdict
 from functools import lru_cache as memoize
 from os.path import dirname, realpath, join as join_path
 
@@ -191,66 +192,64 @@ def w2v_rank_manipulability(model, nouns):
     return sorted_list
 
 
+def cn_get_relations_for_concept(concept, relations, limit=None):
+    """Get results from ConceptNet in a generic way.
+
+    Arguments:
+        concept (str): The concept to look up.
+        relations (list[str]): The list of relations to look up.
+
+    Returns:
+        list: A list of [word, weight] pairs.
+    """
+    url_template = 'http://api.conceptnet.io/query?node=/c/en/{concept}&rel=/r/{relation}'
+    word = concept.replace(' ', '_')
+    results = defaultdict(float)
+    for relation in relations:
+        # query ConceptNet
+        url = url_template.format(concept=word, relation=relation)
+        # parse the result
+        json = requests.get(url).json()
+        for edge in json['edges']:
+            language = edge['end']['language']
+            if language != 'en':
+                continue
+            # get the answer from the edge
+            answer = edge['end']['label']
+            # add to results with weight
+            results[answer] += edge['weight']
+    sorted_list = sorted(results.items(), key=(lambda kv: kv[1]), reverse=True)
+    if limit:
+        return sorted_list[:limit]
+    else:
+        return sorted_list
+
+
 def cn_get_verbs_for_noun(noun):
     """return a list of possible verbs with weight for the given noun from ConceptNet"""
-    v_dic = {}
-
-    # query ConceptNet
-    rel_list = ["CapableOf", "UsedFor"]
-    for rel in rel_list:
-        obj = requests.get('http://api.conceptnet.io/query?node=/c/en/' + noun + '&rel=/r/' + rel).json()
-        for edge in obj["edges"]:
-
-            # get the verb from the edge
-            verb = edge["end"]["label"].split()[0]
-            verb = to_imperative(verb)
-            if not verb:
-                continue
-
-            # add to dic with weight
-            if verb not in v_dic:
-                v_dic[verb] = 0
-            v_dic[verb] += edge["weight"]
-
-    sorted_list = sorted(v_dic.items(), key=(lambda kv: kv[1]), reverse=True)
-    return sorted_list[:10]
+    raw_results = cn_get_relations_for_concept(noun, ['CapableOf', 'UsedFor'])
+    results = []
+    for verb, weight in raw_results:
+        verb = verb.split()[0]
+        verb = to_imperative(verb)
+        if verb:
+            results.append([verb, weight])
+    return results[:10]
 
 
 def cn_get_adjectives_for_noun(noun):
     """return a list of adj best describe the noun from ConceptNet"""
-    adj_dic = {}
-
-    rel_list = ["HasProperty"]
-    for rel in rel_list:
-        obj = requests.get('http://api.conceptnet.io/query?node=/c/en/' + noun + '&rel=/r/' + rel).json()
-        for edge in obj["edges"]:
-
-            # get the adj version of the word
-            word = wn.morphy(edge["end"]["label"], wn.ADJ)
-
-            # add to dic with weight
-            if word not in adj_dic:
-                adj_dic[word] = edge["weight"]
-            if word in adj_dic:
-                adj_dic[word] += edge["weight"]
-
-    sorted_list = sorted(adj_dic.items(), key=(lambda kv: kv[1]), reverse=True)
-    return sorted_list
+    raw_results = cn_get_relations_for_concept(noun, ['HasProperty'])
+    return [
+        [wn.morphy(adjective, wn.ADJ), weight]
+        for adjective, weight in raw_results
+    ][:10]
 
 
 def cn_get_locations(noun):
     """return a list of locations that the noun possibly locate in"""
-    loca_list = []
-    rel_list = ["AtLocation", "LocatedNear", "PartOf"]
-    for rel in rel_list:
-        url = 'http://api.conceptnet.io/query?node=/c/en/' + noun.replace(" ", "_") + '&rel=/r/' + rel
-        obj = requests.get(url).json()
-        for edge in obj["edges"]:
-            if edge["end"]["language"] == 'en':
-                syn = edge["end"]["label"]
-                if syn not in loca_list and syn != noun:
-                    loca_list.append(syn)
-    return loca_list
+    raw_results = cn_get_relations_for_concept(noun, ['AtLocation', 'LocatedNear', 'PartOf'])
+    return [[location, weight] for location, weight in raw_results if location != noun][:10]
 
 
 @memoize(maxsize=None)
