@@ -1,6 +1,7 @@
 import time
 import sys
-from collections import defaultdict
+import re
+from collections import defaultdict, Counter
 from functools import lru_cache as memoize
 from os.path import dirname, realpath, join as join_path
 
@@ -76,19 +77,29 @@ def to_imperative(verb):
 
 
 def w2v_get_verbs_for_noun(model, noun):
-    """return a list of lemmatized verbs that the noun can afford from a given word2vec model"""
-    # load word lists
-    canons = prepare_list_from_file(get_word_list_path('verb_noun_pair.txt'))
-
-    # compute average sigma
-    sigma = get_ave_sigma(model, canons)
-
-    # extract words from word2vec model & append lemmatized word to list
-    model_verbs = model.most_similar([sigma, noun], [], topn=10)
-    word2vec_words = [to_imperative(verb[0].lower()) for verb in model_verbs]
-    word2vec_words = [verb for verb in word2vec_words if verb]
-
-    return word2vec_words
+    # have each cannonical pair vote on the appropriate verbs
+    verbs = Counter()
+    canon = prepare_list_from_file(get_word_list_path('verb_noun_pair.txt'))
+    for pair in canon:
+        verb, obj = pair.split()
+        # calculate the vector for the canonical pair
+        affordance_vector = model.get_vector(verb) - model.get_vector(obj)
+        # find word analogous to that relationship
+        weighted_words = model.most_similar(positive=[model.get_vector(noun) + affordance_vector])
+        # ignore the weights
+        candidate_verbs = [pair[0] for pair in weighted_words]
+        # verify that they are verbs
+        verified_verbs = [
+            wn.morphy(candidate, wn.VERB)
+            for candidate in candidate_verbs
+            if wn.synsets(candidate, wn.VERB)
+        ]
+        # filter out None's
+        verified_verbs = [verified_verb for verified_verb in verified_verbs if verified_verb is not None]
+        # count the them as votes
+        verbs.update(verified_verbs)
+    # return everything that appears more than once
+    return [verb for verb, votes in verbs.most_common() if votes > 1]
 
 
 def w2v_get_adjectives_for_noun(model, noun):
@@ -216,13 +227,14 @@ def cn_get_relations_for_concept(concept, relations, limit=None):
 def cn_get_verbs_for_noun(noun):
     """return a list of possible verbs with weight for the given noun from ConceptNet"""
     raw_results = cn_get_relations_for_concept(noun, ['CapableOf', 'UsedFor'])
-    results = []
-    for verb, weight in raw_results:
+    verbs = Counter()
+    for verb, _ in raw_results:
         verb = verb.split()[0]
-        verb = to_imperative(verb)
+        verb = wn.morphy(verb, wn.VERB)
         if verb:
-            results.append([verb, weight])
-    return results[:10]
+            verbs.update([verb])
+    # return everything that appears more than once
+    return [verb for verb, votes in verbs.most_common() if votes > 1]
 
 
 def cn_get_adjectives_for_noun(noun):
@@ -339,9 +351,21 @@ def get_verbs_for_adj(model, adj):
 
 def get_verbs_for_noun(model, noun):
     """Get list of verb that the noun can afford."""
-    w2v_ls = w2v_get_verbs_for_noun(model, noun)
-    cn_ls = cn_get_verbs_for_noun(noun)
-    return set(w2v_ls) | set(kv[0] for kv in cn_ls)
+    # get verbs from word2vec and ConceptNet
+    w2v_verbs = w2v_get_verbs_for_noun(model, noun)
+    cn_verbs = cn_get_verbs_for_noun(noun)
+    # combine the results
+    verbs = [verb for verb, _ in Counter([*w2v_verbs, *cn_verbs]).most_common() if verb != noun]
+    # get the most common form of the verb
+    verbs = [
+        Counter([synset.name().split('.')[0] for synset in wn.synsets(verb, wn.VERB)]).most_common(1)[0][0]
+        for verb in verbs
+    ]
+    # FIXME things to do here
+    # * check whether they are transitive verbs
+    # replace punctuation with spaces
+    verbs = [re.sub('[-_]', ' ', verb) for verb in verbs]
+    return verbs
 
 
 def get_adjectives_for_noun(model, noun):
