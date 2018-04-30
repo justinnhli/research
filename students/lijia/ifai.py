@@ -309,7 +309,7 @@ def cn_get_relations_for_concept(concept, relations, limit=None):
         return sorted_list
 
 
-def cn_get_verbs_for_noun(noun):
+def cn_get_verbs_for_noun(noun, min_count=1):
     """Get verbs that count be applied to a noun using ConceptNet.
 
     Arguments:
@@ -325,8 +325,9 @@ def cn_get_verbs_for_noun(noun):
         verb = wn.morphy(verb, wn.VERB)
         if verb:
             verbs.update([verb])
+    # FIXME filter out tool entries from affordance entries
     # return everything that appears more than once
-    return [verb for verb, votes in verbs.most_common() if votes > 1]
+    return [verb for verb, votes in verbs.most_common() if votes >= min_count]
 
 
 def cn_get_adjectives_for_noun(noun):
@@ -351,7 +352,7 @@ def cn_get_materials_for_noun(noun):
     Returns:
         list[str]: List of materials.
     """
-    return cn_get_relations_for_concept(noun, ['HasProperty'])[:10]
+    return cn_get_relations_for_concept(noun, ['MadeOf'])[:10]
 
 
 def cn_get_locations(noun):
@@ -479,18 +480,23 @@ def get_verbs_for_noun(model, noun):
     # get verbs from word2vec and ConceptNet
     w2v_verbs = w2v_get_verbs_for_noun(model, noun)
     cn_verbs = cn_get_verbs_for_noun(noun)
+    verbs = [*w2v_verbs, *cn_verbs]
     # combine the results
-    verbs = [verb for verb, _ in Counter([*w2v_verbs, *cn_verbs]).most_common() if verb != noun]
+    verbs = [*w2v_verbs, *cn_verbs]
+    # sort them by decreasing frequency
+    verbs = [verb for verb, _ in Counter(verbs).most_common() if verb != noun]
     # get the most common form of the verb
     verbs = [
         Counter([synset.name().split('.')[0] for synset in wn.synsets(verb, wn.VERB)]).most_common(1)[0][0]
         for verb in verbs
     ]
-    # FIXME things to do here
-    # * check whether they are transitive verbs
+    # remove duplicates
+    verbs = sorted(set(verbs), key=(lambda verb: verbs.index(verb)))
     # replace punctuation with spaces
     verbs = [re.sub('[-_]', ' ', verb) for verb in verbs]
     return verbs
+    # FIXME things to do here
+    # * check whether they are transitive verbs
 
 
 def get_adjectives_for_noun(model, noun):
@@ -505,7 +511,9 @@ def get_adjectives_for_noun(model, noun):
     """
     w2v_ls = w2v_get_adjectives_for_noun(model, noun)
     cn_ls = cn_get_adjectives_for_noun(noun)
-    return set(w2v_ls) | set(kv[0] for kv in cn_ls)
+    adjectives = set(w2v_ls) | set(kv[0] for kv in cn_ls)
+    adjectives = [adjective for adjective in get_adjectives_for_noun(MODEL, noun) if adjective]
+    return adjectives if votes > 1]
 
 
 def get_nouns_from_text(text):
