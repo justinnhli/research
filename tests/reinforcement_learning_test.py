@@ -12,7 +12,7 @@ sys.path.insert(0, dirname(DIRECTORY))
 from research.reinforcement_learning import State, Action
 from research.reinforcement_learning import GridWorld
 
-RLTestStep = namedtuple('RLTestStep', ['action', 'observation', 'actions'])
+RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
 
 def test_gridworld():
@@ -24,22 +24,20 @@ def test_gridworld():
         goal=[2, 0],
     )
     env.new_episode()
-    assert env.get_observation() == State(row=0, col=0)
-    assert set(env.get_actions()) == set([Action('down'), Action('right')])
     expected_steps = [
-        RLTestStep(Action('right'), State(row=0, col=1), [Action('down'), Action('left')]),
-        RLTestStep(Action('right'), State(row=0, col=1), [Action('down'), Action('left')]),
-        RLTestStep(Action('down'), State(row=1, col=1), [Action('up'), Action('down'), Action('left')]),
-        RLTestStep(Action('down'), State(row=2, col=1), [Action('up'), Action('left')]),
-        RLTestStep(Action('down'), State(row=2, col=1), [Action('up'), Action('left')]),
-        RLTestStep(Action('up'), State(row=1, col=1), [Action('up'), Action('down'), Action('left')]),
-        RLTestStep(Action('left'), State(row=1, col=0), [Action('up'), Action('down'), Action('right')]),
-        RLTestStep(Action('down'), None, []),
+        RLTestStep(State(row=0, col=0), [Action('down'), Action('right')], Action('right'), -1),
+        RLTestStep(State(row=0, col=1), [Action('down'), Action('left')], Action('right'), -1),
+        RLTestStep(State(row=0, col=1), [Action('down'), Action('left')], Action('down'), -1),
+        RLTestStep(State(row=1, col=1), [Action('up'), Action('down'), Action('left')], Action('down'), -1),
+        RLTestStep(State(row=2, col=1), [Action('up'), Action('left')], Action('down'), -1),
+        RLTestStep(State(row=2, col=1), [Action('up'), Action('left')], Action('up'), -1),
+        RLTestStep(State(row=1, col=1), [Action('up'), Action('down'), Action('left')], Action('left'), -1),
+        RLTestStep(State(row=1, col=0), [Action('up'), Action('down'), Action('right')], Action('down'), 1),
+        RLTestStep(None, [], None, None),
     ]
     for expected in expected_steps:
-        reward = env.react(expected.action)
-        assert reward == -1
         assert env.get_observation() == expected.observation
         assert set(env.get_actions()) == set(expected.actions)
-    reward = env.react(None)
-    assert reward == 1
+        if expected.action is not None:
+            reward = env.react(expected.action)
+            assert reward == expected.reward
