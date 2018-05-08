@@ -398,18 +398,18 @@ class GridWorld(Environment):
         self.col = self.start[1]
 
     def react(self, action=None): # noqa: D102
+        assert action in self.get_actions()
+        if action.name == 'up':
+            self.row = max(0, self.row - 1)
+        elif action.name == 'down':
+            self.row = min(self.height - 1, self.row + 1)
+        elif action.name == 'left':
+            self.col = max(0, self.col - 1)
+        elif action.name == 'right':
+            self.col = min(self.width - 1, self.col + 1)
         if [self.row, self.col] == self.goal:
             return 1
         else:
-            assert action in self.get_actions()
-            if action.name == 'up':
-                self.row = max(0, self.row - 1)
-            elif action.name == 'down':
-                self.row = min(self.height - 1, self.row + 1)
-            elif action.name == 'left':
-                self.col = max(0, self.col - 1)
-            elif action.name == 'right':
-                self.col = min(self.width - 1, self.col + 1)
             return -1
 
     def visualize(self): # noqa: D102
