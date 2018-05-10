@@ -11,9 +11,12 @@ jobs:
   include:
     - &python-testing
       stage: test
+      env: step=TEST
       before_install: pip3 install pylint pydocstyle pytest-cov coveralls
       script: py.test --cov . && coveralls
     - <<: *python-testing
+      env: step=LINT
       script: pylint *.py research/ tests/*.py
     - <<: *python-testing
+      env: step=DOC
       script: pydocstyle *.py research/
