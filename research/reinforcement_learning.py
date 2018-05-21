@@ -453,29 +453,35 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             state = super().get_state()
             if state is None:
                 return None
-            state = state.as_dict()
-            for key in list(state.keys()):
-                if key.startswith('memory_'):
-                    del state[key]
-            memories = dict(zip(
-                ['memory_{}'.format(i) for i in range(self.num_memory_slots)],
-                self.memories,
-            ))
-            return State(**memories, **state)
+            return self._augment_state(state)
 
         def get_observation(self):
             observation = super().get_observation()
             if observation is None:
                 return None
-            observation = observation.as_dict()
-            for key in list(observation.keys()):
+            return self._augment_state(observation)
+
+        def _augment_state(self, state):
+            """Add memory items to states and observations.
+
+            Note that we need to remove existing 'memory_' attributes because
+            super().get_state() could call the overridden get_observation().
+
+            Arguments:
+                state (State): The state to augment.
+
+            Returns:
+                State: The state with memory items.
+            """
+            state = state.as_dict()
+            for key in list(state.keys()):
                 if key.startswith('memory_'):
-                    del observation[key]
-            memories = dict(zip(
-                ['memory_{}'.format(i) for i in range(self.num_memory_slots)],
-                self.memories,
-            ))
-            return State(**memories, **observation)
+                    del state[key]
+            memories = dict(
+                ('memory_{}'.format(i), value)
+                for i, value in enumerate(self.memories)
+            )
+            return State(**memories, **state)
 
         def get_actions(self):
             actions = super().get_actions()
@@ -528,11 +534,10 @@ class SimpleTMaze(Environment):
         self.goal_x = 0 # dummy value
 
     def get_state(self): # noqa: D102
-        if self.y == self.length and self.x != 0:
-            return State(goal_x=self.goal_x)
-        if self.y == self.hint_pos:
-            return State(x=self.x, y=self.y, symbol=self.goal_x, goal_x=self.goal_x)
-        return State(x=self.x, y=self.y, symbol=0, goal_x=self.goal_x)
+        observation = self.get_observation()
+        if observation is None:
+            return None
+        return State(goal_x=self.goal_x, **observation.as_dict())
 
     def get_observation(self): # noqa: D102
         if self.y == self.length and self.x != 0:
