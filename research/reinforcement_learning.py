@@ -436,7 +436,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
     Returns:
         class: A subclass with a gating memory.
     """
-    assert isinstance(cls, Environment)
+    assert issubclass(cls, Environment)
 
     class GatingMemoryMetaEnvironment(cls):
         """A subclass to add a gating memory to an Environment."""
@@ -461,7 +461,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
                 ['memory_{}'.format(i) for i in range(self.num_memory_slots)],
                 self.memories,
             ))
-            return AttrDict(**memories, **state)
+            return State(**memories, **state)
 
         def get_observation(self):
             observation = super().get_observation()
@@ -475,7 +475,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
                 ['memory_{}'.format(i) for i in range(self.num_memory_slots)],
                 self.memories,
             ))
-            return AttrDict(**memories, **observation)
+            return State(**memories, **observation)
 
         def get_actions(self):
             actions = super().get_actions()
@@ -507,69 +507,39 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
     return GatingMemoryMetaEnvironment
 
 
-class TMaze(Environment):
+class SimpleTMaze(Environment):
     """A T-maze environment, with hints on which direction to go."""
 
-    # FIXME clean up class logic
-
-    def __init__(self, length, hint_pos, hint_pos_2=None, redundant=False):
+    def __init__(self, length, hint_pos, goal_x=0):
         """Construct the TMaze.
 
         Arguments:
             length (int): The length of the hallway before the choice point.
             hint_pos (int): The location of the hint.
-            hint_pos_2 (int): The location of the second hint. Defaults to
-                None.
-            redundant (bool): If True, the second hint will present the same
-                information as the first but in a different representation.
+            goal_x (int): The location of the goal. Must be -1 or 1. If left
+                to default of 0, goal_x is chosen at random.
         """
-        assert 0 <= hint_pos <= length
-        if hint_pos_2 is not None:
-            assert 0 <= hint_pos_2 <= length
-        if redundant:
-            assert length >= 3
-            assert hint_pos_2 is not None
-
+        assert 0 <= hint_pos < length
         self.length = length
         self.hint_pos = hint_pos
-        self.hint_pos_2 = hint_pos_2
         self.x = 0
         self.y = 0
-        self.goal_x = choice([-1, 1])
-        self.logical_connective = choice([-1, 1])
-        self.direction = self.goal_x // self.logical_connective
-        self.redundant = redundant
-        self.redundant_connective = None
-        self.redundant_direction = None
-        if redundant:
-            self.redundant_connective = -1 * self.logical_connective
-            self.redundant_direction = -1 * self.direction
+        self.init_goal_x = goal_x
+        self.goal_x = 0 # dummy value
 
     def get_state(self): # noqa: D102
         if self.y == self.length and self.x != 0:
-            return None
-        if self.hint_pos_2 is None:
-            if self.y == self.hint_pos:
-                return State(x=self.x, y=self.y, symbol=self.goal_x)
-        else:
-            if self.redundant:
-                if self.y == self.hint_pos:
-                    return State(x=self.x, y=self.y, symbol=self.logical_connective)
-                elif self.y == self.hint_pos_2:
-                    return State(x=self.x, y=self.y, symbol=self.direction)
-                elif self.y == self.hint_pos - 2:
-                    return State(x=self.x, y=self.y, symbol=self.redundant_connective)
-                elif self.y == self.hint_pos_2 - 2:
-                    return State(x=self.x, y=self.y, symbol=self.redundant_direction)
-            else:
-                if self.y == self.hint_pos:
-                    return State(x=self.x, y=self.y, symbol=self.logical_connective)
-                elif self.y == self.hint_pos_2:
-                    return State(x=self.x, y=self.y, symbol=self.direction)
-        return State(x=self.x, y=self.y, symbol=0)
+            return State(goal_x=self.goal_x)
+        if self.y == self.hint_pos:
+            return State(x=self.x, y=self.y, symbol=self.goal_x, goal_x=self.goal_x)
+        return State(x=self.x, y=self.y, symbol=0, goal_x=self.goal_x)
 
     def get_observation(self): # noqa: D102
-        return self.get_state()
+        if self.y == self.length and self.x != 0:
+            return None
+        if self.y == self.hint_pos:
+            return State(x=self.x, y=self.y, symbol=self.goal_x)
+        return State(x=self.x, y=self.y, symbol=0)
 
     def get_actions(self): # noqa: D102
         actions = []
@@ -579,8 +549,6 @@ class TMaze(Environment):
             elif self.y == self.length:
                 actions.append(Action('left'))
                 actions.append(Action('right'))
-        else:
-            actions.append(Action('halt'))
         return actions
 
     def reset(self): # noqa: D102
@@ -589,14 +557,10 @@ class TMaze(Environment):
     def new_episode(self): # noqa: D102
         self.x = 0
         self.y = 0
-        self.goal_x = choice([-1, 1])
-        self.logical_connective = choice([-1, 1])
-        self.direction = self.goal_x // self.logical_connective
-        self.redundant_connective = None
-        self.redundant_direction = None
-        if self.redundant:
-            self.redundant_connective = -1 * self.logical_connective
-            self.redundant_direction = -1 * self.direction
+        if self.init_goal_x == 0:
+            self.goal_x = choice([-1, 1])
+        else:
+            self.goal_x = self.init_goal_x
 
     def react(self, action): # noqa: D102
         assert action in self.get_actions()
@@ -626,8 +590,6 @@ class TMaze(Environment):
         lines[0][1 - self.goal_x] = '#'
         lines[self.length - self.y][1] = '*'
         lines[self.length - self.hint_pos][1] = '!'
-        if self.hint_pos_2 is not None:
-            lines[self.length - self.hint_pos_2][1] = '?'
         return '\n'.join(''.join(line) for line in lines)
 
 
