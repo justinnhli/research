@@ -45,6 +45,7 @@ def test_gridworld():
             reward = env.react(expected.action)
             assert reward == expected.reward
 
+
 def test_simpletmaze():
     """Test the SimpleTMaze environment."""
     env = SimpleTMaze(2, 1, -1)

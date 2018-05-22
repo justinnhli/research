@@ -334,6 +334,7 @@ def epsilon_greedy(cls, epsilon):
     Returns:
         class: A subclass with a gating memory.
     """
+
     class EpsilonGreedyMetaAgent(cls):
         """A subclass to make an Agent epsilon greedy."""
 
@@ -481,10 +482,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             for key in list(state.keys()):
                 if key.startswith('memory_'):
                     del state[key]
-            memories = dict(
-                ('memory_{}'.format(i), value)
-                for i, value in enumerate(self.memories)
-            )
+            memories = {'memory_{}'.format(i):value for i, value in enumerate(self.memories)}
             return State(**memories, **state)
 
         def get_actions(self):

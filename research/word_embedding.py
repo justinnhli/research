@@ -4,6 +4,7 @@ from os.path import splitext, exists as file_exists
 
 import gensim
 
+
 def load_model(model_path):
     """Create a model from a binary file.
 

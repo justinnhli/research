@@ -92,6 +92,7 @@ COMMIT;
 # Taken from rdflib_sqlalchemy.constants.py
 INTERNED_PREFIX = "kb_"
 
+
 def generate_interned_id(identifier):
     """Generate an ID for this KB.
 
@@ -126,6 +127,7 @@ def standardize_uri(uri):
         uri = URI(identifier, prefix)
     return uri.uri
 
+
 def escape_sql_string(string):
     """Convert a string to a SQL-escaped format.
 
@@ -138,6 +140,7 @@ def escape_sql_string(string):
     for char in r"\'":
         string = string.replace(char, char + char)
     return "'" + string + "'"
+
 
 class RDFSQLizer:
     """A class to convert triples into a SQL dump."""
@@ -328,6 +331,7 @@ class RDFSQLizer:
         )
         self.literal_id += 1
         return result
+
 
 def read_dump(sql_path, db_path):
     """Read SQL into a SQLite file.
