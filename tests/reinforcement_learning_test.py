@@ -11,7 +11,7 @@ sys.path.insert(0, dirname(DIRECTORY))
 # pylint: disable=wrong-import-position
 from research.reinforcement_learning import State, Action
 from research.reinforcement_learning import GridWorld, SimpleTMaze
-from research.reinforcement_learning import gating_memory
+from research.reinforcement_learning import gating_memory, fixed_long_term_memory
 from research.reinforcement_learning import TabularQLearningAgent
 from research.reinforcement_learning import epsilon_greedy
 
@@ -134,6 +134,85 @@ def test_simpletmaze_gatingmemory():
             -10,
         ),
         RLTestStep(State(x=1 if goal == -1 else -1, y=2, symbol=0, memory_0=goal), [], None, None),
+    ]
+    for expected in expected_steps:
+        assert env.get_observation() == expected.observation
+        assert set(env.get_actions()) == set(expected.actions)
+        if expected.action is not None:
+            reward = env.react(expected.action)
+            assert reward == expected.reward
+
+
+def test_simpletmaze_fixedltm():
+    """Test the fixed LTM meta-environment."""
+    LTMSimpleTMaze = fixed_long_term_memory(SimpleTMaze, num_wm_slots=1, num_ltm_slots=1, reward=-0.05) # pylint: disable=invalid-name
+    env = LTMSimpleTMaze(2, 1, 1)
+    env.new_episode()
+    assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=1, wm_0=None, ltm_0=None)
+    expected_steps = [
+        RLTestStep(
+            State(x=0, y=0, symbol=0, wm_0=None),
+            [
+                Action('up'),
+                Action('store', slot=0, attribute='x'),
+                Action('store', slot=0, attribute='y'),
+                Action('store', slot=0, attribute='symbol'),
+                Action('retrieve', wm_slot=0, ltm_slot=0),
+            ],
+            Action('up'),
+            -1,
+        ),
+        RLTestStep(
+            State(x=0, y=1, symbol=1, wm_0=None),
+            [
+                Action('up'),
+                Action('store', slot=0, attribute='x'),
+                Action('store', slot=0, attribute='y'),
+                Action('store', slot=0, attribute='symbol'),
+                Action('retrieve', wm_slot=0, ltm_slot=0),
+            ],
+            Action('store', slot=0, attribute='symbol'),
+            -0.05,
+        ),
+        RLTestStep(
+            State(x=0, y=1, symbol=1, wm_0=None),
+            [
+                Action('up'),
+                Action('store', slot=0, attribute='x'),
+                Action('store', slot=0, attribute='y'),
+                Action('store', slot=0, attribute='symbol'),
+                Action('retrieve', wm_slot=0, ltm_slot=0),
+            ],
+            Action('up'),
+            -1,
+        ),
+        RLTestStep(
+            State(x=0, y=2, symbol=0, wm_0=None),
+            [
+                Action('left'),
+                Action('right'),
+                Action('store', slot=0, attribute='x'),
+                Action('store', slot=0, attribute='y'),
+                Action('store', slot=0, attribute='symbol'),
+                Action('retrieve', wm_slot=0, ltm_slot=0),
+            ],
+            Action('retrieve', wm_slot=0, ltm_slot=0),
+            -0.05,
+        ),
+        RLTestStep(
+            State(x=0, y=2, symbol=0, wm_0=1),
+            [
+                Action('left'),
+                Action('right'),
+                Action('store', slot=0, attribute='x'),
+                Action('store', slot=0, attribute='y'),
+                Action('store', slot=0, attribute='symbol'),
+                Action('retrieve', wm_slot=0, ltm_slot=0),
+            ],
+            Action('right'),
+            10,
+        ),
+        RLTestStep(State(x=1, y=2, symbol=0, wm_0=1), [], None, None),
     ]
     for expected in expected_steps:
         assert env.get_observation() == expected.observation
