@@ -516,6 +516,111 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 
     return GatingMemoryMetaEnvironment
 
+def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
+    """Decorate an Environment to be contain a long-term memory of fixed size.
+
+    Arguments:
+        cls (class): The Environment superclass.
+        num_wm_slots (int): The amount of working memory. Defaults to 1.
+        num_ltm_slots (int): The amount of long-term memory. Defaults to 1.
+        reward (float): The reward for an internal action. Defaults to 0.
+
+    Returns:
+        class: A subclass with a gating memory.
+    """
+    assert issubclass(cls, Environment)
+
+    WM_PREFIX = 'wm_' # pylint: disable=invalid-name
+    LTM_PREFIX = 'ltm_' # pylint: disable=invalid-name
+
+    class LongTermMemoryMetaEnvironment(cls):
+        """A subclass to add a long-term memory to an Environment."""
+
+        # pylint: disable = missing-docstring
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reward = reward
+            self.wm = num_wm_slots * [None] # pylint: disable=invalid-name
+            self.ltm = num_ltm_slots * [None]
+
+        def get_state(self):
+            state = super().get_state()
+            if state is None:
+                return None
+            state = self._augment_state(state, self.wm)
+            state = self._augment_state(state, self.ltm, prefix=LTM_PREFIX)
+            return state
+
+        def get_observation(self):
+            observation = super().get_observation()
+            if observation is None:
+                return None
+            return self._augment_state(observation, self.wm)
+
+        def get_actions(self):
+            actions = super().get_actions()
+            if actions == []:
+                return actions
+            observations = super().get_observation()
+            if observations is None:
+                return actions
+            for slot_num in range(len(self.ltm)):
+                for attr, _ in observations:
+                    if attr.startswith(WM_PREFIX):
+                        continue
+                    actions.append(Action('store', slot=slot_num, attribute=attr))
+            for wm_slot_num in range(len(self.wm)):
+                for ltm_slot_num in range(len(self.ltm)):
+                    actions.append(Action('retrieve', wm_slot=wm_slot_num, ltm_slot=ltm_slot_num))
+            return actions
+
+        def reset(self):
+            super().reset()
+            self.wm = len(self.wm) * [None]
+            self.ltm = len(self.ltm) * [None]
+
+        def new_episode(self):
+            super().new_episode()
+            self.wm = len(self.wm) * [None]
+            self.ltm = len(self.ltm) * [None]
+
+        def react(self, action):
+            if action.name == 'store':
+                self.ltm[action.slot] = getattr(super().get_observation(), action.attribute)
+                return self.reward
+            elif action.name == 'retrieve':
+                self.wm[action.wm_slot] = self.ltm[action.ltm_slot]
+                return self.reward
+            else:
+                return super().react(action)
+
+        @staticmethod
+        def _augment_state(state, memories, prefix=WM_PREFIX):
+            """Add memory items to states and observations.
+
+            Note that we need to remove existing 'memory_' attributes because
+            super().get_state() could call the overridden get_observation().
+
+            Arguments:
+                state (State): The state to augment.
+                memories (list): The memories to augment with.
+                prefix (str): The prefix to use for memories.
+
+            Returns:
+                State: The state with memory items.
+            """
+            state = state.as_dict()
+            for key in list(state.keys()):
+                if key.startswith(prefix):
+                    del state[key]
+            memories = dict(
+                (prefix + '{}'.format(i), value)
+                for i, value in enumerate(memories)
+            )
+            return State(**memories, **state)
+
+    return LongTermMemoryMetaEnvironment
 
 class SimpleTMaze(Environment):
     """A T-maze environment, with hints on which direction to go."""
