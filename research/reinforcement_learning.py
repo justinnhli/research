@@ -281,10 +281,14 @@ class TabularQLearningAgent(Agent):
         return self.value_function[observation].keys()
 
     def act(self, observation, actions, reward=None): # noqa: D102
-        best_action = self.get_best_action(observation)
-        if best_action is None:
-            best_action = choice(actions)
-        return self.force_act(observation, best_action, reward)
+        if actions:
+            best_action = self.get_best_action(observation)
+            if best_action is None:
+                best_action = choice(actions)
+            return self.force_act(observation, best_action, reward)
+        else:
+            self._observe_reward(observation, reward)
+            return None
 
     def force_act(self, observation, action, reward=None): # noqa: D102
         if self.prev_action is not None and reward is not None:
@@ -340,10 +344,13 @@ def epsilon_greedy(cls, epsilon):
             self.epsilon = epsilon
 
         def act(self, observation, actions, reward=None): # noqa: D102
-            if random() < self.epsilon:
-                return super().force_act(observation, choice(actions), reward)
+            if not actions:
+                self._observe_reward(observation, reward)
+                return None
+            elif random() < self.epsilon:
+                return self.force_act(observation, choice(actions), reward)
             else:
-                return super().act(observation, actions, reward)
+                return self.act(observation, actions, reward)
 
     return EpsilonGreedyMetaAgent
 
@@ -368,10 +375,7 @@ class GridWorld(Environment):
         self.col = start[1]
 
     def get_state(self): # noqa: D102
-        if [self.row, self.col] == self.goal:
-            return None
-        else:
-            return State(row=self.row, col=self.col)
+        return State(row=self.row, col=self.col)
 
     def get_observation(self): # noqa: D102
         return self.get_state()
@@ -485,6 +489,8 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 
         def get_actions(self):
             actions = super().get_actions()
+            if actions == []:
+                return actions
             observations = super().get_observation()
             if observations is None:
                 return actions
@@ -535,13 +541,9 @@ class SimpleTMaze(Environment):
 
     def get_state(self): # noqa: D102
         observation = self.get_observation()
-        if observation is None:
-            return None
         return State(goal_x=self.goal_x, **observation.as_dict())
 
     def get_observation(self): # noqa: D102
-        if self.y == self.length and self.x != 0:
-            return None
         if self.y == self.hint_pos:
             return State(x=self.x, y=self.y, symbol=self.goal_x)
         return State(x=self.x, y=self.y, symbol=0)
