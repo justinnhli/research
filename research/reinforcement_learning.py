@@ -447,11 +447,12 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 
         # pylint: disable = missing-docstring
 
+        ATTR_PREFIX = 'memory_'
+
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.reward = reward
-            self.num_memory_slots = num_memory_slots
-            self.memories = self.num_memory_slots * [None]
+            self.memories = num_memory_slots * [None]
 
         def get_state(self):
             state = super().get_state()
@@ -468,7 +469,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
         def _augment_state(self, state):
             """Add memory items to states and observations.
 
-            Note that we need to remove existing 'memory_' attributes because
+            Note that we need to remove existing ATTR_PREFIX attributes because
             super().get_state() could call the overridden get_observation().
 
             Arguments:
@@ -479,7 +480,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             """
             state = state.as_dict()
             for key in list(state.keys()):
-                if key.startswith('memory_'):
+                if key.startswith(GatingMemoryMetaEnvironment.ATTR_PREFIX):
                     del state[key]
             memories = {'memory_{}'.format(i):value for i, value in enumerate(self.memories)}
             return State(**memories, **state)
@@ -491,20 +492,20 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             observations = super().get_observation()
             if observations is None:
                 return actions
-            for slot_num in range(self.num_memory_slots):
-                for k, _ in observations:
-                    if k == 'memory':
+            for slot_num in range(len(self.memories)):
+                for attr, _ in observations:
+                    if attr.startswith(GatingMemoryMetaEnvironment.ATTR_PREFIX):
                         continue
-                    actions.append(Action('gate', slot=slot_num, attribute=k))
+                    actions.append(Action('gate', slot=slot_num, attribute=attr))
             return actions
 
         def reset(self):
             super().reset()
-            self.memories = self.num_memory_slots * [None]
+            self.memories = len(self.memories) * [None]
 
         def new_episode(self):
             super().new_episode()
-            self.memories = self.num_memory_slots * [None]
+            self.memories = len(self.memories) * [None]
 
         def react(self, action):
             if action.name == 'gate':

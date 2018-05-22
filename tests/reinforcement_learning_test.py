@@ -81,8 +81,9 @@ def test_simpletmaze():
 
 
 def test_simpletmaze_gatingmemory():
-    """Test the SimpleTMaze environment."""
-    env = gating_memory(SimpleTMaze, num_memory_slots=1, reward=-0.05)(2, 1)
+    """Test the gating memory meta-environment."""
+    GatedSimpleTMaze = gating_memory(SimpleTMaze, num_memory_slots=1, reward=-0.05) # pylint: disable=invalid-name
+    env = GatedSimpleTMaze(2, 1)
     env.new_episode()
     goal = env.get_state().goal_x
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=goal, memory_0=None)
