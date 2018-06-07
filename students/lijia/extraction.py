@@ -11,22 +11,21 @@ def separate_sentence(story_file):
     story_path = join_path(STORY_DIRECTORY, story_file)
     ls = []
     for line in open(story_path):
-        ls.extend([s + "." for s in line.replace("\"","").split(". ")])
+        ls.extend([s for s in line.replace("\"","").split(". ")])
     return ls
 
 
 def is_stop_verb(token):
-    if token.pos_ == "VERB" and token.is_stop:
-        return True
-    else:
-        return False
+    return True if token.pos_ == "VERB" and token.is_stop else False
 
 
 def is_subject_noun(token):
-    if (token.pos_ == "NOUN" or token.pos_ == "PROPN") and token.dep_ == "nsubj":
-        return True
-    else:
-        return False
+    return True if (token.pos_ == "NOUN" or token.pos_ == "PRON") and token.dep_ == "nsubj" else False
+
+
+def is_good_verb(token):
+    return True if token.head.pos_ == "VERB" and not is_stop_verb(token.head) \
+                   and not token.text.startswith('\'') else False
 
 
 def extract_sentence_phrase(doc):
@@ -40,11 +39,7 @@ def extract_sentence_phrase(doc):
     results = []
     for token in doc:
         # token.tag_ != "WP" and
-        if is_subject_noun(token) and \
-                        token.head.pos_ == "VERB" and not is_stop_verb(token.head):
-            if is_stop_verb(token.head):
-                print(token.head.lemma_)
-
+        if is_subject_noun(token) and is_good_verb(token.head):
             sentence_results = []
 
             # if the token is likely a person's name, replace it
@@ -61,7 +56,7 @@ def extract_sentence_phrase(doc):
                 # indirect (proposition) objects
                 elif child.dep_ == "prep":
                     for pobj in child.children:
-                        sentence_results.append([s, v + " " + child.lemma_, str(pobj)])
+                        sentence_results.append([s, v + " " + child.lemma_, str(pobj.lemma_)])
 
             # if the verb has neither direct nor indirect objects
             if not sentence_results:
@@ -188,7 +183,7 @@ def main():
             print(sentence)
             print("extracted phrase", extract_sentence_phrase(nlp(sentence)))
             print("extracted noun phrase", extract_sentence_np(nlp(sentence)))
-            print("extracted prp + noun", extract_pobj(nlp(sentence)))
+            print("extracted prep + noun", extract_pobj(nlp(sentence)))
             print()
 
 if __name__ == '__main__':
