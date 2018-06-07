@@ -119,10 +119,8 @@ def extract_phrases(path):
     """take in the path and return a list of phrases"""
 
 
-def test_svo():
+def test_svo(model):
     """adding test cases for extracting svo/sv"""
-    model = 'en_core_web_sm'
-    nlp = spacy.load(model)
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
     test_cases = [
         TestCase(
@@ -140,6 +138,14 @@ def test_svo():
         TestCase(
             "They had been arguing since the start of recess, and what had initially started as a small altercation over a burst ball, had quickly degenerated into a full blow argument.",
             [],
+        ),
+        TestCase(
+            "Rachel Berry thought that she would be upset for a long time after Jesse had broken up with her, breaking his heart.",
+            [['-PRON-', 'think'], ['-PRON-', 'break with', '-PRON-']]
+        ),
+        TestCase(
+            "She wasn't sure how long she could keep the visage up with them around; she needed practice with her peers first.",
+            [] # todo: fill this up
         )
     ]
     for test_case in test_cases:
@@ -150,10 +156,8 @@ def test_svo():
         assert test_case.phrase in extract_sentence_phrase(nlp(test_case.sentence)), "\n".join(message)
 
 
-def test_np():
+def test_np(model):
     """test cases for extracting [adj + NOUN]"""
-    model = 'en_core_web_sm'
-    nlp = spacy.load(model)
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
     test_cases = [
         TestCase(
