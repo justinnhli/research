@@ -1,9 +1,22 @@
-import spacy
-from collections import namedtuple
+import sys
 from os.path import dirname, realpath, join as join_path
 from os import listdir
+from collections import namedtuple
+import spacy
+import numpy as np
 
+from nltk.corpus import wordnet as wn
+from PyDictionary import PyDictionary
+from research.knowledge_base import KnowledgeFile, URI
+
+# make sure research library code is available
+ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
+sys.path.insert(0, ROOT_DIRECTORY)
 STORY_DIRECTORY = './fanfic_stories'
+UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
+
+UMBEL = KnowledgeFile(UMBEL_KB_PATH)
+DICTIONARY = PyDictionary()
 
 
 def separate_sentence(story_file):
@@ -37,9 +50,15 @@ def extract_sentence_phrase(doc):
 
     # iterate through each word of the sentence
     results = []
+    tools = []
     for token in doc:
         # token.tag_ != "WP" and
         if is_subject_noun(token) and is_good_verb(token.head):
+            # extract tool
+            if token.lemma_ != "-PRON-":
+                tools.append(token.lemma_ if wn_is_manipulable_noun(token.lemma_) or umbel_is_manipulable_noun(token.lemma_) else None)
+
+            # extract np
             sentence_results = []
 
             # if the token is likely a person's name, replace it
@@ -63,7 +82,45 @@ def extract_sentence_phrase(doc):
                 sentence_results.append([s, v])
             results.extend(sentence_results)
 
-    return results
+    return results, tools
+
+def wn_is_manipulable_noun(noun):
+
+    def get_all_hypernyms(root_synset):
+        hypernyms = set()
+        queue = [root_synset]
+        while queue:
+            synset = queue.pop(0)
+            new_hypernyms = synset.hypernyms()
+            for hypernym in new_hypernyms:
+                if hypernym.name() not in hypernyms:
+                    hypernyms.add(hypernym.name())
+                    queue.append(hypernym)
+        return hypernyms
+
+    for synset in wn.synsets(noun, pos=wn.NOUN):
+        if 'physical_entity.n.01' in get_all_hypernyms(synset):
+            return True
+    return False
+
+
+def w2v_rank_manipulability(model, nouns):
+    """Rank nouns from most manipulable to least manipulable.
+
+    Arguments:
+        model (VectorModel): Gensim word vector model.
+        nouns (list[str]): The nouns to rank.
+
+    Returns:
+        list[tuple[str, float]]: The list of nouns and cosine distances.
+    """
+    # anchor x_axis by using forest & tree vector difference
+    manipulable_basis = model.word_vec('forest') - model.word_vec('tree')
+    # map the noun's vectors to the x_axis and spit out a list from small to big
+    word_cosine_list = [tuple([noun, np.dot(model.word_vec(noun), manipulable_basis)]) for noun in set(nouns)]
+
+    return sorted(word_cosine_list, key=(lambda kv: kv[1]))
+
 
 
 def extract_sentence_np(doc):
@@ -84,7 +141,6 @@ def extract_sentence_np(doc):
             # if the children is amod and adj and does not have any children
             # not a good idea b/c "the eight year old girl is cute and very funny."
             # if not [child for child in token.children if child.dep_ != "advmod"]:
-
 
             if token.head.pos_ == "NOUN":
                 sentence_results.append([token.lemma_, token.head.lemma_])
@@ -115,8 +171,62 @@ def extract_pobj(doc):
                     results.append([token.lemma_, child.lemma_])
     return results
 
-def extract_phrases(path):
-    """take in the path and return a list of phrases"""
+
+def get_synonyms(word, pos=None):
+    """Get synonyms for a word using PyDictionary and WordNet.
+
+    Arguments:
+        word (str): The word to find synonyms for.
+        pos (int): WordNet part-of-speech constant. Defaults to None.
+
+    Returns:
+        set[str]: The set of synonyms.
+    """
+    syn_list = []
+
+    # add WordNet synonyms to the list
+    for synset in wn.synsets(word, pos):
+        for lemma in synset.lemmas():
+            syn = lemma.name()
+            if syn != word:
+                syn_list.append(syn)
+    # add thesaurus synonyms
+    dict_syns = DICTIONARY.synonym(word)
+    # combine them and return
+    if dict_syns:
+        return set(syn_list) | set(dict_syns)
+    else:
+        return set(syn_list)
+
+
+def umbel_is_manipulable_noun(noun):
+
+    def get_all_superclasses(kb, concept):
+        superclasses = set()
+        queue = [str(URI(concept, 'umbel-rc'))]
+        query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
+        while queue:
+            child = queue.pop(0)
+            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
+            for bindings in kb.query_sparql(query):
+                parent = str(bindings['parent'])
+                if parent not in superclasses:
+                    superclasses.add(parent)
+                    queue.append(str(URI(parent)))
+        return superclasses
+
+    # create superclass to check against
+    solid_tangible_thing = URI('SolidTangibleThing', 'umbel-rc').uri
+    for synonym in get_synonyms(noun, wn.NOUN):
+        # find the corresponding concept
+        variations = [synonym, synonym.lower(), synonym.title()]
+        variations = [variation.replace(' ', '') for variation in variations]
+        # find all ancestors of all variations
+        for variation in variations:
+            if solid_tangible_thing in get_all_superclasses(UMBEL, variation):
+                return True
+    return False
+
 
 
 def test_svo(model):
@@ -185,9 +295,10 @@ def main():
 
         for sentence in ls:
             print(sentence)
-            print("extracted phrase", extract_sentence_phrase(nlp(sentence)))
             print("extracted noun phrase", extract_sentence_np(nlp(sentence)))
             print("extracted prep + noun", extract_pobj(nlp(sentence)))
+            print("extracted tool", extract_sentence_phrase(nlp(sentence))[1])
+            print("extracted phrase", extract_sentence_phrase(nlp(sentence))[0])
             print()
 
 if __name__ == '__main__':
