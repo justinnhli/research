@@ -179,7 +179,7 @@ def main():
     model = 'en_core_web_sm'
     nlp = spacy.load(model)
 
-    story_file = [filename for filename in listdir(STORY_DIRECTORY)]
+    story_file = [filename for filename in listdir(STORY_DIRECTORY) if not filename.startswith('.')]
 
     for file in story_file:
         ls = separate_sentence(file)
