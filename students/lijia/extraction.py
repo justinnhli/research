@@ -1,11 +1,16 @@
 import spacy
 from collections import namedtuple
+from os.path import dirname, realpath, join as join_path
+from os import listdir
+
+STORY_DIRECTORY = './fanfic_stories'
 
 
-def separate_sentence(file_path):
+def separate_sentence(story_file):
     """separate document to return a list of individual sentences"""
+    story_path = join_path(STORY_DIRECTORY, story_file)
     ls = []
-    for line in open(file_path):
+    for line in open(story_path):
         ls.extend([s + "." for s in line.replace("\"","").split(". ")])
     return ls
 
@@ -174,14 +179,17 @@ def main():
     model = 'en_core_web_sm'
     nlp = spacy.load(model)
 
-    ls = separate_sentence("./test-data/text.txt")
+    story_file = [filename for filename in listdir(STORY_DIRECTORY)]
 
-    for sentence in ls:
-        print(sentence)
-        print("extracted phrase", extract_sentence_phrase(nlp(sentence)))
-        print("extracted noun phrase", extract_sentence_np(nlp(sentence)))
-        print("extracted prp + noun", extract_pobj(nlp(sentence)))
-        print()
+    for file in story_file:
+        ls = separate_sentence(file)
+
+        for sentence in ls:
+            print(sentence)
+            print("extracted phrase", extract_sentence_phrase(nlp(sentence)))
+            print("extracted noun phrase", extract_sentence_np(nlp(sentence)))
+            print("extracted prp + noun", extract_pobj(nlp(sentence)))
+            print()
 
 if __name__ == '__main__':
     main()
