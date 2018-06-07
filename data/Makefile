@@ -1,6 +1,11 @@
-.PHONY: directories
+.PHONY: targets
 
-directories: kbs models
+targets:
+	@echo 'available targets:'
+	@grep '^[a-z]' Makefile | sed 's/:.*//' | tail +2 | sed 's/^/    /'
+
+kbs:
+	mkdir 'kbs'
 
 kbs/umbel-ontology.n3: kbs
 	wget --output-document $@ 'https://raw.githubusercontent.com/structureddynamics/UMBEL/master/Ontology/umbel.n3'
@@ -25,16 +30,13 @@ kbs/mappingbased_literals_en.ttl: kbs
 	wget --output-docoument $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_literals_en.ttl.bz2'
 	bunzip2 $@.bz2
 
+models:
+	mkdir 'models'
+
 models/GoogleNews-vectors-negative300.bin: models
 	# linked from 
 	echo 'Google Drive restrictions prevent this file from being downloaded automatically.'
 	echo 'Instead, go to https://github.com/mmihaltz/word2vec-GoogleNews-vectors/'
 	exit 1
-
-models:
-	if [ ! -d 'models' ]; then mkdir 'models'; fi
-
-kbs:
-	if [ ! -d 'kbs' ]; then mkdir 'kbs'; fi
 
 # opencyc-latest.owl
