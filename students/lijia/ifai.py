@@ -512,8 +512,8 @@ def get_adjectives_for_noun(model, noun):
     w2v_ls = w2v_get_adjectives_for_noun(model, noun)
     cn_ls = cn_get_adjectives_for_noun(noun)
     adjectives = set(w2v_ls) | set(kv[0] for kv in cn_ls)
-    adjectives = [adjective for adjective in get_adjectives_for_noun(MODEL, noun) if adjective]
-    return adjectives if votes > 1]
+    # adjectives = [adjective for adjective in get_adjectives_for_noun(MODEL, noun) if adjective]
+    return adjectives
 
 
 def get_nouns_from_text(text):
