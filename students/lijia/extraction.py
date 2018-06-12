@@ -80,11 +80,12 @@ def extract_sentence_phrase(doc):
     tools = []
     for token in doc:
         # token.tag_ != "WP" and
+        if token.pos_ == "NOUN" and token.lemma_ != "-PRON-" and not token.ent_type_ == "PERSON" and \
+                (wn_is_manipulable_noun(token.lemma_) or umbel_is_manipulable_noun(token.lemma_)):
+            tools.append(token.lemma_)
+
         if is_subject_noun(token) and is_good_verb(token.head):
             # extract tool
-            if token.lemma_ != "-PRON-":
-                tools.append(token.lemma_ if wn_is_manipulable_noun(token.lemma_) or umbel_is_manipulable_noun(token.lemma_) else None)
-
             # extract np
             sentence_results = []
 
@@ -110,6 +111,7 @@ def extract_sentence_phrase(doc):
             results.extend(sentence_results)
 
     return results, tools
+
 
 def wn_is_manipulable_noun(noun):
 
@@ -147,7 +149,6 @@ def w2v_rank_manipulability(model, nouns):
     word_cosine_list = [tuple([noun, np.dot(model.word_vec(noun), manipulable_basis)]) for noun in set(nouns)]
 
     return sorted(word_cosine_list, key=(lambda kv: kv[1]))
-
 
 
 def extract_sentence_np(doc):
@@ -255,8 +256,7 @@ def umbel_is_manipulable_noun(noun):
     return False
 
 
-
-def test_svo(model):
+def test_svo(nlp):
     """adding test cases for extracting svo/sv"""
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
     test_cases = [
@@ -293,7 +293,7 @@ def test_svo(model):
         assert test_case.phrase in extract_sentence_phrase(nlp(test_case.sentence)), "\n".join(message)
 
 
-def test_np(model):
+def test_np(nlp):
     """test cases for extracting [adj + NOUN]"""
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
     test_cases = [
@@ -317,15 +317,19 @@ def main():
 
     story_file = [filename for filename in listdir(STORY_DIRECTORY) if not filename.startswith('.')]
 
+    tools = []
     for file in story_file:
         ls = separate_sentence(file)
 
         for sentence in ls:
+            doc = nlp(sentence)
             print(sentence)
-            print("extracted noun phrase", extract_sentence_np(nlp(sentence)))
-            print("extracted prep + noun", extract_pobj(nlp(sentence)))
-            print("extracted tool", extract_sentence_phrase(nlp(sentence))[1])
-            print("extracted phrase", extract_sentence_phrase(nlp(sentence))[0])
+
+            # print("extracted noun phrase", extract_sentence_np(doc))
+            # print("extracted prep + noun", extract_pobj(doc))
+            # tools.extend(extract_sentence_phrase(doc)[1])
+            # print("extracted tools", extract_sentence_phrase(doc)[1])
+            # print("extracted phrase", extract_sentence_phrase(doc)[0])
 
             # check patterns
             i = check_tool_pattern(doc)
