@@ -41,6 +41,33 @@ def is_good_verb(token):
                    and not token.text.startswith('\'') else False
 
 
+def check_tool_pattern(doc):
+    """extract tool from a few prescript patterns"""
+    for token in doc:
+        # use NP to V
+        if token.lemma_ == "use":
+            # extract object
+            obj = [child.lemma_ for child in token.head.children if child.dep_ == "dobj"]
+            if obj:
+                if umbel_is_manipulable_noun(obj[0]) or wn_is_manipulable_noun(obj[0]):
+                    for child in token.children:
+                        # find "to" that compliment "use"
+                        if child.dep_ == "xcomp" and [grandchild for grandchild in child.children if grandchild.text == "to"]:
+                            return [token.lemma_, obj, "to", child.lemma_]
+
+        # V NP with NP
+        elif token.text == "with" and token.head.pos_ == "VERB":
+            obj = [child.lemma_ for child in token.head.children if child.dep_ == "dobj"]
+            for child in token.children:
+                # find the preposition object and check manipulability
+                if child.dep_ == "pobj" and (umbel_is_manipulable_noun(child.lemma_) or wn_is_manipulable_noun(child.lemma_)):
+                    # it does not really matter weather object exist or not, the tool is the 'pobj'
+                    if obj:
+                        return [token.head.lemma_, obj[0], "with", child.lemma_]
+                    else:
+                        return [token.head.lemma_, "with", child.lemma_]
+
+
 def extract_sentence_phrase(doc):
     """extract phrases that are SVO or SV
 
@@ -299,7 +326,14 @@ def main():
             print("extracted prep + noun", extract_pobj(nlp(sentence)))
             print("extracted tool", extract_sentence_phrase(nlp(sentence))[1])
             print("extracted phrase", extract_sentence_phrase(nlp(sentence))[0])
+
+            # check patterns
+            i = check_tool_pattern(doc)
+            print(i)
+            if i is not None: tools.append(" ".join(i))
+
             print()
+    print("extracted tool phrase", tools)
 
 if __name__ == '__main__':
     main()
