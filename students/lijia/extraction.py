@@ -18,14 +18,27 @@ UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfs
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 DICTIONARY = PyDictionary()
 
+# load nlp model
+model = 'en_core_web_sm'
+nlp = spacy.load(model)
 
-def separate_sentence(story_file):
-    """separate document to return a list of individual sentences"""
-    story_path = join_path(STORY_DIRECTORY, story_file)
-    ls = []
-    for line in open(story_path):
-        ls.extend([s for s in line.replace("\"","").split(". ")])
-    return ls
+
+def get_filename_from_folder(STORY_DIRECTORY):
+    "read a folder that yield filename to read from inividual file"
+    for filename in listdir(STORY_DIRECTORY) :
+        yield filename
+
+
+def get_sentence_from_folder(DIRECTORY):
+    """separate document to yield tokenized individual sentences"""
+    for filename in get_filename_from_folder(DIRECTORY):
+        try:
+            for line in open(join_path(DIRECTORY, filename)):
+                s_ls = line.replace("\"","").split(". ")
+                for s in s_ls:
+                    yield nlp(s)
+        except UnicodeDecodeError:
+            continue
 
 
 def is_stop_verb(token):
