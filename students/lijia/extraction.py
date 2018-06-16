@@ -1,18 +1,28 @@
 import sys
+import time
+import datetime
+from collections import Counter, defaultdict
 from os.path import dirname, realpath, join as join_path
 from os import listdir
+from os.path import isfile
 from collections import namedtuple
 import spacy
 import numpy as np
 
 from nltk.corpus import wordnet as wn
+from nltk.wsd import lesk
 from PyDictionary import PyDictionary
 from research.knowledge_base import KnowledgeFile, URI
+
+from ifai import *
 
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
-STORY_DIRECTORY = './fanfic_stories'
+STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'data/fanfic_stories')
+OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output')
+NP_DIR = join_path(OUTPUT_DIR, "np")
+VO_DIR = join_path(OUTPUT_DIR, "vo")
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
@@ -23,22 +33,19 @@ model = 'en_core_web_sm'
 nlp = spacy.load(model)
 
 
-def get_filename_from_folder(STORY_DIRECTORY):
-    "read a folder that yield filename to read from inividual file"
-    for filename in listdir(STORY_DIRECTORY) :
-        yield filename
+def get_filename_from_folder(dir):
+    "read a folder  that yield filename to read from inividual file"
+    for filename in listdir(dir):
+        if not filename.startswith("."):
+            yield filename
 
 
-def get_sentence_from_folder(DIRECTORY):
+def get_sentence_from_folder(dir, filename):
     """separate document to yield tokenized individual sentences"""
-    for filename in get_filename_from_folder(DIRECTORY):
-        try:
-            for line in open(join_path(DIRECTORY, filename)):
-                s_ls = line.replace("\"","").split(". ")
-                for s in s_ls:
-                    yield nlp(s)
-        except UnicodeDecodeError:
-            continue
+    for line in open(join_path(dir, filename), encoding='utf-8'):
+        s_ls = line.replace("\"","").split(". ")
+        for s in s_ls:
+            yield nlp(s)
 
 
 def is_stop_verb(token):
@@ -49,9 +56,18 @@ def is_subject_noun(token):
     return True if (token.pos_ == "NOUN" or token.pos_ == "PRON") and token.dep_ == "nsubj" else False
 
 
+def is_good_obj(token):
+    return True if token.dep_ == "dobj" and token.lemma_ != "…"  \
+                   and token.tag_ != "WP" else False
+
+
 def is_good_verb(token):
     return True if token.head.pos_ == "VERB" and not is_stop_verb(token.head) \
                    and not token.text.startswith('\'') else False
+
+
+def replace_wsd(doc, token):
+    return lesk(doc.text.split(), str(token))
 
 
 def check_tool_pattern(doc):
@@ -79,6 +95,16 @@ def check_tool_pattern(doc):
                         return [token.head.lemma_, obj[0], "with", child.lemma_]
                     else:
                         return [token.head.lemma_, "with", child.lemma_]
+
+
+def extract_vo(doc):
+    vo_ls = []
+    for token in doc:
+        if token.pos_ == "VERB" and is_good_verb(token):
+            for child in token.children:
+                if child.dep_ == "dobj" and is_good_obj(child):
+                    vo_ls.append("%s\t%s\n" % (token.lemma_, child.lemma_))
+    return vo_ls
 
 
 def extract_sentence_phrase(doc):
@@ -126,54 +152,10 @@ def extract_sentence_phrase(doc):
     return results, tools
 
 
-def wn_is_manipulable_noun(noun):
-
-    def get_all_hypernyms(root_synset):
-        hypernyms = set()
-        queue = [root_synset]
-        while queue:
-            synset = queue.pop(0)
-            new_hypernyms = synset.hypernyms()
-            for hypernym in new_hypernyms:
-                if hypernym.name() not in hypernyms:
-                    hypernyms.add(hypernym.name())
-                    queue.append(hypernym)
-        return hypernyms
-
-    for synset in wn.synsets(noun, pos=wn.NOUN):
-        if 'physical_entity.n.01' in get_all_hypernyms(synset):
-            return True
-    return False
-
-
-def w2v_rank_manipulability(model, nouns):
-    """Rank nouns from most manipulable to least manipulable.
-
-    Arguments:
-        model (VectorModel): Gensim word vector model.
-        nouns (list[str]): The nouns to rank.
-
-    Returns:
-        list[tuple[str, float]]: The list of nouns and cosine distances.
-    """
-    # anchor x_axis by using forest & tree vector difference
-    manipulable_basis = model.word_vec('forest') - model.word_vec('tree')
-    # map the noun's vectors to the x_axis and spit out a list from small to big
-    word_cosine_list = [tuple([noun, np.dot(model.word_vec(noun), manipulable_basis)]) for noun in set(nouns)]
-
-    return sorted(word_cosine_list, key=(lambda kv: kv[1]))
-
-
 def extract_sentence_np(doc):
     """extract the [adj + noun] from the given doc sentence"""
     results = []
     for token in doc:
-        sentence_results = []
-
-        # testing
-        # if token.pos_ == "ADJ":
-            # print(token)
-
         # attributive adjective
         if token.dep_ == "amod" and token.pos_ == "ADJ":
 
@@ -184,11 +166,12 @@ def extract_sentence_np(doc):
             # if not [child for child in token.children if child.dep_ != "advmod"]:
 
             if token.head.pos_ == "NOUN":
-                sentence_results.append([token.lemma_, token.head.lemma_])
+                a = replace_wsd(doc, token)
+                results.append("%s\t%s\n" % (token.lemma_, token.head.lemma_))
 
             for child in token.children:
                 if child.dep_ == "conj":
-                    sentence_results.append([child.lemma_, token.head.lemma_])
+                    results.append("%s\t%s\n" % (child.lemma_, token.head.lemma_))
 
         # predicative adjective
         elif token.dep_ == "acomp" \
@@ -197,8 +180,7 @@ def extract_sentence_np(doc):
 
             for child in token.head.children:
                 if child.dep_ == "nsubj":
-                    sentence_results.append([token.lemma_, child.lemma_])
-        results.extend(sentence_results)
+                    results.append("%s\t%s\n" % (token.lemma_, child.lemma_))
     return results
 
 
@@ -213,60 +195,52 @@ def extract_pobj(doc):
     return results
 
 
-def get_synonyms(word, pos=None):
-    """Get synonyms for a word using PyDictionary and WordNet.
+def calculate_stats(dir):
+    """output a file with frequency of extraction from previously stored files"""
+    def write_out():
+        with open(join_path(OUTPUT_DIR, dir[-2:] + "_stat.txt"), 'w', encoding='utf-8') as f:
+            for k in d:
+                c = d[k]
+                f.write("%s (%s)\n" % (k, sum(c.values())))
+                for x in d[k]:
+                    f.write("---%s (%s)\n" % (x, c[x]))
 
-    Arguments:
-        word (str): The word to find synonyms for.
-        pos (int): WordNet part-of-speech constant. Defaults to None.
-
-    Returns:
-        set[str]: The set of synonyms.
-    """
-    syn_list = []
-
-    # add WordNet synonyms to the list
-    for synset in wn.synsets(word, pos):
-        for lemma in synset.lemmas():
-            syn = lemma.name()
-            if syn != word:
-                syn_list.append(syn)
-    # add thesaurus synonyms
-    dict_syns = DICTIONARY.synonym(word)
-    # combine them and return
-    if dict_syns:
-        return set(syn_list) | set(dict_syns)
-    else:
-        return set(syn_list)
+    file_gen = get_filename_from_folder(dir)
+    d = defaultdict(Counter)
+    for file in file_gen:
+        lines = [line.rstrip('\n').replace('\t', ' ') for line in open(join_path(dir, file), 'r', encoding='utf-8')]
+        # add to defaultdict with x as key and a counter as value
+        # the counter counts y's appearance
+        for line in lines:
+            x = line.split(' ')[0]
+            y = line.split(' ')[1]
+            if d[x]:
+                d[x].update([y])
+            else:
+                d[x] = Counter([y])
+    write_out()
+    return
 
 
-def umbel_is_manipulable_noun(noun):
-
-    def get_all_superclasses(kb, concept):
-        superclasses = set()
-        queue = [str(URI(concept, 'umbel-rc'))]
-        query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
-        while queue:
-            child = queue.pop(0)
-            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
-            for bindings in kb.query_sparql(query):
-                parent = str(bindings['parent'])
-                if parent not in superclasses:
-                    superclasses.add(parent)
-                    queue.append(str(URI(parent)))
-        return superclasses
-
-    # create superclass to check against
-    solid_tangible_thing = URI('SolidTangibleThing', 'umbel-rc').uri
-    for synonym in get_synonyms(noun, wn.NOUN):
-        # find the corresponding concept
-        variations = [synonym, synonym.lower(), synonym.title()]
-        variations = [variation.replace(' ', '') for variation in variations]
-        # find all ancestors of all variations
-        for variation in variations:
-            if solid_tangible_thing in get_all_superclasses(UMBEL, variation):
-                return True
-    return False
+def pipe():
+    for file in get_filename_from_folder(STORY_DIRECTORY):
+        print(file)
+        file_name_vo = join_path(VO_DIR, file[:-4] + "_vo.txt")
+        file_name_np = join_path(NP_DIR, file[:-4] + "_np.txt")
+        # start extraction if the file does not exist yet
+        if not (isfile(file_name_vo) and isfile(file_name_np)):
+            with open(file_name_vo, 'w', encoding='utf-8') as vo_file, open(file_name_np, 'w', encoding='utf-8') as np_file:
+                for s in get_sentence_from_folder(STORY_DIRECTORY, file):
+                    # write verb + obj result
+                    for vo in extract_vo(s):
+                        if vo is not None:
+                            vo_file.write(vo)
+                    # write adj + noun result
+                    for np in extract_sentence_np(s):
+                        if np is not None:
+                            np_file.write(np)
+    calculate_stats(NP_DIR)
+    calculate_stats(VO_DIR)
 
 
 def test_svo(nlp):
@@ -324,33 +298,11 @@ def test_np(nlp):
 
 
 def main():
-    # load nlp model
-    model = 'en_core_web_sm'
-    nlp = spacy.load(model)
+    start = time.time()
+    pipe()
+    end = time.time()
+    print("total time cost %s" % datetime.timedelta(seconds= (end - start)))
 
-    story_file = [filename for filename in listdir(STORY_DIRECTORY) if not filename.startswith('.')]
-
-    tools = []
-    for file in story_file:
-        ls = separate_sentence(file)
-
-        for sentence in ls:
-            doc = nlp(sentence)
-            print(sentence)
-
-            # print("extracted noun phrase", extract_sentence_np(doc))
-            # print("extracted prep + noun", extract_pobj(doc))
-            # tools.extend(extract_sentence_phrase(doc)[1])
-            # print("extracted tools", extract_sentence_phrase(doc)[1])
-            # print("extracted phrase", extract_sentence_phrase(doc)[0])
-
-            # check patterns
-            i = check_tool_pattern(doc)
-            print(i)
-            if i is not None: tools.append(" ".join(i))
-
-            print()
-    print("extracted tool phrase", tools)
 
 if __name__ == '__main__':
     main()
