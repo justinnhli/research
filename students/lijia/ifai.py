@@ -28,8 +28,9 @@ GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vecto
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
+model = 'en_core_web_sm'
 
-SPACY_NLP = spacy.load('en')
+SPACY_NLP = spacy.load(model)
 LEMMATIZER = WordNetLemmatizer()
 DICTIONARY = PyDictionary()
 
