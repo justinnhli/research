@@ -1,11 +1,10 @@
 import sys
 import time
 import datetime
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 from os.path import dirname, realpath, join as join_path
 from os import listdir
 from os.path import isfile
-from collections import namedtuple
 import spacy
 import numpy as np
 
@@ -21,6 +20,8 @@ ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'data/fanfic_stories')
 OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output')
+# STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'students/lijia/fantacy')
+# OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'students/lijia/abc')
 NP_DIR = join_path(OUTPUT_DIR, "np")
 VO_DIR = join_path(OUTPUT_DIR, "vo")
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
