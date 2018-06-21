@@ -421,7 +421,7 @@ class GridWorld(Environment):
 
 
 def gating_memory(cls, num_memory_slots=1, reward=0):
-    """Decorate an Environment to be contain a gating memory.
+    """Decorate an Environment to include a gating memory.
 
     This decorator function takes a class (and some parameters) and, on the
     fly, creates a subclass with additional "memory" elements. Specifically, it
@@ -517,7 +517,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
     return GatingMemoryMetaEnvironment
 
 def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
-    """Decorate an Environment to be contain a long-term memory of fixed size.
+    """Decorate an Environment to include a long-term memory of fixed size.
 
     Arguments:
         cls (class): The Environment superclass.
@@ -526,7 +526,7 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
         reward (float): The reward for an internal action. Defaults to 0.
 
     Returns:
-        class: A subclass with a gating memory.
+        class: A subclass with a fixed-sized long-term memory.
     """
     assert issubclass(cls, Environment)
 
