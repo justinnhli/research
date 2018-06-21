@@ -40,7 +40,7 @@ def get_filename_from_folder(dir):
             yield filename
 
 
-def get_sentence_from_folder(dir, filename):
+def get_nlp_sentence_from_file(dir, filename):
     """separate document to yield tokenized individual sentences"""
     for line in open(join_path(dir, filename), encoding='utf-8'):
         s_ls = line.replace("\"","").split(". ")
@@ -195,54 +195,6 @@ def extract_pobj(doc):
     return results
 
 
-def calculate_stats(dir):
-    """output a file with frequency of extraction from previously stored files"""
-    def write_out():
-        with open(join_path(OUTPUT_DIR, dir[-2:] + "_stat.txt"), 'w', encoding='utf-8') as f:
-            for k in d:
-                c = d[k]
-                f.write("%s (%s)\n" % (k, sum(c.values())))
-                for x in d[k]:
-                    f.write("---%s (%s)\n" % (x, c[x]))
-
-    file_gen = get_filename_from_folder(dir)
-    d = defaultdict(Counter)
-    for file in file_gen:
-        lines = [line.rstrip('\n').replace('\t', ' ') for line in open(join_path(dir, file), 'r', encoding='utf-8')]
-        # add to defaultdict with x as key and a counter as value
-        # the counter counts y's appearance
-        for line in lines:
-            x = line.split(' ')[0]
-            y = line.split(' ')[1]
-            if d[x]:
-                d[x].update([y])
-            else:
-                d[x] = Counter([y])
-    write_out()
-    return
-
-
-def pipe():
-    for file in get_filename_from_folder(STORY_DIRECTORY):
-        print(file)
-        file_name_vo = join_path(VO_DIR, file[:-4] + "_vo.txt")
-        file_name_np = join_path(NP_DIR, file[:-4] + "_np.txt")
-        # start extraction if the file does not exist yet
-        if not (isfile(file_name_vo) and isfile(file_name_np)):
-            with open(file_name_vo, 'w', encoding='utf-8') as vo_file, open(file_name_np, 'w', encoding='utf-8') as np_file:
-                for s in get_sentence_from_folder(STORY_DIRECTORY, file):
-                    # write verb + obj result
-                    for vo in extract_vo(s):
-                        if vo is not None:
-                            vo_file.write(vo)
-                    # write adj + noun result
-                    for np in extract_sentence_np(s):
-                        if np is not None:
-                            np_file.write(np)
-    calculate_stats(NP_DIR)
-    calculate_stats(VO_DIR)
-
-
 def test_svo(nlp):
     """adding test cases for extracting svo/sv"""
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
@@ -295,6 +247,146 @@ def test_np(nlp):
             "    but failed to see expected result: " + str(test_case.phrase),
         ]
         assert test_case.phrase in extract_sentence_phrase(nlp(test_case.sentence)), "\n".join(message)
+
+
+def extract_from_dump(dump):
+    """extract and write (adj + noun) and (verb + noun) from given dump"""
+    # todo(Lijia): rstrip("-") form PRON before saving the file
+    for file in get_filename_from_folder(dump):
+        print(file)
+        file_name_vo = join_path(VO_DIR, file[:-4] + "_vo.txt")
+        file_name_np = join_path(NP_DIR, file[:-4] + "_np.txt")
+
+        # start extraction if the file does not exist yet
+        # if not (isfile(file_name_vo) and isfile(file_name_np)):
+        if not isfile(file_name_vo):
+            with open(file_name_vo, 'w', encoding='utf-8') as vo_file, open(file_name_np, 'w', encoding='utf-8') as np_file:
+                for s in get_nlp_sentence_from_file(dump, file):
+                    # write verb + obj result
+                    for vo in extract_vo(s):
+                        if vo is not None:
+                            vo_file.write(vo)
+                    # # write adj + noun result
+                    # for np in extract_sentence_np(s):
+                    #     if np is not None:
+                    #         np_file.write(np)
+    return
+
+
+def calculate_stats(dir):
+    """output a file with frequency of extraction from previously stored files"""
+    def write_out():
+        """ write out counts"""
+        with open(join_path(OUTPUT_DIR, dir[-2:] + "_stat1.txt"), 'w', encoding='utf-8') as f:
+            for k in d:
+                c = d[k]
+                f.write("%s (%s)\n" % (k, sum(c.values())))
+                for x in d[k]:
+                    f.write("---%s (%s)\n" % (x, c[x]))
+
+    file_gen = get_filename_from_folder(dir)
+    d = defaultdict(Counter)
+    i = 0
+    for file in file_gen:
+        i += 1
+        print(file)
+        lines = [line.rstrip('\n').replace('\t', ' ') for line in open(join_path(dir, file), 'r', encoding='utf-8')]
+        # add to defaultdict with x as key and a counter as value
+        # the counter counts y's appearance
+        for line in lines:
+            x = line.split(' ')[1].replace("-", "")
+            y = line.split(' ')[0].replace("-", "")
+            if d[x]:
+                d[x].update([y])
+            else:
+                d[x] = Counter([y])
+    write_out()
+    print("total file processed: ", i)
+    calculate_prob(join_path(OUTPUT_DIR, dir[-2:] + "_stat1.txt"))
+    return
+
+
+def calculate_prob(file):
+    with open(file, 'r', encoding='utf-8') as f, \
+            open(join_path(OUTPUT_DIR, file[-11:-10] + '_prob1.txt'), 'w', encoding='utf-8') as w:
+        total = 0
+        for line in f.readlines():
+            line = line.split(" ")
+
+            if not line[0].startswith("-"):
+                a = line[0]
+                total = int(line[1].replace('(', '').replace(')',""))
+            else:
+                b = line[0].replace('-', "")
+                count = int(line[1].replace('(', '').replace(')', ""))
+                try:
+                    w.write("%s %s %s\n" % (a, b, float(count / total)))
+                except:
+                    pass
+
+
+def read_to_nested_dict(filename, x, y, z):
+    """ read from file and store in nested dict
+    Arguments:
+        x: outer dictionary key index
+        y: inner dictionary key index
+        z: value index
+    OUTPUT = {x: { y: z }}"""
+    d = defaultdict(defaultdict )
+    with open(filename, 'r', encoding='utf-8') as f:
+        for l in f.readlines():
+            ls = l.rstrip("\n").split(" ")
+            if d[ls[x]]:
+                d[ls[x]][ls[y]] = ls[z]
+            else:
+                d[ls[x]] = {ls[y]: ls[z]}
+    return d
+
+
+def calculate_and_cache_individual_p():
+    # read file in to dictioanry
+
+    """ {object : {verb: prob}}"""
+    d_vo = read_to_nested_dict(join_path(OUTPUT_DIR, 'p_verb_noun.txt'), 0, 1, 2)
+    print("read p_verb_noun")
+
+    # {object: {adj: prob}}
+    d_np = read_to_nested_dict(join_path(OUTPUT_DIR, 'p_noun_adj.txt'), 1, 0, 2)
+    print("read p_noun_adj")
+
+    # cache v, adj, p(v|o) * p(o|adj)
+    with open(join_path(OUTPUT_DIR, 'temp.txt'), 'w', encoding='utf-8') as f:
+        for o in d_vo:
+            sum = 0
+            # only cached out those with the same o
+            for v, p1 in d_vo[o].items():
+                for adj, p2 in d_np[o].items():
+                    f.write("%s %s %s\n" % (v, adj, float(p1) * float(p2)))
+
+
+def add_up_p():
+    dict = defaultdict(defaultdict)
+    with open(join_path(OUTPUT_DIR, 'temp.txt'), 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            ls = line.rstrip('\n').split(" ")
+            k = str(ls[0] + " " + ls[1])
+            if dict[k]:
+                dict[k] += float(ls[2])
+            else:
+                dict[k] = float(ls[2])
+    with open(join_path(OUTPUT_DIR, 'final.txt'), 'w', encoding='utf-8') as w:
+        for key, value in dict.items():
+            w.write("%s %s\n" % (key, value))
+
+
+def pipe():
+    # extract and write (adj + noun) and (verb + noun) from given dump
+    extract_from_dump(STORY_DIRECTORY)
+    # calculate count and probability
+    # calculate_stats(NP_DIR)
+    # calculate_stats(VO_DIR)
+    # calculate_and_cache_individual_p()
+    # add_up_p()
 
 
 def main():
