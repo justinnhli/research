@@ -104,6 +104,11 @@ def extract_vo(doc):
             for child in token.children:
                 if child.dep_ == "dobj" and is_good_obj(child):
                     vo_ls.append("%s\t%s\n" % (token.lemma_, child.lemma_))
+                # indirect (proposition) objects
+                elif child.dep_ == "prep":
+                    for pobj in child.children:
+                        if pobj.dep_ == "pobj":
+                            vo_ls.append("%s_%s\t%s\n" % (token.lemma_, child.lemma_, pobj.lemma_))
     return vo_ls
 
 
