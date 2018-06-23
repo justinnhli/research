@@ -4,7 +4,7 @@
 import re
 import sqlite3
 from os import remove
-from os.path import exists as file_exists
+from os.path import exists as file_exists, realpath, expanduser, dirname, join as join_path
 from hashlib import sha1
 from textwrap import dedent
 
@@ -362,12 +362,14 @@ def sqlize(rdf_file, kb_name, binary=True):
     Raises:
         FileExistsError: If any intermediate files already exist.
     """
-    sql_file = kb_name + '.sql'
+    rdf_file = realpath(expanduser(rdf_file))
+    directory = dirname(rdf_file)
+    sql_file = join_path(directory, kb_name + '.sql')
     if file_exists(sql_file):
         raise FileExistsError(sql_file)
     RDFSQLizer().sqlize(rdf_file, kb_name, sql_file)
     if binary:
-        rdfsqlite_file = kb_name + '.rdfsqlite'
+        rdfsqlite_file = join_path(directory, kb_name + '.rdfsqlite')
         if file_exists(rdfsqlite_file):
             raise FileExistsError(sql_file)
         read_dump(sql_file, rdfsqlite_file)
