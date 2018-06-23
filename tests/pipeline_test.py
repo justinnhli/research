@@ -20,6 +20,8 @@ class RangeStep(PipelineStep):
 
         Arguments:
             count (int): The number to count to.
+            args (obj): Positional arguments to the superclass.
+            kwargs (obj): Keyword arguments to the superclass.
         """
         super().__init__(*args, **kwargs)
         self.count = count
