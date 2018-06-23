@@ -15,7 +15,6 @@ from research.rdfsqlize import sqlize
 
 def test_rdfsqlize():
     """Test rdfsqlize and knowledge bases."""
-
     with TemporaryDirectory() as temp_dir:
         print(temp_dir)
 
