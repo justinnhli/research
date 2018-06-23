@@ -116,8 +116,6 @@ def create_sqlite_graph(path, create=True, identifier=None):
 class KnowledgeSource:
     """Abstract class to represent a knowledge source."""
 
-    # pylint: disable=redundant-returns-doc, missing-raises-doc
-
     def query_sparql(self, sparql):
         """Query the KB with SPARQL.
 
@@ -127,7 +125,7 @@ class KnowledgeSource:
         Returns:
             list[dict[str:str]]: A list of variable bindings.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class KnowledgeFile(KnowledgeSource):

@@ -9,7 +9,7 @@ from random import random, choice
 class Environment:
     """A reinforcement learning environment."""
 
-    def get_state(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def get_state(self):
         """Get the current state.
 
         This is different from get_observation() in that the state includes
@@ -23,7 +23,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def get_observation(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def get_observation(self):
         """Get the current observation.
 
         See note on get_state() for the difference between the methods.
@@ -33,7 +33,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def get_actions(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def get_actions(self):
         """Get the available actions.
 
         Returns:
@@ -41,7 +41,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def reset(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def reset(self):
         """Reset the environment entirely.
 
         The result of calling this method should have the same effect as
@@ -50,14 +50,14 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def new_episode(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def new_episode(self):
         """Reset the environment for a new episode.
 
         See note on reset() for the difference between the methods.
         """
         raise NotImplementedError()
 
-    def react(self, action): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def react(self, action):
         """Update the environment to an agent action.
 
         Assumes the argument is one of the returned actions from get_actions().
@@ -70,7 +70,7 @@ class Environment:
         """
         raise NotImplementedError()
 
-    def visualize(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def visualize(self):
         """Create visualization of the environment.
 
         Returns:
@@ -176,7 +176,7 @@ class State(AttrDict):
 class Agent:
     """A reinforcement learning agent."""
 
-    def get_value(self, observation, action): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def get_value(self, observation, action):
         """Get the Q value for an action at an observation.
 
         Arguments:
@@ -185,7 +185,7 @@ class Agent:
         """
         raise NotImplementedError()
 
-    def get_valued_actions(self, observation): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def get_valued_actions(self, observation):
         """Get all actions with stored values at an observation.
 
         Arguments:
@@ -219,7 +219,7 @@ class Agent:
         """
         return self.get_value(observation, self.get_best_action(observation))
 
-    def act(self, observation, actions, reward=None): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def act(self, observation, actions, reward=None):
         """Update the value function and decide on the next action.
 
         Arguments:
@@ -234,7 +234,7 @@ class Agent:
         """
         raise NotImplementedError()
 
-    def force_act(self, observation, action, reward=None): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def force_act(self, observation, action, reward=None):
         """Update the value function and return a specific action.
 
         Arguments:
@@ -249,7 +249,7 @@ class Agent:
         """
         raise NotImplementedError()
 
-    def print_value_function(self): # pylint: disable=redundant-returns-doc,missing-raises-doc
+    def print_value_function(self):
         """Print the value function."""
         raise NotImplementedError()
 
