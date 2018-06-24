@@ -1,41 +1,38 @@
+"""extract phrase from folder and calculate p(verb|adj)"""
+
 import sys
 import time
 import datetime
 from collections import Counter, defaultdict, namedtuple
-from os.path import dirname, realpath, join as join_path
+from os.path import dirname, realpath, join as join_path, exists as file_exists
 from os import listdir
-from os.path import isfile
 import spacy
 import numpy as np
-
-from nltk.corpus import wordnet as wn
 from nltk.wsd import lesk
-from PyDictionary import PyDictionary
 from research.knowledge_base import KnowledgeFile, URI
-
-from ifai import *
+from ifai import wn_is_manipulable_noun, umbel_is_manipulable_noun
 
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
-STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'data/fanfic_stories')
-OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output')
-# STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'students/lijia/fantacy')
-# OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'students/lijia/abc')
+# STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'data/fanfic_stories/sub1')
+# OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output')
+STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'students/lijia/fantacy')
+OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'students/lijia/output_files')
 NP_DIR = join_path(OUTPUT_DIR, "np")
 VO_DIR = join_path(OUTPUT_DIR, "vo")
-UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
-
-UMBEL = KnowledgeFile(UMBEL_KB_PATH)
-DICTIONARY = PyDictionary()
 
 # load nlp model
 model = 'en_core_web_sm'
 nlp = spacy.load(model)
 
+# set up namedtuple for extraction
+SVO = namedtuple('SVO', ('subject', 'verb', 'preposition', 'object'))
+NP = namedtuple('NP', ['noun', 'adjectives'])
+
 
 def get_filename_from_folder(dir):
-    "read a folder  that yield filename to read from inividual file"
+    """read a folder  that yield filename to read from individual file"""
     for filename in listdir(dir):
         if not filename.startswith("."):
             yield filename
@@ -50,24 +47,35 @@ def get_nlp_sentence_from_file(dir, filename):
 
 
 def is_stop_verb(token):
-    return True if token.pos_ == "VERB" and token.is_stop else False
+    return token.pos_ == "VERB" and token.is_stop
 
 
 def is_subject_noun(token):
-    return True if (token.pos_ == "NOUN" or token.pos_ == "PRON") and token.dep_ == "nsubj" else False
+    return (token.pos_ == "NOUN" or token.pos_ == "PRON") and token.dep_ == "nsubj"
 
 
 def is_good_obj(token):
-    return True if token.dep_ == "dobj" and token.lemma_ != "…"  \
-                   and token.tag_ != "WP" else False
+    return token.dep_ == "dobj" and token.lemma_ != "…" and token.tag_ != "WP"
 
 
 def is_good_verb(token):
-    return True if token.head.pos_ == "VERB" and not is_stop_verb(token.head) \
-                   and not token.text.startswith('\'') else False
+    return token.head.pos_ == "VERB" and not is_stop_verb(token.head) and not token.text.startswith('\'')
+
+
+def is_tool(token):
+    return (
+        token.pos_ == "NOUN" and
+        token.lemma_ != "-PRON-" and
+        not token.ent_type_ == "PERSON" and
+        (
+            wn_is_manipulable_noun(token.lemma_) or
+            umbel_is_manipulable_noun(token.lemma_)
+        ))
 
 
 def replace_wsd(doc, token):
+    # TODO (Lijia): use the function in extraction
+    """return the wsd token of a doc"""
     return lesk(doc.text.split(), str(token))
 
 
@@ -98,106 +106,69 @@ def check_tool_pattern(doc):
                         return [token.head.lemma_, "with", child.lemma_]
 
 
-def extract_vo(doc):
-    vo_ls = []
-    for token in doc:
-        if token.pos_ == "VERB" and is_good_verb(token):
-            for child in token.children:
-                if child.dep_ == "dobj" and is_good_obj(child):
-                    vo_ls.append("%s\t%s\n" % (token.lemma_, child.lemma_))
-                # indirect (proposition) objects
-                elif child.dep_ == "prep":
-                    for pobj in child.children:
-                        if pobj.dep_ == "pobj":
-                            vo_ls.append("%s_%s\t%s\n" % (token.lemma_, child.lemma_, pobj.lemma_))
-    return vo_ls
-
-
 def extract_sentence_phrase(doc):
-    """extract phrases that are SVO or SV
+    """extract phrases that are SVO or SV with prep and return a list of namedtuple SV(O)
 
-        Argument:
+        Keyword arguments:
         doc: processed sentences
     """
-
-    # iterate through each word of the sentence
     results = []
-    tools = []
     for token in doc:
-        # token.tag_ != "WP" and
-        if token.pos_ == "NOUN" and token.lemma_ != "-PRON-" and not token.ent_type_ == "PERSON" and \
-                (wn_is_manipulable_noun(token.lemma_) or umbel_is_manipulable_noun(token.lemma_)):
-            tools.append(token.lemma_)
+        if not (is_subject_noun(token) and is_good_verb(token.head)):
+            continue
+        # if the token is likely a person's name, replace it
+        if token.ent_type_ == "PERSON" or token.lemma_ == "-PRON-":
+            s = "PRON"
+        else:
+            s = token.lemma_
+        v = token.head.lemma_
 
-        if is_subject_noun(token) and is_good_verb(token.head):
-            # extract tool
-            # extract np
-            sentence_results = []
+        # look for direct and indirect objects
+        for child in token.head.children:
+            # direct objects
+            if child.dep_ == "dobj" and is_good_obj(child):
+                results.append(SVO(s, v, None, child.lemma_))
+            # indirect (proposition) objects
+            elif child.dep_ == "prep":
+                for pobj in child.children:
+                    if pobj.dep_ == "pobj":
+                        results.append(SVO(s, v, child.lemma_, pobj.lemma_))
+        # if the verb has neither direct nor indirect objects
+        if not results:
+            results.append(SVO(s, v, None, None))
+    return results
 
-            # if the token is likely a person's name, replace it
-            if token.ent_type_ == "PERSON":
-                s = "-PRON-"
-            else:
-                s = token.lemma_
-            v = token.head.lemma_
 
-            for child in token.head.children:
-                # direct objects
-                if child.dep_ == "dobj":
-                    sentence_results.append([s, v, child.lemma_])
-                # indirect (proposition) objects
-                elif child.dep_ == "prep":
-                    for pobj in child.children:
-                        sentence_results.append([s, v + " " + child.lemma_, str(pobj.lemma_)])
-
-            # if the verb has neither direct nor indirect objects
-            if not sentence_results:
-                sentence_results.append([s, v])
-            results.extend(sentence_results)
-
-    return results, tools
+def extract_vo(doc):
+    results = extract_sentence_phrase(doc) # ignore tools by indexing
+    return [result for result in results if result.object is not None]
 
 
 def extract_sentence_np(doc):
     """extract the [adj + noun] from the given doc sentence"""
     results = []
     for token in doc:
-        # attributive adjective
-        if token.dep_ == "amod" and token.pos_ == "ADJ":
+        # a = replace_wsd(doc, token)
+        if token.pos_ != "ADJ":
+            continue
+        # identify all subjects being described
+        if token.dep_ == "amod" and token.head.pos_ == "NOUN":
+            # eg. "The tall and skinny girl..."
+            subjects = [token.head.lemma_]
+        elif token.dep_ == "acomp" and len([child for child in token.children]) == 0:
+            # eg. "The girl is tall and skinny."
+            subjects = [
+                child.lemma_
+                for child in token.head.children
+                if child.dep_ == "nsubj"
+            ]
+        else:
+            subjects = []
+        adjectives = [token.lemma_]
+        adjectives.extend(child.lemma_ for child in token.children if child.dep_ == "conj")
 
-            # Example: "Two cute girls no more than eight years old stood in the centre of their friends"
-            # should result in "funny" and "eight years old"
-            # if the children is amod and adj and does not have any children
-            # not a good idea b/c "the eight year old girl is cute and very funny."
-            # if not [child for child in token.children if child.dep_ != "advmod"]:
-
-            if token.head.pos_ == "NOUN":
-                a = replace_wsd(doc, token)
-                results.append("%s\t%s\n" % (token.lemma_, token.head.lemma_))
-
-            for child in token.children:
-                if child.dep_ == "conj":
-                    results.append("%s\t%s\n" % (child.lemma_, token.head.lemma_))
-
-        # predicative adjective
-        elif token.dep_ == "acomp" \
-                and not [child for child in token.children]:
-            # to fight against counter example: "Olivia was sure of it." --> sure olivia
-
-            for child in token.head.children:
-                if child.dep_ == "nsubj":
-                    results.append("%s\t%s\n" % (token.lemma_, child.lemma_))
-    return results
-
-
-def extract_pobj(doc):
-    """extract prep + object from the given doc sentence"""
-    results = []
-    for token in doc:
-        if token.dep_ == "prep":
-            for child in token.children:
-                if child.dep_ == "pobj":
-                    results.append([token.lemma_, child.lemma_])
+        for subject in subjects:
+            results.append(NP(subject, adjectives))
     return results
 
 
@@ -225,10 +196,6 @@ def test_svo(nlp):
             "Rachel Berry thought that she would be upset for a long time after Jesse had broken up with her, breaking his heart.",
             [['-PRON-', 'think'], ['-PRON-', 'break with', '-PRON-']]
         ),
-        TestCase(
-            "She wasn't sure how long she could keep the visage up with them around; she needed practice with her peers first.",
-            [] # todo: fill this up
-        )
     ]
     for test_case in test_cases:
         message = [
@@ -242,9 +209,14 @@ def test_np(nlp):
     """test cases for extracting [adj + NOUN]"""
     TestCase = namedtuple('TestCase', ['sentence', 'phrase'])
     test_cases = [
+        # FIXME fix the testcases to match the new return value of extract_sentence_np
         TestCase(
             "Olivia guessed that even Ashley's parents weren't that rich, they didn't live near the park or have a house that backed onto the forest and that house, well It was the biggest house in Lima, Olivia was sure of it.",
-            ['big', 'house'],
+            ['house', 'big'],
+        ),
+        TestCase(
+            "The tall girl is cute and very funny.",
+            ["girl", "tall", "cute", "funny"],
         ),
     ]
     for test_case in test_cases:
@@ -252,44 +224,67 @@ def test_np(nlp):
             "Parsing sentence: " + test_case.sentence,
             "    but failed to see expected result: " + str(test_case.phrase),
         ]
-        assert test_case.phrase in extract_sentence_phrase(nlp(test_case.sentence)), "\n".join(message)
+        assert test_case.phrase in extract_sentence_np(nlp(test_case.sentence)), "\n".join(message)
 
 
-def extract_from_dump(dump):
+def extract_from_directory(directory):
     """extract and write (adj + noun) and (verb + noun) from given dump"""
-    # todo(Lijia): rstrip("-") form PRON before saving the file
-    for file in get_filename_from_folder(dump):
+    for file in get_filename_from_folder(directory):
         print(file)
         file_name_vo = join_path(VO_DIR, file[:-4] + "_vo.txt")
         file_name_np = join_path(NP_DIR, file[:-4] + "_np.txt")
 
         # start extraction if the file does not exist yet
-        # if not (isfile(file_name_vo) and isfile(file_name_np)):
-        if not isfile(file_name_vo):
-            with open(file_name_vo, 'w', encoding='utf-8') as vo_file, open(file_name_np, 'w', encoding='utf-8') as np_file:
-                for s in get_nlp_sentence_from_file(dump, file):
-                    # write verb + obj result
-                    for vo in extract_vo(s):
-                        if vo is not None:
-                            vo_file.write(vo)
-                    # # write adj + noun result
-                    # for np in extract_sentence_np(s):
-                    #     if np is not None:
-                    #         np_file.write(np)
-    return
+        if file_exists(file_name_vo) and file_exists(file_name_np):
+            continue
+
+        vo_lines = []
+        np_lines = []
+        for s in get_nlp_sentence_from_file(directory, file):
+            for vo in extract_vo(s):
+                if vo.preposition is not None:
+                    line = "%s_%s\t%s" % (vo.verb, vo.preposition, vo.object)
+                else:
+                    line = "%s\t%s" % (vo.verb, vo.object)
+                vo_lines.append(line)
+            # write adj + obj result
+            for np in extract_sentence_np(s):
+                for adjective in np.adjectives:
+                    np_lines.append("%s\t%s" % (adjective, np.noun))
+        with open(file_name_vo, 'w', encoding='utf-8') as vo_file:
+            vo_file.write('\n'.join(vo_lines))
+        with open(file_name_np, 'w', encoding='utf-8') as np_file:
+            np_file.write('\n'.join(np_lines))
 
 
-def calculate_stats(dir):
-    """output a file with frequency of extraction from previously stored files"""
-    def write_out():
+def calculate_individual_p(dir, output_filename, outer_index, inner_index):
+    """
+    a generic function that calculate probability and count
+    :param dir: the folder that contains extracted words
+    :param output_filename
+    :param outer_index: default dictionary's key (the condition)
+    :param inner_index: counter's key
+    :return:
+    """
+    def write_out_count():
         """ write out counts"""
-        with open(join_path(OUTPUT_DIR, dir[-2:] + "_stat1.txt"), 'w', encoding='utf-8') as f:
+        with open(join_path(OUTPUT_DIR, "count_" + output_filename), 'w', encoding='utf-8') as f:
             for k in d:
                 c = d[k]
                 f.write("%s (%s)\n" % (k, sum(c.values())))
                 for x in d[k]:
                     f.write("---%s (%s)\n" % (x, c[x]))
 
+    def write_out_prob():
+        """write out probability for each pair"""
+        with open(join_path(OUTPUT_DIR, "prob_" + output_filename), 'w', encoding='utf-8') as f:
+            for k in d:
+                c = d[k]
+                total = sum(c.values())
+                for x in d[k]:
+                    f.write("%s %s %s\n" % (k, x, float(c[x] / total)))
+
+    # read from a directory to a nested dictionary
     file_gen = get_filename_from_folder(dir)
     d = defaultdict(Counter)
     i = 0
@@ -300,21 +295,24 @@ def calculate_stats(dir):
         # add to defaultdict with x as key and a counter as value
         # the counter counts y's appearance
         for line in lines:
-            x = line.split(' ')[1].replace("-", "")
-            y = line.split(' ')[0].replace("-", "")
+            print(line)
+            x = line.split()[outer_index].replace("-", "")
+            y = line.split()[inner_index].replace("-", "")
             if d[x]:
                 d[x].update([y])
             else:
                 d[x] = Counter([y])
-    write_out()
-    print("total file processed: ", i)
-    calculate_prob(join_path(OUTPUT_DIR, dir[-2:] + "_stat1.txt"))
+
+    write_out_count()
+    print("Finished writing count. Total file processed: ", i)
+    write_out_prob()
+    print("Finished writing probability")
     return
 
 
-def calculate_prob(file):
-    with open(file, 'r', encoding='utf-8') as f, \
-            open(join_path(OUTPUT_DIR, file[-11:-10] + '_prob1.txt'), 'w', encoding='utf-8') as w:
+def calculate_prob(file, output_filename):
+    """"reading from count file to calculate probability"""
+    with open(file, 'r', encoding='utf-8') as f, open(join_path(OUTPUT_DIR, output_filename), 'w', encoding='utf-8') as w:
         total = 0
         for line in f.readlines():
             line = line.split(" ")
@@ -331,68 +329,73 @@ def calculate_prob(file):
                     pass
 
 
-def read_to_nested_dict(filename, x, y, z):
+def read_to_nested_dict(filename, outer_index, inner_index, value_index):
     """ read from file and store in nested dict
     Arguments:
-        x: outer dictionary key index
-        y: inner dictionary key index
-        z: value index
-    OUTPUT = {x: { y: z }}"""
-    d = defaultdict(defaultdict )
+        outer_index: outer dictionary key index
+        inner_index: inner dictionary key index
+        value_index: value index
+    OUTPUT = {outer_index: { inner_index: value_index }}"""
+    d = defaultdict(lambda: defaultdict(float))
     with open(filename, 'r', encoding='utf-8') as f:
         for l in f.readlines():
             ls = l.rstrip("\n").split(" ")
-            if d[ls[x]]:
-                d[ls[x]][ls[y]] = ls[z]
-            else:
-                d[ls[x]] = {ls[y]: ls[z]}
+            d[ls[outer_index]][ls[inner_index]] = float(ls[value_index])
     return d
 
 
-def calculate_and_cache_individual_p():
+def calculate_stats():
+    """output a file with frequency of extraction from previously stored files"""
+    calculate_individual_p(VO_DIR, "verb|noun.txt", 1, 0)
+    calculate_individual_p(NP_DIR, "noun|adj.txt", 0, 1)
+    calculate_individual_p(VO_DIR, "noun|verb.txt", 0, 1)
+
+    return
+
+
+def calculate_verb_given_adj():
     # read file in to dictioanry
 
-    """ {object : {verb: prob}}"""
-    d_vo = read_to_nested_dict(join_path(OUTPUT_DIR, 'p_verb_noun.txt'), 0, 1, 2)
-    print("read p_verb_noun")
+    """ {object : {verb: prob(v|n)}}"""
+    d_ov = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_verb|noun.txt'), 0, 1, 2)
 
-    # {object: {adj: prob}}
-    d_np = read_to_nested_dict(join_path(OUTPUT_DIR, 'p_noun_adj.txt'), 1, 0, 2)
-    print("read p_noun_adj")
+    # {object: {adj: prob(n|a}}
+    d_oa = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_noun|adj.txt'), 1, 0, 2)
 
-    # cache v, adj, p(v|o) * p(o|adj)
-    with open(join_path(OUTPUT_DIR, 'temp.txt'), 'w', encoding='utf-8') as f:
-        for o in d_vo:
-            sum = 0
-            # only cached out those with the same o
-            for v, p1 in d_vo[o].items():
-                for adj, p2 in d_np[o].items():
-                    f.write("%s %s %s\n" % (v, adj, float(p1) * float(p2)))
+    adj_verb = set()
+    for o in d_ov:
+        for adj, _ in d_oa[o].items():
+            adj = adj.strip()
+            if not adj:
+                continue
+            for v, _ in d_ov[o].items():
+                v = v.strip()
+                if not v: continue
+                adj_verb.add((adj, v))
+    with open(join_path(OUTPUT_DIR, 'verb_adj_pair.txt'), 'w', encoding='utf-8') as w:
+        for adj, v in adj_verb:
+            w.write("%s %s\n" % (adj, v))
 
-
-def add_up_p():
-    dict = defaultdict(defaultdict)
-    with open(join_path(OUTPUT_DIR, 'temp.txt'), 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            ls = line.rstrip('\n').split(" ")
-            k = str(ls[0] + " " + ls[1])
-            if dict[k]:
-                dict[k] += float(ls[2])
-            else:
-                dict[k] = float(ls[2])
-    with open(join_path(OUTPUT_DIR, 'final.txt'), 'w', encoding='utf-8') as w:
-        for key, value in dict.items():
-            w.write("%s %s\n" % (key, value))
+    # {verb : {obj: prob(n|v)}}
+    d_vo = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_noun|verb.txt'), 0, 1, 2)
+    with open(join_path(OUTPUT_DIR, 'prob_verb|adj.txt'), 'w', encoding='utf-8') as f:
+        for i, (adj, verb) in enumerate(adj_verb):
+            prob = sum(
+                # P(V|O) * P(O|A)
+                # d_vo[verb][obj] * d_oa[obj][adj]
+                d_ov[obj][verb] * d_oa[obj][adj]
+                for obj in d_vo[verb]
+            )
+            if not (0 <= prob <= 1):
+                continue
+            f.write("%s %s %s\n" % (adj, verb, prob))
+            # print(i, adj, verb, prob)
 
 
 def pipe():
-    # extract and write (adj + noun) and (verb + noun) from given dump
-    extract_from_dump(STORY_DIRECTORY)
-    # calculate count and probability
-    # calculate_stats(NP_DIR)
-    # calculate_stats(VO_DIR)
-    # calculate_and_cache_individual_p()
-    # add_up_p()
+    # extract_from_directory(STORY_DIRECTORY)
+    # calculate_stats()
+    calculate_verb_given_adj()
 
 
 def main():
@@ -403,4 +406,6 @@ def main():
 
 
 if __name__ == '__main__':
+    # test_svo(nlp)
+    # test_np(nlp)
     main()
