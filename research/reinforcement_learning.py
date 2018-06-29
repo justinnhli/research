@@ -706,8 +706,8 @@ def run_episodes(env, agent, num_episodes):
         agent (Agent): The agent.
         num_episodes (int): The number of episodes to run.
 
-    Returns: 
-        List[float]: The returns of each episode. 
+    Returns:
+        List[float]: The returns of each episode.
     """
     returns = []
     for _ in range(num_episodes):
