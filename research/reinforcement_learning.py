@@ -698,7 +698,7 @@ class SimpleTMaze(Environment, RandomMixin):
         return '\n'.join(''.join(line) for line in lines)
 
 
-def run_interactive_episode(env, agent, num_episodes):
+def run_episodes(env, agent, num_episodes):
     """Print out a run of an Agent in an Environment.
 
     Arguments:
@@ -706,31 +706,24 @@ def run_interactive_episode(env, agent, num_episodes):
         agent (Agent): The agent.
         num_episodes (int): The number of episodes to run.
 
+    Returns: 
+        List[float]: The returns of each episode. 
     """
+    returns = []
     for _ in range(num_episodes):
         env.new_episode()
         episodic_return = 0
         reward = None
         step = 0
         obs = env.get_observation()
-        while obs is not None:
-            print('step {}'.format(step))
-            print(env.visualize())
-            actions = env.get_actions()
-            print('observation: {}'.format(obs))
-            print('actions: {}'.format(actions))
-            input()
+        actions = env.get_actions()
+        while not env.end_of_episode():
             action = agent.act(obs, actions, reward)
-            print('action: {}'.format(action))
             reward = env.react(action)
             obs = env.get_observation()
+            actions = env.get_actions()
             episodic_return += reward
-            print('reward: {}'.format(reward))
             step += 1
-            print()
-            print(10 * '-')
-            print()
-        print(env.visualize())
         agent.act(obs, env.get_actions(), reward)
-        print('return: {}'.format(episodic_return))
-        print(20 * '=')
+        returns.append(episodic_return)
+    return returns

@@ -14,6 +14,7 @@ from research.reinforcement_learning import GridWorld, SimpleTMaze
 from research.reinforcement_learning import gating_memory, fixed_long_term_memory
 from research.reinforcement_learning import TabularQLearningAgent
 from research.reinforcement_learning import epsilon_greedy
+from research.reinforcement_learning import run_episodes
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
@@ -232,16 +233,7 @@ def test_agent():
     )
     agent = epsilon_greedy(TabularQLearningAgent, 0.05)(0.1, 0.9, random_seed=8675309)
     assert agent.random_seed == 8675309
-    for _ in range(1000):
-        env.new_episode()
-        reward = None
-        while env.get_actions() != []:
-            observation = env.get_observation()
-            actions = env.get_actions()
-            reward = env.react(agent.act(observation, actions, reward))
-        observation = env.get_observation()
-        actions = env.get_actions()
-        agent.act(observation, actions, reward)
+    run_episodes(env, agent, 1000)
     for row in range(3):
         for col in range(3):
             best_action = agent.get_best_action(State(row=row, col=col))
