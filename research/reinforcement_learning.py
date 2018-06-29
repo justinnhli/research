@@ -257,14 +257,15 @@ class Agent:
 class TabularQLearningAgent(Agent, RandomClass):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, learning_rate, discount_rate):
+    def __init__(self, learning_rate, discount_rate, **kwargs):
         """Construct a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
@@ -609,7 +610,7 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
 class SimpleTMaze(Environment, RandomClass):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0):
+    def __init__(self, length, hint_pos, goal_x=0, **kwargs):
         """Construct the TMaze.
 
         Arguments:
@@ -617,9 +618,10 @@ class SimpleTMaze(Environment, RandomClass):
             hint_pos (int): The location of the hint.
             goal_x (int): The location of the goal. Must be -1 or 1. If left
                 to default of 0, goal_x is chosen at random.
+            **kwargs: Arbitrary keyword arguments.
         """
         assert 0 <= hint_pos < length
-        super().__init__()
+        super().__init__(**kwargs)
         self.length = length
         self.hint_pos = hint_pos
         self.x = 0
