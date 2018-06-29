@@ -257,16 +257,16 @@ class Agent:
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, alpha, gamma):
+    def __init__(self, learning_rate, discount_rate):
         """Construct a tabular Q-learning agent.
 
         Arguments:
-            alpha (float): The learning rate.
-            gamma (float): The discount rate.
+            learning_rate (float): The learning rate (alpha).
+            discount_rate (float): The discount rate (gamma).
         """
         self.value_function = defaultdict((lambda: defaultdict(float)))
-        self.learning_rate = alpha
-        self.discount_rate = gamma
+        self.learning_rate = learning_rate
+        self.discount_rate = discount_rate
         self.prev_observation = None
         self.prev_action = None
 
