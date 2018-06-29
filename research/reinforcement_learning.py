@@ -41,6 +41,14 @@ class Environment:
         """
         raise NotImplementedError()
 
+    def end_of_episode(self):
+        """Determine if the episode has ended.
+
+        Returns:
+            bool: True if the episode has ended.
+        """
+        return self.get_actions() == []
+
     def reset(self):
         """Reset the environment entirely.
 
