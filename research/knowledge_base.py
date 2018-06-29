@@ -153,7 +153,7 @@ class KnowledgeFile(KnowledgeSource):
     def query_sparql(self, sparql): # noqa: D102
         results = []
         for result in self.graph.query(sparql).bindings:
-            results.append({str(variable):str(uri) for variable, uri in result.items()})
+            results.append({str(variable): str(uri) for variable, uri in result.items()})
         return results
 
 
@@ -172,5 +172,5 @@ class SparqlEndpoint(KnowledgeSource):
         self.endpoint.setQuery(sparql)
         results = []
         for bindings in self.endpoint.query().bindings:
-            results.append({key:value.value for key, value in bindings.items()})
+            results.append({key: value.value for key, value in bindings.items()})
         return results

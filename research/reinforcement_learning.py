@@ -6,6 +6,7 @@ from copy import copy
 
 from .randommixin import RandomMixin
 
+
 class Environment:
     """A reinforcement learning environment."""
 
@@ -450,10 +451,7 @@ def augment_state(state, memories, prefix):
     for key in list(state.keys()):
         if key.startswith(prefix):
             del state[key]
-    memories = dict(
-        (prefix + '{}'.format(i), value)
-        for i, value in enumerate(memories)
-    )
+    memories = {(prefix + '{}'.format(i)): value for i, value in enumerate(memories)}
     return State(**memories, **state)
 
 
@@ -533,6 +531,7 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
                 return super().react(action)
 
     return GatingMemoryMetaEnvironment
+
 
 def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
     """Decorate an Environment to include a long-term memory of fixed size.
@@ -614,6 +613,7 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
                 return super().react(action)
 
     return LongTermMemoryMetaEnvironment
+
 
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""

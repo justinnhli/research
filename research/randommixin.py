@@ -2,6 +2,7 @@
 
 from random import Random, random
 
+
 class RandomMixin:
     """Encapsulation of a randomized object."""
 
