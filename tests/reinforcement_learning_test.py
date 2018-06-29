@@ -230,7 +230,8 @@ def test_agent():
         start=[0, 0],
         goal=[2, 2],
     )
-    agent = epsilon_greedy(TabularQLearningAgent, 0.05)(0.1, 0.9)
+    agent = epsilon_greedy(TabularQLearningAgent, 0.05)(0.1, 0.9, random_seed=8675309)
+    assert agent.random_seed == 8675309
     for _ in range(1000):
         env.new_episode()
         reward = None

@@ -3,8 +3,8 @@
 
 from collections import defaultdict
 from copy import copy
-from random import random, choice
 
+from .randommixin import RandomMixin
 
 class Environment:
     """A reinforcement learning environment."""
@@ -254,16 +254,18 @@ class Agent:
         raise NotImplementedError()
 
 
-class TabularQLearningAgent(Agent):
+class TabularQLearningAgent(Agent, RandomMixin):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, learning_rate, discount_rate):
+    def __init__(self, learning_rate, discount_rate, **kwargs):
         """Construct a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            **kwargs: Arbitrary keyword arguments.
         """
+        super().__init__(**kwargs)
         self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
@@ -284,7 +286,7 @@ class TabularQLearningAgent(Agent):
         if actions:
             best_action = self.get_best_action(observation)
             if best_action is None:
-                best_action = choice(actions)
+                best_action = self.rng.choice(actions)
             return self.force_act(observation, best_action, reward)
         else:
             self._observe_reward(observation, reward)
@@ -349,8 +351,8 @@ def epsilon_greedy(cls, epsilon):
             if not actions:
                 self._observe_reward(observation, reward)
                 return None
-            elif random() < self.epsilon:
-                return self.force_act(observation, choice(actions), reward)
+            elif self.rng.random() < self.epsilon:
+                return self.force_act(observation, self.rng.choice(actions), reward)
             else:
                 return self.act(observation, actions, reward)
 
@@ -605,10 +607,10 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
 
     return LongTermMemoryMetaEnvironment
 
-class SimpleTMaze(Environment):
+class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0):
+    def __init__(self, length, hint_pos, goal_x=0, **kwargs):
         """Construct the TMaze.
 
         Arguments:
@@ -616,8 +618,10 @@ class SimpleTMaze(Environment):
             hint_pos (int): The location of the hint.
             goal_x (int): The location of the goal. Must be -1 or 1. If left
                 to default of 0, goal_x is chosen at random.
+            **kwargs: Arbitrary keyword arguments.
         """
         assert 0 <= hint_pos < length
+        super().__init__(**kwargs)
         self.length = length
         self.hint_pos = hint_pos
         self.x = 0
@@ -651,7 +655,7 @@ class SimpleTMaze(Environment):
         self.x = 0
         self.y = 0
         if self.init_goal_x == 0:
-            self.goal_x = choice([-1, 1])
+            self.goal_x = self.rng.choice([-1, 1])
         else:
             self.goal_x = self.init_goal_x
 
