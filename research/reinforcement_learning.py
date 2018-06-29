@@ -334,6 +334,8 @@ def epsilon_greedy(cls, epsilon):
     Returns:
         class: A subclass with a gating memory.
     """
+    assert issubclass(cls, Agent)
+
     class EpsilonGreedyMetaAgent(cls):
         """A subclass to make an Agent epsilon greedy."""
 
