@@ -87,32 +87,6 @@ class URI:
             raise ValueError('No namespace found for URI: ' + self.uri)
 
 
-def create_sqlite_graph(path, create=True, identifier=None):
-    """Create a sqlite-backed graph at the given path.
-
-    Args:
-        path (str): Either the fully qualified URI, or the fragment that comes after the prefix
-        create (bool): If True, create the path if it doesn't exist. Defaults to True.
-        identifier (str): The identifier of the graph. Defaults to 'rdflib_sqlalchemy_graph'
-
-    Returns:
-        Graph: An RDF Graph that uses the specified sqlite-db at the path
-
-    Raises:
-        FileNotFoundError: If the path doesn't exist and create is False.
-    """
-    path = realpath(expanduser(path))
-    if identifier is None:
-        identifier = 'rdflib_sqlalchemy_graph'
-    identifier = URIRef(identifier)
-    store = plugin.get("SQLAlchemy", Store)(identifier=identifier)
-    graph = Graph(store, identifier=identifier)
-    if not create and not file_exists(path):
-        raise FileNotFoundError('cannot open non-existent file {}'.format(path))
-    graph.open(Literal('sqlite:///' + realpath(expanduser(path))))
-    return graph
-
-
 class KnowledgeSource:
     """Abstract class to represent a knowledge source."""
 
