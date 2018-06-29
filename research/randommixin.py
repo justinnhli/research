@@ -2,7 +2,7 @@
 
 from random import Random, random
 
-class RandomClass:
+class RandomMixin:
     """Encapsulation of a randomized object."""
 
     def __init__(self, random_seed=None):

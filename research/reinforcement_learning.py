@@ -4,7 +4,7 @@
 from collections import defaultdict
 from copy import copy
 
-from .randomclass import RandomClass
+from .randommixin import RandomMixin
 
 class Environment:
     """A reinforcement learning environment."""
@@ -254,7 +254,7 @@ class Agent:
         raise NotImplementedError()
 
 
-class TabularQLearningAgent(Agent, RandomClass):
+class TabularQLearningAgent(Agent, RandomMixin):
     """A tabular Q-learning reinforcement learning agent."""
 
     def __init__(self, learning_rate, discount_rate, **kwargs):
@@ -607,7 +607,7 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
 
     return LongTermMemoryMetaEnvironment
 
-class SimpleTMaze(Environment, RandomClass):
+class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
     def __init__(self, length, hint_pos, goal_x=0, **kwargs):
