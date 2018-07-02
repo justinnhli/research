@@ -302,7 +302,7 @@ class TabularQLearningAgent(Agent, RandomMixin):
             return None
 
     def force_act(self, observation, action, reward=None): # noqa: D102
-        if self.prev_action is not None and reward is not None:
+        if self.prev_action is not None:
             self._observe_reward(observation, reward)
         self.prev_observation = observation
         if observation is None:
@@ -317,13 +317,15 @@ class TabularQLearningAgent(Agent, RandomMixin):
             for action, value in sorted(values.items(), key=(lambda kv: str(kv[0]))):
                 print('    {}: {:.3f}'.format(action, value))
 
-    def _observe_reward(self, observation, reward):
+    def _observe_reward(self, observation, reward=None):
         """Update the value function with the reward.
 
         Arguments:
             observation (State): The current observation.
             reward (float): The reward from the previous action.
         """
+        if reward is None:
+            return
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
