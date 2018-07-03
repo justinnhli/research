@@ -191,14 +191,20 @@ class Agent(RandomMixin):
         Arguments:
             observation (State): The observation
             action (Action): The action
+
+        Returns:
+            float: The value for the action at the observation.
         """
         raise NotImplementedError()
 
-    def get_valued_actions(self, observation):
+    def get_stored_actions(self, observation):
         """Get all actions with stored values at an observation.
 
         Arguments:
             observation (State): The observation.
+
+        Returns:
+            Sequence[Action]: The stored actions at the observation.
         """
         raise NotImplementedError()
 
@@ -211,7 +217,7 @@ class Agent(RandomMixin):
         Returns:
             Action: The best action for the given observation.
         """
-        actions = self.get_valued_actions(observation)
+        actions = self.get_stored_actions(observation)
         if not actions:
             return None
         else:
@@ -286,7 +292,7 @@ class TabularQLearningAgent(Agent):
             return 0
         return self.value_function[observation][action]
 
-    def get_valued_actions(self, observation): # noqa: D102
+    def get_stored_actions(self, observation): # noqa: D102
         if observation not in self.value_function:
             return []
         return self.value_function[observation].keys()
