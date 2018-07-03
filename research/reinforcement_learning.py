@@ -182,7 +182,7 @@ class State(AttrDict):
     pass
 
 
-class Agent:
+class Agent(RandomMixin):
     """A reinforcement learning agent."""
 
     def get_value(self, observation, action):
@@ -263,7 +263,7 @@ class Agent:
         raise NotImplementedError()
 
 
-class TabularQLearningAgent(Agent, RandomMixin):
+class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
     def __init__(self, learning_rate, discount_rate, **kwargs):
