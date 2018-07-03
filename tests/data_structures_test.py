@@ -13,8 +13,9 @@ from research.data_structures import UnionFind
 def test_unionfind():
     """Test UnionFind."""
     assert not UnionFind()
-    union_find = UnionFind([0, 1, 2, 3])
+    union_find = UnionFind(range(4))
     assert all(i in union_find for i in range(len(union_find)))
+    assert set(union_find) == set(range(4))
     for i in range(4, 8):
         union_find.add(i)
     assert all(union_find[i] == i for i in range(len(union_find)))
