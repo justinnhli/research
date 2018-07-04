@@ -164,16 +164,16 @@ class TabularQLearningAgent(Agent):
         self.value_function[self.prev_observation][self.prev_action] = new_value
 
     def print_value_function(self): # noqa: D102
-        for state, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
-            print(state)
+        for observation, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
+            print(observation)
             for action, value in sorted(values.items(), key=(lambda kv: str(kv[1]))):
                 print('    {}: {:.3f}'.format(action, value))
 
-    def print_policy(self):
-        for state, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
-            print(state)
-            best_action = self.get_best_stored_action(state)
-            print('    {}: {:.3f}'.format(action, self.get_value(state, action)))
+    def print_policy(self): # noqa: D102
+        for observation in sorted(self.value_function.keys()):
+            print(observation)
+            best_action = self.get_best_stored_action(observation)
+            print('    {}: {:.3f}'.format(best_action, self.get_value(observation, best_action)))
 
 
 def epsilon_greedy(cls):
