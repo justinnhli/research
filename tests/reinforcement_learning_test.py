@@ -251,5 +251,5 @@ def test_agent():
     run_episodes(env, agent, 1000)
     for row in range(3):
         for col in range(3):
-            best_action = agent.get_best_action(State(row=row, col=col))
+            best_action = agent.get_best_stored_action(State(row=row, col=col))
             assert best_action is None or best_action.name in ['down', 'right']

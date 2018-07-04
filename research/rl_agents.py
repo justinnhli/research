@@ -57,7 +57,7 @@ class Agent(RandomMixin):
         """
         raise NotImplementedError()
 
-    def get_best_action(self, observation):
+    def get_best_stored_action(self, observation):
         """Get the action with the highest value at an observation.
 
         Arguments:
@@ -72,7 +72,7 @@ class Agent(RandomMixin):
         else:
             return max(actions, key=(lambda action: self.get_value(observation, action)))
 
-    def get_best_value(self, observation):
+    def get_best_stored_value(self, observation):
         """Get the highest value at an observation.
 
         Arguments:
@@ -81,7 +81,7 @@ class Agent(RandomMixin):
         Returns:
             float: The value of the best action for the given observation.
         """
-        return self.get_value(observation, self.get_best_action(observation))
+        return self.get_value(observation, self.get_best_stored_action(observation))
 
     def act(self, observation, actions):
         """Update the value function and decide on the next action.
@@ -93,7 +93,13 @@ class Agent(RandomMixin):
         Returns:
             Action: The action the agent takes.
         """
-        best_action = self.get_best_action(observation)
+        best_action = None
+        best_value = None
+        for action in actions:
+            value = self.get_value(observation, action)
+            if value is not None and (best_value is None or value > best_value):
+                best_action = action
+                best_value = value
         if best_action is None:
             best_action = self.rng.choice(actions)
         return self.force_act(observation, best_action)
@@ -149,7 +155,7 @@ class TabularQLearningAgent(Agent):
 
     def observe_reward(self, observation, reward): # noqa: D102
         prev_value = self.get_value(self.prev_observation, self.prev_action)
-        next_value = reward + self.discount_rate * self.get_best_value(observation)
+        next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
         self.value_function[self.prev_observation][self.prev_action] = new_value
 
@@ -192,13 +198,10 @@ def epsilon_greedy(cls):
             super().__init__(*args, **kwargs)
             self.exploration_rate = exploration_rate
 
-        def act(self, observation, actions, reward=None): # noqa: D102
-            if not actions:
-                self.observe_reward(observation, reward)
-                return None
-            elif self.rng.random() < self.exploration_rate:
-                return self.force_act(observation, self.rng.choice(actions))
+        def act(self, observation, actions): # noqa: D102
+            if self.rng.random() < self.exploration_rate:
+                return super().force_act(observation, self.rng.choice(actions))
             else:
-                return self.act(observation, actions, reward)
+                return super().act(observation, actions)
 
     return EpsilonGreedyMetaAgent
