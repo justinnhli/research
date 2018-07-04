@@ -264,7 +264,10 @@ class Agent(RandomMixin):
         Returns:
             Action: The action the agent takes.
         """
-        raise NotImplementedError()
+        best_action = self.get_best_action(observation)
+        if best_action is None:
+            best_action = self.rng.choice(actions)
+        return self.force_act(observation, best_action)
 
     def force_act(self, observation, action):
         """Update the value function and return a specific action.
@@ -279,7 +282,12 @@ class Agent(RandomMixin):
         Returns:
             Action: The action the agent takes.
         """
-        raise NotImplementedError()
+        self.prev_observation = observation
+        if observation is None:
+            self.prev_action = None
+        else:
+            self.prev_action = action
+        return action
 
     def print_value_function(self):
         """Print the value function."""
@@ -317,26 +325,6 @@ class TabularQLearningAgent(Agent):
         next_value = reward + self.discount_rate * self.get_best_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
         self.value_function[self.prev_observation][self.prev_action] = new_value
-
-    def act(self, observation, actions, reward=None): # noqa: D102
-        if actions:
-            best_action = self.get_best_action(observation)
-            if best_action is None:
-                best_action = self.rng.choice(actions)
-            return self.force_act(observation, best_action)
-        else:
-            self.observe_reward(observation, reward)
-            return None
-
-    def force_act(self, observation, action): # noqa: D102
-        if self.prev_action is not None:
-            self.observe_reward(observation, reward)
-        self.prev_observation = observation
-        if observation is None:
-            self.prev_action = None
-        else:
-            self.prev_action = action
-        return action
 
     def print_value_function(self): # noqa: D102
         for state, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
