@@ -125,6 +125,10 @@ class Agent(RandomMixin):
         """Print the value function."""
         raise NotImplementedError()
 
+    def print_policy(self):
+        """Print the policy."""
+        raise NotImplementedError()
+
 
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
@@ -164,6 +168,12 @@ class TabularQLearningAgent(Agent):
             print(state)
             for action, value in sorted(values.items(), key=(lambda kv: str(kv[1]))):
                 print('    {}: {:.3f}'.format(action, value))
+
+    def print_policy(self):
+        for state, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
+            print(state)
+            best_action = self.get_best_stored_action(state)
+            print('    {}: {:.3f}'.format(action, self.get_value(state, action)))
 
 
 def epsilon_greedy(cls):
