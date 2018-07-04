@@ -185,6 +185,20 @@ class State(AttrDict):
 class Agent(RandomMixin):
     """A reinforcement learning agent."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prev_observation = None
+        self.prev_action = None
+
+    def observe_reward(self, observation, reward=None):
+        """Update the value function with the reward.
+
+        Arguments:
+            observation (State): The current observation.
+            reward (float): The reward from the previous action.
+        """
+        raise NotImplementedError()
+
     def get_value(self, observation, action):
         """Get the Q value for an action at an observation.
 
@@ -234,22 +248,19 @@ class Agent(RandomMixin):
         """
         return self.get_value(observation, self.get_best_action(observation))
 
-    def act(self, observation, actions, reward=None):
+    def act(self, observation, actions):
         """Update the value function and decide on the next action.
 
         Arguments:
             observation (State): The observation of the environment.
             actions (list[Action]): List of available actions.
-            reward (float): The reward from the previous action. If
-                not provided, the observation will be treated as the first in a
-                new episode.
 
         Returns:
             Action: The action the agent takes.
         """
         raise NotImplementedError()
 
-    def force_act(self, observation, action, reward=None):
+    def force_act(self, observation, action):
         """Update the value function and return a specific action.
 
         Arguments:
@@ -272,7 +283,7 @@ class Agent(RandomMixin):
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, learning_rate, discount_rate, **kwargs):
+    def __init__(self, learning_rate, discount_rate, *args, **kwargs):
         """Construct a tabular Q-learning agent.
 
         Arguments:
@@ -280,12 +291,10 @@ class TabularQLearningAgent(Agent):
             discount_rate (float): The discount rate (gamma).
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
-        self.prev_observation = None
-        self.prev_action = None
 
     def get_value(self, observation, action): # noqa: D102
         if observation not in self.value_function:
@@ -297,19 +306,25 @@ class TabularQLearningAgent(Agent):
             return []
         return self.value_function[observation].keys()
 
+    def observe_reward(self, observation, reward): # noqa: D102
+        prev_value = self.get_value(self.prev_observation, self.prev_action)
+        next_value = reward + self.discount_rate * self.get_best_value(observation)
+        new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
+        self.value_function[self.prev_observation][self.prev_action] = new_value
+
     def act(self, observation, actions, reward=None): # noqa: D102
         if actions:
             best_action = self.get_best_action(observation)
             if best_action is None:
                 best_action = self.rng.choice(actions)
-            return self.force_act(observation, best_action, reward)
+            return self.force_act(observation, best_action)
         else:
-            self._observe_reward(observation, reward)
+            self.observe_reward(observation, reward)
             return None
 
-    def force_act(self, observation, action, reward=None): # noqa: D102
+    def force_act(self, observation, action): # noqa: D102
         if self.prev_action is not None:
-            self._observe_reward(observation, reward)
+            self.observe_reward(observation, reward)
         self.prev_observation = observation
         if observation is None:
             self.prev_action = None
@@ -322,20 +337,6 @@ class TabularQLearningAgent(Agent):
             print(state)
             for action, value in sorted(values.items(), key=(lambda kv: str(kv[1]))):
                 print('    {}: {:.3f}'.format(action, value))
-
-    def _observe_reward(self, observation, reward=None):
-        """Update the value function with the reward.
-
-        Arguments:
-            observation (State): The current observation.
-            reward (float): The reward from the previous action.
-        """
-        if reward is None:
-            return
-        prev_value = self.get_value(self.prev_observation, self.prev_action)
-        next_value = reward + self.discount_rate * self.get_best_value(observation)
-        new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
-        self.value_function[self.prev_observation][self.prev_action] = new_value
 
 
 def epsilon_greedy(cls, epsilon):
@@ -366,10 +367,10 @@ def epsilon_greedy(cls, epsilon):
 
         def act(self, observation, actions, reward=None): # noqa: D102
             if not actions:
-                self._observe_reward(observation, reward)
+                self.observe_reward(observation, reward)
                 return None
             elif self.rng.random() < self.epsilon:
-                return self.force_act(observation, self.rng.choice(actions), reward)
+                return self.force_act(observation, self.rng.choice(actions))
             else:
                 return self.act(observation, actions, reward)
 
@@ -726,12 +727,12 @@ def run_episodes(env, agent, num_episodes):
         obs = env.get_observation()
         actions = env.get_actions()
         while not env.end_of_episode():
-            action = agent.act(obs, actions, reward)
+            action = agent.act(obs, actions)
             reward = env.react(action)
             obs = env.get_observation()
+            agent.observe_reward(obs, reward)
             actions = env.get_actions()
             episodic_return += reward
             step += 1
-        agent.act(obs, env.get_actions(), reward)
         returns.append(episodic_return)
     return returns
