@@ -9,12 +9,12 @@ DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable=wrong-import-position
-from research.reinforcement_learning import State, Action
-from research.reinforcement_learning import GridWorld, SimpleTMaze
-from research.reinforcement_learning import gating_memory, fixed_long_term_memory
-from research.reinforcement_learning import TabularQLearningAgent
-from research.reinforcement_learning import epsilon_greedy
-from research.reinforcement_learning import run_episodes
+from research.rl_core import run_episodes
+from research.rl_environments import State, Action
+from research.rl_environments import GridWorld, SimpleTMaze
+from research.rl_environments import gating_memory, fixed_long_term_memory
+from research.rl_agents import TabularQLearningAgent
+from research.rl_agents import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
