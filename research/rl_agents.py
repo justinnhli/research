@@ -220,6 +220,49 @@ class LinearQLearner(Agent):
             self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) / num_features
 
 
+def eligibility_trace(cls):
+    """Decorate an Agent to use eligibility traces.
+
+    This decorator function takes a class (and a value of trace decay, lambda)
+    and, on the fly, creates a subclass which updates the value function with
+    eligibility traces
+
+    Arguments:
+        cls (class): The Agent superclass.
+
+    Returns:
+        class: An Agent subclass that uses eligibility traces.
+    """
+    assert issubclass(cls, Agent)
+
+    class EligibilityTraceMetaAgent(cls):
+        """An Agent subclass that uses eligibility traces."""
+
+        # pylint: disable = missing-docstring
+
+        def __init__(self, trace_decay, history_length=10, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+            """Initialize an EligibilityTraceMetaAgent.
+
+            Arguments:
+                trace_decay (float): The discount for the trace. Often denoted lambda.
+                history_length (int): Number of historical observations to keep.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
+            super().__init__(*args, **kwargs)
+            self.trace_decay = trace_decay
+            self.observation_history = []
+            self.history_length = history_length
+
+        def observe_reward(self, observation, reward): # noqa: D102
+            self.observation_history.append(observation)
+            self.observation_history = self.observation_history[-self.history_length:]
+            for i, past_observation in enumerate(self.observation_history):
+                self.observe_reward(past_observation, reward * self.trace_decay**i)
+
+    return EligibilityTraceMetaAgent
+
+
 def epsilon_greedy(cls):
     """Decorate an Agent to be epsilon-greedy.
 
