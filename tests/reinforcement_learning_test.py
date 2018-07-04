@@ -27,7 +27,7 @@ def test_gridworld():
         start=[0, 0],
         goal=[2, 0],
     )
-    env.new_episode()
+    env.start_new_episode()
     expected_steps = [
         RLTestStep(State(row=0, col=0), [Action('down'), Action('right')], Action('right'), -1),
         RLTestStep(State(row=0, col=1), [Action('down'), Action('left')], Action('right'), -1),
@@ -50,7 +50,7 @@ def test_gridworld():
 def test_simpletmaze():
     """Test the SimpleTMaze environment."""
     env = SimpleTMaze(2, 1, -1)
-    env.new_episode()
+    env.start_new_episode()
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=-1)
     expected_steps = [
         RLTestStep(
@@ -85,7 +85,7 @@ def test_simpletmaze_gatingmemory():
     """Test the gating memory meta-environment."""
     GatedSimpleTMaze = gating_memory(SimpleTMaze, num_memory_slots=1, reward=-0.05) # pylint: disable=invalid-name
     env = GatedSimpleTMaze(2, 1)
-    env.new_episode()
+    env.start_new_episode()
     goal = env.get_state().goal_x
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=goal, memory_0=None)
     expected_steps = [
@@ -148,7 +148,7 @@ def test_simpletmaze_fixedltm():
     """Test the fixed LTM meta-environment."""
     LTMSimpleTMaze = fixed_long_term_memory(SimpleTMaze, num_wm_slots=1, num_ltm_slots=1, reward=-0.05) # pylint: disable=invalid-name
     env = LTMSimpleTMaze(2, 1, 1)
-    env.new_episode()
+    env.start_new_episode()
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=1, wm_0=None, ltm_0=None)
     expected_steps = [
         RLTestStep(
@@ -231,7 +231,12 @@ def test_agent():
         start=[0, 0],
         goal=[2, 2],
     )
-    agent = epsilon_greedy(TabularQLearningAgent, 0.05)(0.1, 0.9, random_seed=8675309)
+    agent = epsilon_greedy(TabularQLearningAgent)(
+        exploration_rate=0.05,
+        learning_rate=0.1,
+        discount_rate=0.9,
+        random_seed=8675309,
+    )
     assert agent.random_seed == 8675309
     run_episodes(env, agent, 1000)
     for row in range(3):

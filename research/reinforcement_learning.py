@@ -54,12 +54,12 @@ class Environment:
         """Reset the environment entirely.
 
         The result of calling this method should have the same effect as
-        creating a new environment from scratch. Use new_episode() to reset the
+        creating a new environment from scratch. Use start_new_episode() to reset the
         environment for a new episode.
         """
         raise NotImplementedError()
 
-    def new_episode(self):
+    def start_new_episode(self):
         """Reset the environment for a new episode.
 
         See note on reset() for the difference between the methods.
@@ -185,6 +185,32 @@ class State(AttrDict):
 class Agent(RandomMixin):
     """A reinforcement learning agent."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the Agent.
+
+        Arguments:
+            *args: Arbitrary positional arguments.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self.prev_observation = None
+        self.prev_action = None
+        self.start_new_episode()
+
+    def start_new_episode(self):
+        """Prepare the agent for a new episode."""
+        self.prev_observation = None
+        self.prev_action = None
+
+    def observe_reward(self, observation, reward):
+        """Update the value function with the reward.
+
+        Arguments:
+            observation (State): The current observation.
+            reward (float): The reward from the previous action.
+        """
+        raise NotImplementedError()
+
     def get_value(self, observation, action):
         """Get the Q value for an action at an observation.
 
@@ -234,35 +260,37 @@ class Agent(RandomMixin):
         """
         return self.get_value(observation, self.get_best_action(observation))
 
-    def act(self, observation, actions, reward=None):
+    def act(self, observation, actions):
         """Update the value function and decide on the next action.
 
         Arguments:
             observation (State): The observation of the environment.
             actions (list[Action]): List of available actions.
-            reward (float): The reward from the previous action. If
-                not provided, the observation will be treated as the first in a
-                new episode.
 
         Returns:
             Action: The action the agent takes.
         """
-        raise NotImplementedError()
+        best_action = self.get_best_action(observation)
+        if best_action is None:
+            best_action = self.rng.choice(actions)
+        return self.force_act(observation, best_action)
 
-    def force_act(self, observation, action, reward=None):
+    def force_act(self, observation, action):
         """Update the value function and return a specific action.
 
         Arguments:
             observation (State): The observation of the environment.
             action (list[Action]): The action to return.
-            reward (float): The reward from the previous action. If
-                not provided, the observation will be treated as the first in a
-                new episode.
 
         Returns:
             Action: The action the agent takes.
         """
-        raise NotImplementedError()
+        self.prev_observation = observation
+        if observation is None:
+            self.prev_action = None
+        else:
+            self.prev_action = action
+        return action
 
     def print_value_function(self):
         """Print the value function."""
@@ -272,20 +300,19 @@ class Agent(RandomMixin):
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, learning_rate, discount_rate, **kwargs):
+    def __init__(self, learning_rate, discount_rate, *args, **kwargs):
         """Construct a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
-        self.prev_observation = None
-        self.prev_action = None
 
     def get_value(self, observation, action): # noqa: D102
         if observation not in self.value_function:
@@ -297,25 +324,11 @@ class TabularQLearningAgent(Agent):
             return []
         return self.value_function[observation].keys()
 
-    def act(self, observation, actions, reward=None): # noqa: D102
-        if actions:
-            best_action = self.get_best_action(observation)
-            if best_action is None:
-                best_action = self.rng.choice(actions)
-            return self.force_act(observation, best_action, reward)
-        else:
-            self._observe_reward(observation, reward)
-            return None
-
-    def force_act(self, observation, action, reward=None): # noqa: D102
-        if self.prev_action is not None:
-            self._observe_reward(observation, reward)
-        self.prev_observation = observation
-        if observation is None:
-            self.prev_action = None
-        else:
-            self.prev_action = action
-        return action
+    def observe_reward(self, observation, reward): # noqa: D102
+        prev_value = self.get_value(self.prev_observation, self.prev_action)
+        next_value = reward + self.discount_rate * self.get_best_value(observation)
+        new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
+        self.value_function[self.prev_observation][self.prev_action] = new_value
 
     def print_value_function(self): # noqa: D102
         for state, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
@@ -323,22 +336,8 @@ class TabularQLearningAgent(Agent):
             for action, value in sorted(values.items(), key=(lambda kv: str(kv[1]))):
                 print('    {}: {:.3f}'.format(action, value))
 
-    def _observe_reward(self, observation, reward=None):
-        """Update the value function with the reward.
 
-        Arguments:
-            observation (State): The current observation.
-            reward (float): The reward from the previous action.
-        """
-        if reward is None:
-            return
-        prev_value = self.get_value(self.prev_observation, self.prev_action)
-        next_value = reward + self.discount_rate * self.get_best_value(observation)
-        new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
-        self.value_function[self.prev_observation][self.prev_action] = new_value
-
-
-def epsilon_greedy(cls, epsilon):
+def epsilon_greedy(cls):
     """Decorate an Agent to be epsilon-greedy.
 
     This decorator function takes a class (and a value of epsilon) and, on the
@@ -348,10 +347,9 @@ def epsilon_greedy(cls, epsilon):
 
     Arguments:
         cls (class): The Agent superclass.
-        epsilon (float): The probability of random action.
 
     Returns:
-        class: A subclass with a gating memory.
+        class: An Agent subclass that behaves epsilon greedily.
     """
     assert issubclass(cls, Agent)
 
@@ -360,16 +358,23 @@ def epsilon_greedy(cls, epsilon):
 
         # pylint: disable = missing-docstring
 
-        def __init__(self, *args, **kwargs): # noqa: D102
+        def __init__(self, exploration_rate, *args, **kwargs): # noqa: D102
+            """Initialize the epsilon-greedy agent.
+
+            Arguments:
+                exploration_rate (float): The probability of random action.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
             super().__init__(*args, **kwargs)
-            self.epsilon = epsilon
+            self.exploration_rate = exploration_rate
 
         def act(self, observation, actions, reward=None): # noqa: D102
             if not actions:
-                self._observe_reward(observation, reward)
+                self.observe_reward(observation, reward)
                 return None
-            elif self.rng.random() < self.epsilon:
-                return self.force_act(observation, self.rng.choice(actions), reward)
+            elif self.rng.random() < self.exploration_rate:
+                return self.force_act(observation, self.rng.choice(actions))
             else:
                 return self.act(observation, actions, reward)
 
@@ -416,9 +421,9 @@ class GridWorld(Environment):
         return actions
 
     def reset(self): # noqa: D102
-        self.new_episode()
+        self.start_new_episode()
 
-    def new_episode(self): # noqa: D102
+    def start_new_episode(self): # noqa: D102
         self.row = self.start[0]
         self.col = self.start[1]
 
@@ -527,8 +532,8 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             super().reset()
             self.memories = len(self.memories) * [None]
 
-        def new_episode(self):
-            super().new_episode()
+        def start_new_episode(self):
+            super().start_new_episode()
             self.memories = len(self.memories) * [None]
 
         def react(self, action):
@@ -605,8 +610,8 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
-        def new_episode(self):
-            super().new_episode()
+        def start_new_episode(self):
+            super().start_new_episode()
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
@@ -665,9 +670,9 @@ class SimpleTMaze(Environment, RandomMixin):
         return actions
 
     def reset(self): # noqa: D102
-        self.new_episode()
+        self.start_new_episode()
 
-    def new_episode(self): # noqa: D102
+    def start_new_episode(self): # noqa: D102
         self.x = 0
         self.y = 0
         if self.init_goal_x == 0:
@@ -719,19 +724,20 @@ def run_episodes(env, agent, num_episodes):
     """
     returns = []
     for _ in range(num_episodes):
-        env.new_episode()
+        env.start_new_episode()
+        agent.start_new_episode()
         episodic_return = 0
         reward = None
         step = 0
         obs = env.get_observation()
         actions = env.get_actions()
         while not env.end_of_episode():
-            action = agent.act(obs, actions, reward)
+            action = agent.act(obs, actions)
             reward = env.react(action)
             obs = env.get_observation()
+            agent.observe_reward(obs, reward)
             actions = env.get_actions()
             episodic_return += reward
             step += 1
-        agent.act(obs, env.get_actions(), reward)
         returns.append(episodic_return)
     return returns
