@@ -186,6 +186,12 @@ class Agent(RandomMixin):
     """A reinforcement learning agent."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize the Agent.
+
+        Arguments:
+            *args: Arbitrary positional arguments.
+            **kwargs: Arbitrary keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.prev_observation = None
         self.prev_action = None
@@ -196,7 +202,7 @@ class Agent(RandomMixin):
         self.prev_observation = None
         self.prev_action = None
 
-    def observe_reward(self, observation, reward=None):
+    def observe_reward(self, observation, reward):
         """Update the value function with the reward.
 
         Arguments:
@@ -275,9 +281,6 @@ class Agent(RandomMixin):
         Arguments:
             observation (State): The observation of the environment.
             action (list[Action]): The action to return.
-            reward (float): The reward from the previous action. If
-                not provided, the observation will be treated as the first in a
-                new episode.
 
         Returns:
             Action: The action the agent takes.
@@ -303,6 +306,7 @@ class TabularQLearningAgent(Agent):
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
