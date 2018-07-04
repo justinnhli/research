@@ -110,7 +110,7 @@ class AttrDict:
         """Construct an AttrDict object.
 
         Arguments:
-            **kwargs: Arbitrary key-value pairs
+            **kwargs: Arbitrary keyword arguments.
         """
         self._attributes_ = kwargs
 
@@ -183,15 +183,18 @@ class State(AttrDict):
 class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
 
-    def __init__(self, width, height, start, goal):
-        """Construct the GridWorld.
+    def __init__(self, width, height, start, goal, *args, **kwargs):
+        """Construct a GridWorld.
 
         Arguments:
             width (int): The width of the grid.
             height (int): The height of the grid.
             start (list[int]): The starting location. Origin is top left.
             goal (list[int]): The goal location. Origin is top left.
+            *args: Arbitrary positional arguments.
+            **kwargs: Arbitrary keyword arguments.
         """
+        super().__init__(*args, **kwargs)
         self.width = width
         self.height = height
         self.start = list(start)
@@ -267,7 +270,7 @@ def augment_state(state, memories, prefix):
     return State(**memories, **state)
 
 
-def gating_memory(cls, num_memory_slots=1, reward=0):
+def gating_memory(cls):
     """Decorate an Environment to include a gating memory.
 
     This decorator function takes a class (and some parameters) and, on the
@@ -281,8 +284,6 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 
     Arguments:
         cls (class): The Environment superclass.
-        num_memory_slots (int): The amount of memory. Defaults to 1.
-        reward (float): The reward for an internal action. Defaults to 0.
 
     Returns:
         class: A subclass with a gating memory.
@@ -296,7 +297,15 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
 
         ATTR_PREFIX = 'memory_'
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+            """Initialize a GatingMemoryMetaEnvironment.
+
+            Arguments:
+                num_memory_slots (int): The amount of memory. Defaults to 1.
+                reward (float): The reward for an internal action. Defaults to 0.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
             super().__init__(*args, **kwargs)
             self.reward = reward
             self.memories = num_memory_slots * [None]
@@ -345,14 +354,11 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
     return GatingMemoryMetaEnvironment
 
 
-def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
+def fixed_long_term_memory(cls):
     """Decorate an Environment to include a long-term memory of fixed size.
 
     Arguments:
         cls (class): The Environment superclass.
-        num_wm_slots (int): The amount of working memory. Defaults to 1.
-        num_ltm_slots (int): The amount of long-term memory. Defaults to 1.
-        reward (float): The reward for an internal action. Defaults to 0.
 
     Returns:
         class: A subclass with a fixed-sized long-term memory.
@@ -367,7 +373,16 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
         WM_PREFIX = 'wm_' # pylint: disable=invalid-name
         LTM_PREFIX = 'ltm_' # pylint: disable=invalid-name
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+            """Initialize a LongTermMemoryMetaEnvironment.
+
+            Arguments:
+                num_wm_slots (int): The amount of working memory. Defaults to 1.
+                num_ltm_slots (int): The amount of long-term memory. Defaults to 1.
+                reward (float): The reward for an internal action. Defaults to 0.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
             super().__init__(*args, **kwargs)
             self.reward = reward
             self.wm = num_wm_slots * [None] # pylint: disable=invalid-name
@@ -430,7 +445,7 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0, **kwargs):
+    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
         """Construct the TMaze.
 
         Arguments:
@@ -438,10 +453,11 @@ class SimpleTMaze(Environment, RandomMixin):
             hint_pos (int): The location of the hint.
             goal_x (int): The location of the goal. Must be -1 or 1. If left
                 to default of 0, goal_x is chosen at random.
+            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
         assert 0 <= hint_pos < length
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.length = length
         self.hint_pos = hint_pos
         self.x = 0

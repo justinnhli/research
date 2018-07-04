@@ -83,8 +83,12 @@ def test_simpletmaze():
 
 def test_simpletmaze_gatingmemory():
     """Test the gating memory meta-environment."""
-    GatedSimpleTMaze = gating_memory(SimpleTMaze, num_memory_slots=1, reward=-0.05) # pylint: disable=invalid-name
-    env = GatedSimpleTMaze(2, 1)
+    env = gating_memory(SimpleTMaze)(
+        num_memory_slots=1,
+        reward=-0.05,
+        length=2,
+        hint_pos=1,
+    )
     env.start_new_episode()
     goal = env.get_state().goal_x
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=goal, memory_0=None)
@@ -146,8 +150,14 @@ def test_simpletmaze_gatingmemory():
 
 def test_simpletmaze_fixedltm():
     """Test the fixed LTM meta-environment."""
-    LTMSimpleTMaze = fixed_long_term_memory(SimpleTMaze, num_wm_slots=1, num_ltm_slots=1, reward=-0.05) # pylint: disable=invalid-name
-    env = LTMSimpleTMaze(2, 1, 1)
+    env = fixed_long_term_memory(SimpleTMaze)(
+        num_wm_slots=1,
+        num_ltm_slots=1,
+        reward=-0.05,
+        length=2,
+        hint_pos=1,
+        goal_x=1,
+    )
     env.start_new_episode()
     assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=1, wm_0=None, ltm_0=None)
     expected_steps = [
