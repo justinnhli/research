@@ -345,7 +345,7 @@ class TabularQLearningAgent(Agent):
                 print('    {}: {:.3f}'.format(action, value))
 
 
-def epsilon_greedy(cls, epsilon):
+def epsilon_greedy(cls):
     """Decorate an Agent to be epsilon-greedy.
 
     This decorator function takes a class (and a value of epsilon) and, on the
@@ -355,10 +355,9 @@ def epsilon_greedy(cls, epsilon):
 
     Arguments:
         cls (class): The Agent superclass.
-        epsilon (float): The probability of random action.
 
     Returns:
-        class: A subclass with a gating memory.
+        class: An Agent subclass that behaves epsilon greedily.
     """
     assert issubclass(cls, Agent)
 
@@ -367,15 +366,22 @@ def epsilon_greedy(cls, epsilon):
 
         # pylint: disable = missing-docstring
 
-        def __init__(self, *args, **kwargs): # noqa: D102
+        def __init__(self, exploration_rate, *args, **kwargs): # noqa: D102
+            """Initialize the epsilon-greedy agent.
+
+            Arguments:
+                exploration_rate (float): The probability of random action.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
             super().__init__(*args, **kwargs)
-            self.epsilon = epsilon
+            self.exploration_rate = exploration_rate
 
         def act(self, observation, actions, reward=None): # noqa: D102
             if not actions:
                 self.observe_reward(observation, reward)
                 return None
-            elif self.rng.random() < self.epsilon:
+            elif self.rng.random() < self.exploration_rate:
                 return self.force_act(observation, self.rng.choice(actions))
             else:
                 return self.act(observation, actions, reward)
