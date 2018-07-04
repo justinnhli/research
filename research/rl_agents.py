@@ -93,7 +93,13 @@ class Agent(RandomMixin):
         Returns:
             Action: The action the agent takes.
         """
-        best_action = self.get_best_action(observation)
+        best_action = None
+        best_value = None
+        for action in actions:
+            value = self.get_value(observation, action)
+            if value is not None and (best_value is None or value > best_value):
+                best_action = action
+                best_value = value
         if best_action is None:
             best_action = self.rng.choice(actions)
         return self.force_act(observation, best_action)
