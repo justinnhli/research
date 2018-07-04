@@ -54,12 +54,12 @@ class Environment:
         """Reset the environment entirely.
 
         The result of calling this method should have the same effect as
-        creating a new environment from scratch. Use new_episode() to reset the
+        creating a new environment from scratch. Use start_new_episode() to reset the
         environment for a new episode.
         """
         raise NotImplementedError()
 
-    def new_episode(self):
+    def start_new_episode(self):
         """Reset the environment for a new episode.
 
         See note on reset() for the difference between the methods.
@@ -187,6 +187,12 @@ class Agent(RandomMixin):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.prev_observation = None
+        self.prev_action = None
+        self.start_new_episode()
+
+    def start_new_episode(self):
+        """Prepare the agent for a new episode."""
         self.prev_observation = None
         self.prev_action = None
 
@@ -417,9 +423,9 @@ class GridWorld(Environment):
         return actions
 
     def reset(self): # noqa: D102
-        self.new_episode()
+        self.start_new_episode()
 
-    def new_episode(self): # noqa: D102
+    def start_new_episode(self): # noqa: D102
         self.row = self.start[0]
         self.col = self.start[1]
 
@@ -528,8 +534,8 @@ def gating_memory(cls, num_memory_slots=1, reward=0):
             super().reset()
             self.memories = len(self.memories) * [None]
 
-        def new_episode(self):
-            super().new_episode()
+        def start_new_episode(self):
+            super().start_new_episode()
             self.memories = len(self.memories) * [None]
 
         def react(self, action):
@@ -606,8 +612,8 @@ def fixed_long_term_memory(cls, num_wm_slots=1, num_ltm_slots=1, reward=0):
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
-        def new_episode(self):
-            super().new_episode()
+        def start_new_episode(self):
+            super().start_new_episode()
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
@@ -666,9 +672,9 @@ class SimpleTMaze(Environment, RandomMixin):
         return actions
 
     def reset(self): # noqa: D102
-        self.new_episode()
+        self.start_new_episode()
 
-    def new_episode(self): # noqa: D102
+    def start_new_episode(self): # noqa: D102
         self.x = 0
         self.y = 0
         if self.init_goal_x == 0:
@@ -720,7 +726,8 @@ def run_episodes(env, agent, num_episodes):
     """
     returns = []
     for _ in range(num_episodes):
-        env.new_episode()
+        env.start_new_episode()
+        agent.start_new_episode()
         episodic_return = 0
         reward = None
         step = 0
