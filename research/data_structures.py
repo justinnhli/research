@@ -1,5 +1,6 @@
 """Utility data structures."""
 
+
 class UnionFind:
     """UnionFind for discrete sets."""
 
