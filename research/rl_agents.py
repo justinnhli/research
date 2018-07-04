@@ -192,13 +192,10 @@ def epsilon_greedy(cls):
             super().__init__(*args, **kwargs)
             self.exploration_rate = exploration_rate
 
-        def act(self, observation, actions, reward=None): # noqa: D102
-            if not actions:
-                self.observe_reward(observation, reward)
-                return None
-            elif self.rng.random() < self.exploration_rate:
-                return self.force_act(observation, self.rng.choice(actions))
+        def act(self, observation, actions): # noqa: D102
+            if self.rng.random() < self.exploration_rate:
+                return super().force_act(observation, self.rng.choice(actions))
             else:
-                return self.act(observation, actions, reward)
+                return super().act(observation, actions)
 
     return EpsilonGreedyMetaAgent
