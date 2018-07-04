@@ -57,7 +57,7 @@ class Agent(RandomMixin):
         """
         raise NotImplementedError()
 
-    def get_best_action(self, observation):
+    def get_best_stored_action(self, observation):
         """Get the action with the highest value at an observation.
 
         Arguments:
@@ -72,7 +72,7 @@ class Agent(RandomMixin):
         else:
             return max(actions, key=(lambda action: self.get_value(observation, action)))
 
-    def get_best_value(self, observation):
+    def get_best_stored_value(self, observation):
         """Get the highest value at an observation.
 
         Arguments:
@@ -81,7 +81,7 @@ class Agent(RandomMixin):
         Returns:
             float: The value of the best action for the given observation.
         """
-        return self.get_value(observation, self.get_best_action(observation))
+        return self.get_value(observation, self.get_best_stored_action(observation))
 
     def act(self, observation, actions):
         """Update the value function and decide on the next action.
@@ -155,7 +155,7 @@ class TabularQLearningAgent(Agent):
 
     def observe_reward(self, observation, reward): # noqa: D102
         prev_value = self.get_value(self.prev_observation, self.prev_action)
-        next_value = reward + self.discount_rate * self.get_best_value(observation)
+        next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
         self.value_function[self.prev_observation][self.prev_action] = new_value
 
