@@ -170,7 +170,7 @@ class TabularQLearningAgent(Agent):
                 print('    {}: {:.3f}'.format(action, value))
 
     def print_policy(self): # noqa: D102
-        for observation in sorted(self.value_function.keys()):
+        for observation in sorted(self.value_function.keys(), key=str):
             print(observation)
             best_action = self.get_best_stored_action(observation)
             print('    {}: {:.3f}'.format(best_action, self.get_value(observation, best_action)))
