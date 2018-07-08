@@ -239,6 +239,26 @@ def run_experiment(params):
     )
 
 
+def run_optimal_agent(params):
+    """Evaluate the optimal agent for an experiment.
+
+    Arguments:
+        params (ExperimentParameter): The parameters of the experiment.
+
+    Returns:
+        float: The mean return of the evaluation.
+    """
+    env = create_env(params)
+    agent = OptimalAgent()
+    return evaluate_agent(
+        env,
+        agent,
+        num_episodes=params.eval_num_episodes,
+        min_return=params.min_return,
+        new_episode_hook=(lambda env, agent: load_ltm(env, agent, params)),
+    )
+
+
 def load_ltm(env, _, params):
     """Load RandomMaze paths into a MemoryArchitecture agent.
 
@@ -275,6 +295,119 @@ def dict_replace(orig, **kwargs):
     result = dict(**orig)
     result.update(**kwargs)
     return result
+
+
+class OptimalAgent(Agent):
+    """The optimal agent for random mazes."""
+
+    # pylint: disable = abstract-method
+
+    def _retrieved_matches(self, observation):
+        retrieved = self.retrieved_attrs(observation)
+        if not retrieved:
+            return False
+        match = all(
+            (
+                f'retrieval_{attr}' in observation
+                and observation[f'retrieval_{attr}'] == observation[f'perceptual_{attr}']
+            ) for attr in self.perceptual_attrs(observation)
+        )
+        return match
+
+    def buffer_attrs(self, observation, buf):
+        """Get the attributes in a buffer.
+
+        Arguments:
+            observation (Observation): The observation.
+            buf (str): The buffer to get attributes from
+
+        Returns:
+            Set[str]: The attributes in that buffer.
+        """
+        # pylint: disable: no-self-use
+        return set(key[len(buf) + 1:] for key in observation if key.startswith(buf + '_'))
+
+    def perceptual_attrs(self, observation):
+        """Get the attributes the perceptual buffer.
+
+        Arguments:
+            observation (Observation): The observation.
+
+        Returns:
+            Set[str]: The attributes in the perceptual buffer.
+        """
+        return self.buffer_attrs(observation, 'perceptual')
+
+    def retrieved_attrs(self, observation):
+        """Get the attributes the retrieved buffer.
+
+        Arguments:
+            observation (Observation): The observation.
+
+        Returns:
+            Set[str]: The attributes in the retrieved buffer.
+        """
+        return self.buffer_attrs(observation, 'retrieval')
+
+    def query_attrs(self, observation):
+        """Get the attributes the query buffer.
+
+        Arguments:
+            observation (Observation): The observation.
+
+        Returns:
+            Set[str]: The attributes in the query buffer.
+        """
+        return self.buffer_attrs(observation, 'query')
+
+    def act(self, observation, actions):
+        """Update the value function and decide on the next action.
+
+        In order, check for
+            * retrieved == perceptual
+            * retrieved != perceptual, incorrect query
+            * partial/no query
+
+        Arguments:
+            observation (State): The observation of the environment.
+            actions (list[Action]): List of available actions.
+
+        Returns:
+            Action: The action the agent takes.
+        """
+        action = None
+        perceptual_attrs = self.perceptual_attrs(observation)
+        query_attrs = self.query_attrs(observation)
+        if self._retrieved_matches(observation) and 'retrieval_direction' in observation:
+            # if retrieved, output action
+            action = Action(
+                'copy',
+                src_buf='retrieval',
+                src_attr='direction',
+                dst_buf='action',
+                dst_attr='name',
+            )
+        elif query_attrs - perceptual_attrs:
+            # if query is incorrect
+            attr = min(query_attrs - perceptual_attrs)
+            action = Action('delete', buf='perceptual', attr=min(query_attrs - perceptual_attrs))
+        else:
+            # no query or query is subset; retrieve for location
+            # FIXME deal with representation change
+            attr = min(perceptual_attrs - query_attrs)
+            action = Action(
+                'copy',
+                src_buf='perceptual',
+                src_attr=attr,
+                dst_buf='query',
+                dst_attr=attr,
+            )
+        assert action is not None, 'No action generated\n' + str(observation)
+        assert action in actions, 'Action unrecognized\n' + str(action)
+        return action
+
+    def observe_reward(self, observation, reward): # noqa: D102
+        pass
 
 
 ExperimentParameter = namedtuple(
@@ -360,6 +493,13 @@ EXP_4_PARAM = ExperimentParameter(**dict_replace(
 ))
 
 
+def show_optimal_rewards():
+    """Calculate the optimal rewards."""
+    experiments = [3, 4]
+    for exp in experiments:
+        print(exp, run_optimal_agent(globals()[f'EXP_{exp}_PARAM']))
+
+
 def main():
     """Run experiments."""
     episodes = range(0, NUM_EPISODES, EVAL_FREQENCY)
@@ -372,5 +512,6 @@ def main():
 
 
 if __name__ == '__main__':
+    #show_optimal_rewards()
     main()
     #trace_experiment(EXP_4_PARAM, pause=False)
