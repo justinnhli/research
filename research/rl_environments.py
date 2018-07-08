@@ -130,7 +130,7 @@ class AttrDict:
         return hash(tuple(sorted(self._attributes_.items())))
 
     def __eq__(self, other):
-        # pylint: disable=protected-access
+        # pylint: disable = protected-access
         return type(self) is type(other) and self._attributes_ == other._attributes_
 
     def __str__(self):
@@ -297,7 +297,7 @@ def gating_memory(cls):
 
         ATTR_PREFIX = 'memory_'
 
-        def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+        def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
             """Initialize a GatingMemoryMetaEnvironment.
 
             Arguments:
@@ -370,10 +370,10 @@ def fixed_long_term_memory(cls):
 
         # pylint: disable = missing-docstring
 
-        WM_PREFIX = 'wm_' # pylint: disable=invalid-name
-        LTM_PREFIX = 'ltm_' # pylint: disable=invalid-name
+        WM_PREFIX = 'wm_' # pylint: disable = invalid-name
+        LTM_PREFIX = 'ltm_' # pylint: disable = invalid-name
 
-        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
             """Initialize a LongTermMemoryMetaEnvironment.
 
             Arguments:
@@ -385,7 +385,7 @@ def fixed_long_term_memory(cls):
             """
             super().__init__(*args, **kwargs)
             self.reward = reward
-            self.wm = num_wm_slots * [None] # pylint: disable=invalid-name
+            self.wm = num_wm_slots * [None] # pylint: disable = invalid-name
             self.ltm = num_ltm_slots * [None]
 
         def get_state(self):
@@ -445,7 +445,7 @@ def fixed_long_term_memory(cls):
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs): # pylint: disable=keyword-arg-before-vararg
+    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
         """Construct the TMaze.
 
         Arguments:

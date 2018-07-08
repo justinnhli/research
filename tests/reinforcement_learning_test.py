@@ -8,7 +8,7 @@ from os.path import dirname, realpath
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
-# pylint: disable=wrong-import-position
+# pylint: disable = wrong-import-position
 from research.rl_core import run_episodes
 from research.rl_environments import State, Action
 from research.rl_environments import GridWorld, SimpleTMaze

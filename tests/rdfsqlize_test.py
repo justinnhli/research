@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
-# pylint: disable=wrong-import-position
+# pylint: disable = wrong-import-position
 from research.knowledge_base import KnowledgeFile
 from research.rdfsqlize import sqlize
 
@@ -22,7 +22,7 @@ def test_rdfsqlize():
 
         output_file = sqlize(nt_file, 'states')
 
-        kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable=invalid-name
+        kb = KnowledgeFile(output_file, kb_name='states') # pylint: disable = invalid-name
 
         results = []
         sparql = 'SELECT ?state WHERE {?state a dbo:State}'
