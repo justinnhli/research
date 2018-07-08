@@ -5,13 +5,14 @@ from os.path import dirname, realpath
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
-# pylint: disable=wrong-import-position
+# pylint: disable = wrong-import-position
 from research.rl_environments import State, Action, Environment
 from research.randommixin import RandomMixin
 from research.data_structures import UnionFind
 
 
 class Location:
+    """A container class for a 2D coordinate in a grid."""
 
     def __init__(self, index, size):
         self.index = index
@@ -23,47 +24,13 @@ class Location:
 
     @property
     def row(self):
+        """Get the column of this location."""
         return self.index // self.size
 
     @property
     def col(self):
+        """Get the column of this location."""
         return self.index % self.size
-
-    @property
-    def up_index(self):
-        if self.index - self.size < 0 or self.up_wall:
-            return None
-        elif 0 <= self.index - self.size < self.size * self.size:
-            return self.index - self.size
-        else:
-            return None
-
-    @property
-    def down_index(self):
-        if self.index + self.size >= self.size * self.size or self.down_wall:
-            return None
-        elif 0 <= self.index + self.size < self.size * self.size:
-            return self.index + self.size
-        else:
-            return None
-
-    @property
-    def left_index(self):
-        if self.index % self.size == 0 or self.left_wall:
-            return None
-        elif 0 <= self.index - 1 < self.size * self.size:
-            return self.index - 1
-        else:
-            return None
-
-    @property
-    def right_index(self):
-        if self.index + 1 % self.size == 0 or self.right_wall:
-            return None
-        elif 0 <= self.index + 1 < self.size * self.size:
-            return self.index + 1
-        else:
-            return None
 
 
 class RandomMaze(Environment, RandomMixin):
@@ -97,10 +64,10 @@ class RandomMaze(Environment, RandomMixin):
     def num_locations(self):
         return self.size * self.size
 
-    def get_state(self):
+    def get_state(self): # noqa: D102
         return self.get_observation()
 
-    def get_observation(self):
+    def get_observation(self): # noqa: D102
         if self.representation == 'coords':
             coords = self.to_coords(self.location)
             return State(row=coords[0], col=coords[1])
@@ -109,7 +76,7 @@ class RandomMaze(Environment, RandomMixin):
         assert False
         return None
 
-    def get_actions(self):
+    def get_actions(self): # noqa: D102
         if self.location == self.goal:
             return []
         return [
@@ -119,7 +86,7 @@ class RandomMaze(Environment, RandomMixin):
             Action('right'),
         ]
 
-    def react(self, action):
+    def react(self, action): # noqa: D102
         #assert action.name in ['up', 'down', 'left', 'right', 'no-op']
         if action.name == 'up' and self.row > 0:
             self.location -= self.size
@@ -134,11 +101,11 @@ class RandomMaze(Environment, RandomMixin):
         else:
             return -1
 
-    def reset(self):
+    def reset(self): # noqa: D102
         self.rng.seed(self.random_seed)
         self.start_new_episode()
 
-    def start_new_episode(self):
+    def start_new_episode(self): # noqa: D102
         if not self.randomize:
             self.rng.seed(self.random_seed)
         self.start = self.rng.randrange(self.num_locations)
@@ -229,7 +196,7 @@ class RandomMaze(Environment, RandomMixin):
                         queue.append((next_index, next_action))
         return path
 
-    def visualize(self):
+    def visualize(self): # noqa: D102
         arrows = {
             None: '@',
             'up': '^',
@@ -266,7 +233,14 @@ BufferProperties = namedtuple(
 
 
 def memory_architecture(cls):
+    """Decorate an Environment to become a memory architecture.
 
+    Arguments:
+        cls (class): The Environment superclass.
+
+    Returns:
+        class: A subclass with a memory architecture.
+    """
     assert issubclass(cls, Environment)
 
     class MemoryArchitectureMetaEnvironment(cls):
@@ -307,7 +281,7 @@ def memory_architecture(cls):
             ),
         }
 
-        def __init__(self, explicit_actions=False, load_goal_path=False, map_representation='symbol', *args, **kwargs):
+        def __init__(self, explicit_actions=False, load_goal_path=False, map_representation='symbol', *args, **kwargs): # noqa: D102
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             self.explicit_actions = explicit_actions
@@ -335,10 +309,10 @@ def memory_architecture(cls):
         def to_dict(self):
             return {buf + '_' + attr: val for buf, attr, val in self.slots}
 
-        def get_state(self):
+        def get_state(self): # noqa: D102
             return State(**self.to_dict())
 
-        def get_observation(self):
+        def get_observation(self): # noqa: D102
             return State(**self.to_dict())
 
         def _generate_output_actions(self):
@@ -387,7 +361,7 @@ def memory_architecture(cls):
                     ))
             return actions
 
-        def get_actions(self):
+        def get_actions(self): # noqa: D102
             actions = super().get_actions()
             if actions == []:
                 return actions
@@ -398,11 +372,11 @@ def memory_architecture(cls):
             actions.extend(self._generate_delete_actions())
             return actions
 
-        def reset(self):
+        def reset(self): # noqa: D102
             super().reset()
             self.clear_buffers()
 
-        def start_new_episode(self):
+        def start_new_episode(self): # noqa: D102
             super().start_new_episode()
             self.clear_buffers()
             if self.load_goal_path:
@@ -421,7 +395,7 @@ def memory_architecture(cls):
                         ))
             self._sync_input_buffers()
 
-        def react(self, action):
+        def react(self, action): # noqa: D102
             assert 0 <= self.row < self.size, str('index is {} ({}, {})'.format(self.location, self.row, self.col))
             assert 0 <= self.col < self.size, str('index is {} ({}, {})'.format(self.location, self.row, self.col))
             # handle internal actions
