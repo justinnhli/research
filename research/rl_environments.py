@@ -115,7 +115,7 @@ class AttrDict:
         self._attributes_ = kwargs
 
     def __iter__(self):
-        return self._attributes_.items().__iter__()
+        return iter(self._attributes_)
 
     def __getattr__(self, name):
         if name in self._attributes_:
@@ -136,7 +136,7 @@ class AttrDict:
     def __str__(self):
         return '{}({})'.format(
             type(self).__name__,
-            ', '.join('{}={}'.format(*kv) for kv in sorted(self)),
+            ', '.join('{}={}'.format(*kv) for kv in sorted(self._attributes_.items())),
         )
 
     def __repr__(self):
@@ -330,7 +330,7 @@ def gating_memory(cls):
             if observations is None:
                 return actions
             for slot_num in range(len(self.memories)):
-                for attr, _ in observations:
+                for attr in observations:
                     if attr.startswith(self.ATTR_PREFIX):
                         continue
                     actions.append(Action('gate', slot=slot_num, attribute=attr))
@@ -410,7 +410,7 @@ def fixed_long_term_memory(cls):
             if observations is None:
                 return actions
             for slot_num in range(len(self.ltm)):
-                for attr, _ in observations:
+                for attr in observations:
                     if attr.startswith(self.WM_PREFIX):
                         continue
                     actions.append(Action('store', slot=slot_num, attribute=attr))
