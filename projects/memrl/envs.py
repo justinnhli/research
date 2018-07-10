@@ -281,11 +281,10 @@ def memory_architecture(cls):
             ),
         }
 
-        def __init__(self, explicit_actions=False, load_goal_path=False, map_representation='symbol', *args, **kwargs): # noqa: D102
+        def __init__(self, explicit_actions=False, map_representation='symbol', *args, **kwargs): # noqa: D102
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             self.explicit_actions = explicit_actions
-            self.load_goal_path = load_goal_path
             self.map_representation = map_representation
             # variables
             self.ltm = set()
@@ -379,20 +378,6 @@ def memory_architecture(cls):
         def start_new_episode(self): # noqa: D102
             super().start_new_episode()
             self.clear_buffers()
-            if self.load_goal_path:
-                self.ltm = set()
-                if self.map_representation == 'symbol':
-                    LocDir = namedtuple('LocationDirection', ['location', 'direction'])
-                    for location, direction in self.goal_map.items():
-                        self.ltm.add(LocDir(location, direction))
-                else:
-                    LocDir = namedtuple('LocationDirection', ['row', 'col', 'direction'])
-                    for location, direction in self.goal_map.items():
-                        self.ltm.add(LocDir(
-                            location // self.size,
-                            location % self.size,
-                            direction,
-                        ))
             self._sync_input_buffers()
 
         def react(self, action): # noqa: D102
