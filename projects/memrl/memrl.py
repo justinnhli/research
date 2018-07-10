@@ -89,7 +89,7 @@ def run_experiment(params):
         eval_frequency=params.eval_frequency,
         eval_num_episodes=params.eval_num_episodes,
         min_return=params.min_return,
-        new_episode_hook=(lambda env, agent: load_ltm(env, agent, params)),
+        new_episode_hook=params.new_episode_hook,
     )
 
 
@@ -109,31 +109,28 @@ def run_optimal_agent(params):
         agent,
         num_episodes=params.eval_num_episodes,
         min_return=params.min_return,
-        new_episode_hook=(lambda env, agent: load_ltm(env, agent, params)),
+        new_episode_hook=params.new_episode_hook,
     )
 
 
-def load_ltm(env, _, params):
+def load_ltm(env, _, map_representation, translation=False):
     """Load RandomMaze paths into a MemoryArchitecture agent.
 
     Arguments:
         env (MemoryArchitecture): The environment.
         _ (Agent): The agent.
-        params (ExperimentParameter): The parameters of the experiment.
+        map_representation (str): The representation of the map.
+        translation (bool): If True, include a translation from the other
+            representation
     """
     env.ltm = set()
-    if params.map_representation == 'symbol':
-        LocDir = namedtuple('LocationDirection', ['location', 'direction'])
+    if map_representation == 'symbol':
         for location, direction in env.goal_map.items():
-            env.ltm.add(LocDir(location, direction))
+            env.add_to_ltm(location=location, direction=direction)
     else:
-        LocDir = namedtuple('LocationDirection', ['row', 'col', 'direction'])
         for location, direction in env.goal_map.items():
-            env.ltm.add(LocDir(
-                location // env.size,
-                location % env.size,
-                direction,
-            ))
+            row, col = env.to_coords(location)
+            env.add_to_ltm(row=row, col=col, direction=direction)
 
 
 def dict_replace(orig, **kwargs):
@@ -288,6 +285,7 @@ ExperimentParameter = namedtuple(
         'eval_frequency',
         'eval_num_episodes',
         'min_return',
+        'new_episode_hook',
     ],
 )
 
@@ -315,8 +313,9 @@ PARAMETER_DEFAULTS = {
     # EVALUATION PARAMETERS
     'num_episodes': NUM_EPISODES,
     'eval_frequency': EVAL_FREQENCY,
-    'eval_num_episodes': 1000,
-    'min_return': -5000,
+    'eval_num_episodes': 10,
+    'min_return': -1000,
+    'new_episode_hook': None,
 }
 
 EXP_1_PARAM = ExperimentParameter(**dict_replace(
@@ -333,6 +332,7 @@ EXP_2_PARAM = ExperimentParameter(**dict_replace(
 EXP_3_PARAM = ExperimentParameter(**dict_replace(
     PARAMETER_DEFAULTS,
     randomize=True,
+    new_episode_hook=(lambda env, agent: load_ltm(env, agent, 'symbol')),
 ))
 
 EXP_4_PARAM = ExperimentParameter(**dict_replace(
@@ -340,6 +340,7 @@ EXP_4_PARAM = ExperimentParameter(**dict_replace(
     randomize=True,
     representation='coords',
     map_representation='coords',
+    new_episode_hook=(lambda env, agent: load_ltm(env, agent, 'coords')),
 ))
 
 
