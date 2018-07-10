@@ -175,7 +175,7 @@ class OptimalAgent(Agent):
         Returns:
             Set[str]: The attributes in that buffer.
         """
-        # pylint: disable: no-self-use
+        # pylint: disable = no-self-use
         return set(key[len(buf) + 1:] for key in observation if key.startswith(buf + '_'))
 
     def perceptual_attrs(self, observation):
