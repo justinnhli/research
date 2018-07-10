@@ -60,6 +60,16 @@ def create_env(params):
         map_representation=params.map_representation,
     )
 
+def create_agent(params):
+    return epsilon_greedy(TabularQLearningAgent)(
+        # Tabular Q Learning Agent
+        random_seed=params.agent_random_seed,
+        learning_rate=params.learning_rate,
+        discount_rate=params.discount_rate,
+        # Epsilon Greedy
+        exploration_rate=params.exploration_rate,
+    )
+
 
 def run_experiment(params):
     """Run an experiment.
@@ -71,14 +81,7 @@ def run_experiment(params):
         Sequence[float]: The mean returns of each evaluation.
     """
     env = create_env(params)
-    agent = epsilon_greedy(TabularQLearningAgent)(
-        # Tabular Q Learning Agent
-        random_seed=params.agent_random_seed,
-        learning_rate=params.learning_rate,
-        discount_rate=params.discount_rate,
-        # Epsilon Greedy
-        exploration_rate=params.exploration_rate,
-    )
+    agent = create_agent(params)
     return train_and_evaluate(
         env,
         agent,
