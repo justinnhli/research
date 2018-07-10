@@ -2,6 +2,8 @@
 
 from statistics import mean
 
+from .rl_agents import Agent
+
 
 def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_episode_hook=None):
     """Run some episodes and print out what's going on.
@@ -63,9 +65,9 @@ def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, n
     for _ in range(num_episodes):
         env.start_new_episode()
         agent.start_new_episode()
-        episodic_return = 0
         if new_episode_hook is not None:
             new_episode_hook(env, agent)
+        episodic_return = 0
         while not env.end_of_episode() and episodic_return > min_return:
             action = agent.act(
                 observation=env.get_observation(),
@@ -92,9 +94,21 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
     Returns:
         float: The mean return over all episodes.
     """
+    class ExploitAgent(Agent):
+
+        def __init__(self, agent):
+            self.agent = agent
+
+        def act(self, observation, actions):
+            action = self.agent.get_best_stored_action(observation)
+            if action is None:
+                return choice(actions)
+            else:
+                return action
+
     return run_episodes(
         env,
-        agent,
+        ExploitAgent(agent),
         num_episodes,
         update_agent=False,
         min_return=min_return,

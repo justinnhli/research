@@ -9,7 +9,7 @@ DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
-from research.rl_core import train_agent
+from research.rl_core import train_and_evaluate
 from research.rl_environments import State, Action
 from research.rl_environments import GridWorld, SimpleTMaze
 from research.rl_environments import gating_memory, fixed_long_term_memory
@@ -236,10 +236,10 @@ def test_simpletmaze_fixedltm():
 def test_agent():
     """Test the epsilon greedy tabular Q-learning agent."""
     env = GridWorld(
-        width=3,
-        height=3,
+        width=5,
+        height=5,
         start=[0, 0],
-        goal=[2, 2],
+        goal=[4, 4],
     )
     agent = epsilon_greedy(TabularQLearningAgent)(
         exploration_rate=0.05,
@@ -248,8 +248,18 @@ def test_agent():
         random_seed=8675309,
     )
     assert agent.random_seed == 8675309
-    train_agent(env, agent, 1000)
+    returns = list(train_and_evaluate(
+        env,
+        agent,
+        num_episodes=500,
+        eval_frequency=50,
+        eval_num_episodes=50,
+    ))
     for row in range(3):
         for col in range(3):
             best_action = agent.get_best_stored_action(State(row=row, col=col))
             assert best_action is None or best_action.name in ['down', 'right']
+    agent.print_policy()
+    # the optimal policy takes 8 steps for a 5x5 grid
+    # -6 comes from 7 steps of -1 reward and 1 step of +1 reward
+    assert returns[-1] == -6
