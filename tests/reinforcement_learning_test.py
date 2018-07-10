@@ -9,7 +9,7 @@ DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
-from research.rl_core import run_episodes
+from research.rl_core import train_agent
 from research.rl_environments import State, Action
 from research.rl_environments import GridWorld, SimpleTMaze
 from research.rl_environments import gating_memory, fixed_long_term_memory
@@ -248,7 +248,7 @@ def test_agent():
         random_seed=8675309,
     )
     assert agent.random_seed == 8675309
-    run_episodes(env, agent, 1000)
+    train_agent(env, agent, 1000)
     for row in range(3):
         for col in range(3):
             best_action = agent.get_best_stored_action(State(row=row, col=col))
