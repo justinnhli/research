@@ -95,14 +95,24 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
         float: The mean return over all episodes.
     """
     class ExploitAgent(Agent):
+        """An Agent that only selects the best action."""
+
+        # pylint: disable = abstract-method
 
         def __init__(self, agent):
+            """Initialize the ExploitAgent.
+
+            Arguments:
+                agent (Agent): The underlying agent.
+
+            """
+            super().__init__()
             self.agent = agent
 
-        def act(self, observation, actions):
+        def act(self, observation, actions): # noqa: D102
             action = self.agent.get_best_stored_action(observation)
             if action is None:
-                return choice(actions)
+                return self.rng.choice(actions)
             else:
                 return action
 
