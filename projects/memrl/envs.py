@@ -7,6 +7,7 @@ sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from research.rl_environments import State, Action, Environment
+from research.rl_environments import AttrDict
 from research.randommixin import RandomMixin
 from research.data_structures import UnionFind
 
@@ -279,6 +280,9 @@ def memory_architecture(cls):
     """
     assert issubclass(cls, Environment)
 
+    class MemoryElement(AttrDict):
+        pass
+
     class MemoryArchitectureMetaEnvironment(cls):
         """A subclass to add a long-term memory to an Environment."""
 
@@ -443,19 +447,21 @@ def memory_architecture(cls):
             self._sync_input_buffers()
             return reward
 
+        def add_to_ltm(self, **kwargs):
+            self.ltm.add(MemoryElement(**kwargs))
+
         def _query_ltm(self):
             if self.buffers['query']:
                 candidates = []
                 for candidate in self.ltm:
-                    candidate_dict = candidate._asdict()
                     match = all(
-                        attr in candidate_dict and candidate_dict[attr] == val
+                        attr in candidate and candidate[attr] == val
                         for attr, val in self.buffers['query'].items()
                     )
                     if match:
-                        candidates.append(candidate_dict)
+                        candidates.append(candidate)
                 if candidates:
-                    self.buffers['retrieval'] = self.rng.choice(candidates)
+                    self.buffers['retrieval'] = self.rng.choice(candidates).as_dict()
 
         def _clear_ltm_buffers(self):
             self.buffers['query'] = {}
