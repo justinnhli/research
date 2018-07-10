@@ -136,7 +136,7 @@ class AttrDict:
     def __str__(self):
         return '{}({})'.format(
             type(self).__name__,
-            ', '.join('{}={}'.format(*kv) for kv in sorted(self._attributes_.items())),
+            ', '.join('{}={}'.format(k, v) for k, v in sorted(self._attributes_.items())),
         )
 
     def __repr__(self):
@@ -170,7 +170,7 @@ class Action(AttrDict):
     def __str__(self):
         return 'Action("{}", {})'.format(
             self.name,
-            ', '.join('{}={}'.format(*kv) for kv in sorted(self)),
+            ', '.join('{}={}'.format(k, v) for k, v in sorted(self._attributes_.items())),
         )
 
 
