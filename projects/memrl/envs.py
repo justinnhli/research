@@ -32,6 +32,42 @@ class Location:
         """Get the column of this location."""
         return self.index % self.size
 
+    @property 
+    def up_index(self): 
+        if self.index - self.size < 0 or self.up_wall: 
+            return None 
+        elif 0 <= self.index - self.size < self.size * self.size: 
+            return self.index - self.size 
+        else: 
+            return None 
+ 
+    @property 
+    def down_index(self): 
+        if self.index + self.size >= self.size * self.size or self.down_wall: 
+            return None 
+        elif 0 <= self.index + self.size < self.size * self.size: 
+            return self.index + self.size 
+        else: 
+            return None 
+ 
+    @property 
+    def left_index(self): 
+        if self.index % self.size == 0 or self.left_wall: 
+            return None 
+        elif 0 <= self.index - 1 < self.size * self.size: 
+            return self.index - 1 
+        else: 
+            return None 
+ 
+    @property 
+    def right_index(self): 
+        if self.index + 1 % self.size == 0 or self.right_wall: 
+            return None 
+        elif 0 <= self.index + 1 < self.size * self.size: 
+            return self.index + 1 
+        else: 
+            return None 
+
 
 class RandomMaze(Environment, RandomMixin):
 
