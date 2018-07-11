@@ -325,7 +325,7 @@ def calculate_individual_p(directory, output_filename, outer_index, inner_index)
                     f.write("%s %s %s\n" % (k, word, float(c[word] / total)))
 
     # read from a directory to a nested dictionary
-    file_gen = get_filename_from_folder(dir)
+    file_gen = get_filename_from_folder(directory)
     d = defaultdict(Counter)
     i = 0
     for file in file_gen:
@@ -390,7 +390,10 @@ def calculate_verb_given_adj():
         return
 
     with open(join_path(OUTPUT_DIR, 'verb_adj_pair.txt'), 'r', encoding='utf-8') as r:
-        adj_verb = [line.split() for line in r.readlines()]
+        adj_verb = {}
+        for line in r.readlines():
+            adj_verb[line] = 0
+        # adj_verb = [line.split() for line in r.readlines()]
 
     # {object : {verb: prob(v_n)}}
     d_ov = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_verb_noun.txt'), 0, 1, 2)
@@ -402,7 +405,7 @@ def calculate_verb_given_adj():
     d_vo = read_to_dict(join_path(OUTPUT_DIR, 'prob_verb_noun.txt'), 1, 0)
 
     for pair in adj_verb:
-        adj, verb = pair
+        adj, verb = pair.split()
         prob = sum(
             # P(V_O) * P(O_A)
             d_ov[obj][verb] * d_oa[obj][adj]
@@ -410,10 +413,12 @@ def calculate_verb_given_adj():
         )
         # print(adj, verb, prob)
         if not 0 <= prob <= 1:
-            print(adj, verb, prob)
+            # print(adj, verb, prob)
             continue
-        with open(output_filename, 'a+', encoding='utf-8') as f:
-            f.write("%s %s %s\n" % (adj, verb, prob))
+        adj_verb[pair] = prob
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        for key, value in adj_verb.items():
+            f.write("%s %s\n" % (key, value))
 
 
 def overall(noun):
@@ -423,7 +428,7 @@ def overall(noun):
     temp_dict = {}
     # p1 is P(adj|noun)
     for adj, p1 in dict_adj_noun.items():
-        dict_verb_adj = search_file(join_path(OUTPUT_DIR, "prob_verb_adj.txt"), adj)
+        dict_verb_adj = search_file(join_path(OUTPUT_DIR, "prob_verb_adj_3.txt"), adj)
         # p2 is P(verb|adj)
         for verb, p2 in dict_verb_adj.items():
             if verb in temp_dict:
@@ -435,14 +440,17 @@ def overall(noun):
 
 def pipe():
     """pipeline for extraction and probability calculation"""
-    extract_from_directory(STORY_DIRECTORY)
-    print("finish extract from directory at %s" % str(datetime.datetime.now()))
-    calculate_stats()
-    print("finish calculating stats at %s" % str(datetime.datetime.now()))
-    compute_verb_adj_set()
-    calculate_verb_given_adj()
-    print("finish calculating prob(v|adj) at %s" % str(datetime.datetime.now()))
-    # overall("knife")
+    # extract_from_directory(STORY_DIRECTORY)
+    # print("finish extract from directory at %s" % str(datetime.datetime.now()))
+    # calculate_stats()
+    # print("finish calculating stats at %s" % str(datetime.datetime.now()))
+    # compute_verb_adj_set()
+    # calculate_verb_given_adj()
+    # print("finish calculating prob(v|adj) at %s" % str(datetime.datetime.now()))
+    list = ["knife", "lamp", "coffee", "stone", "bottle", "cake"]
+    for word in list:
+        overall(word)
+
 
 
 def main():  # pylint: disable= missing-docstring
