@@ -95,6 +95,11 @@ class DumpStats:
 
     @property
     def prob_verb_adj_db(self):
+        """
+        return p(verb|adj) database if already exist, else initiate database and return
+        Returns:
+            a instance of CondProbDict for p(verb|adj)
+        """
         if self._prob_verb_adj_db is not None:
             pass
         elif file_exists(self.prob_verb_adj_file):
@@ -102,6 +107,7 @@ class DumpStats:
 
         else:
             self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
+            # compute verb adj combination set (also cached)
             verb_adj_set = set()
             for obj in self.prob_verb_noun_db:
                 for adj, _ in self.prob_noun_adj_db.get_variable_dict(obj):
@@ -111,6 +117,7 @@ class DumpStats:
             verb_adj_set = sorted(verb_adj_set)
             cache_verb_adj_set(self.stat_dir, verb_adj_set)
 
+            # calculate the real probability and add to database
             for pair in verb_adj_set:
                 adj, verb = pair.split()
                 prob = sum(
@@ -120,7 +127,6 @@ class DumpStats:
                     for obj in self.prob_verb_noun_db.get_variable_dict(verb)
                 )
                 if not 0 <= prob <= 1:
-                    # print(adj, verb, prob)
                     continue
                 self._prob_verb_adj_db.add_probability(adj, verb, prob)
         return self._prob_verb_adj_db
