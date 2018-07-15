@@ -41,11 +41,13 @@ class DumpStats:
             a instance of CondProbDict for p(verb|noun)
         """
         if self._prob_verb_noun_db is not None:
-            return self._prob_verb_noun_db
+            pass
+        elif file_exists(self.prob_verb_noun_file):
+            self._prob_verb_noun_db = CondProbDict(self.prob_verb_noun_file)
         else:
             self._prob_verb_noun_db = self.calculate_prob_from_extraction(
-                self.verb_noun_extract_folder, self.prob_verb_noun_file, 1, 0)
-            return self._prob_verb_noun_db
+                self.VN_extract_dir, self.prob_verb_noun_file, 1, 0)
+        return self._prob_verb_noun_db
 
     @property
     def prob_noun_verb_db(self):
@@ -55,11 +57,13 @@ class DumpStats:
             a instance of CondProbDict for p(noun|verb)
         """
         if self._prob_noun_verb_db is not None:
-            return self._prob_noun_verb_db
+            pass
+        elif file_exists(self.prob_noun_verb_file):
+            self._prob_noun_verb_db = CondProbDict(self.prob_noun_verb_file)
         else:
-            self._prob_noun_verb_db = self.calculate_prob_from_extraction\
-                (self.verb_noun_extract_folder, self.prob_noun_verb_file, 0, 1)
-            return self._prob_noun_verb_db
+            self._prob_noun_verb_db = self.calculate_prob_from_extraction(
+                self.VN_extract_dir, self.prob_noun_verb_file, 0, 1)
+        return self._prob_noun_verb_db
 
     @property
     def prob_noun_adj_db(self):
@@ -69,11 +73,13 @@ class DumpStats:
             a instance of CondProbDict for p(noun|adj)
         """
         if self._prob_noun_adj_db is not None:
-            return self._prob_noun_adj_db
+            pass
+        elif file_exists(self.prob_noun_adj_file):
+            self._prob_noun_adj_db = CondProbDict(self.prob_noun_adj_file)
         else:
             self._prob_noun_adj_db = self.calculate_prob_from_extraction(
-                self.adj_noun_extract_folder, self.prob_noun_adj_file, 0, 1)
-            return self._prob_noun_adj_db
+                self.AN_extract_dir, self.prob_noun_adj_file, 0, 1)
+        return self._prob_noun_adj_db
 
     @property
     def prob_adj_noun_db(self):
@@ -83,11 +89,45 @@ class DumpStats:
             a instance of CondProbDict for p(adj|noun)
         """
         if self._prob_adj_noun_db is not None:
-            return self._prob_adj_noun_db
+            pass
+        elif file_exists(self.prob_adj_noun_file):
+            self._prob_adj_noun_db = CondProbDict(self.prob_adj_noun_file)
         else:
             self._prob_adj_noun_db = self.calculate_prob_from_extraction(
-                self.adj_noun_extract_folder, self.prob_adj_noun_file, 1, 0)
-            return self._prob_adj_noun_db
+                self.AN_extract_dir, self.prob_adj_noun_file, 1, 0)
+        return self._prob_adj_noun_db
+
+    @property
+    def prob_verb_adj_db(self):
+        if self._prob_verb_adj_db is not None:
+            pass
+        elif file_exists(self.prob_verb_adj_file):
+            self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
+
+        else:
+            self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
+            verb_adj_set = set()
+            for obj in self.prob_verb_noun_db:
+                for adj, _ in self.prob_noun_adj_db.get_variable_dict(obj):
+                    for verb, _ in self.prob_verb_noun_db.get_given_dict(obj):
+                        verb_adj_set.add("%s %s" % (adj, verb))
+
+            verb_adj_set = sorted(verb_adj_set)
+            cache_verb_adj_set(self.stat_dir, verb_adj_set)
+
+            for pair in verb_adj_set:
+                adj, verb = pair.split()
+                prob = sum(
+                    # P(V_O) * P(O_A)
+                    self.prob_verb_noun_db.get_probability(obj, verb) *
+                    self.prob_noun_adj_db.get_probability(adj, obj)
+                    for obj in self.prob_verb_noun_db.get_variable_dict(verb)
+                )
+                if not 0 <= prob <= 1:
+                    # print(adj, verb, prob)
+                    continue
+                self._prob_verb_adj_db.add_probability(adj, verb, prob)
+        return self._prob_verb_adj_db
 
     def cache_prob(self, db_name, dict_count):
         """
@@ -102,14 +142,13 @@ class DumpStats:
         if file_exists(db_name):
             print("failed to cache beacause, the file %s already exist" % db_name)
             return CondProbDict(self.prob_verb_noun_file)
-        else:
-            dict_db = CondProbDict(self.prob_verb_noun_file)
-            for cond in dict_count:
-                counter = dict_count[cond]
-                total = sum(counter.values())
-                for var in dict_count[cond]:
-                    dict_db.add_probability(cond, var, float(counter[var] / total))
-            return dict_db
+        dict_db = CondProbDict(self.prob_verb_noun_file)
+        for cond in dict_count:
+            counter = dict_count[cond]
+            total = sum(counter.values())
+            for var in dict_count[cond]:
+                dict_db.add_probability(cond, var, float(counter[var] / total))
+        return dict_db
 
     def calculate_prob_from_extraction(self, extract_dir, db_name, cond_idx, var_idx):
         """
@@ -162,3 +201,9 @@ def cache_count(db_filename, dict_counter):
             f.write("%s (%s)\n" % (cond, sum(counter.values())))
             for var in dict_counter[cond]:
                 f.write("---%s (%s)\n" % (var, counter[var]))
+
+def cache_verb_adj_set(output_dir, verb_adj_set):
+    """cache verb adjective verb_adj_set in output stat directory as txt file """
+    with open(join_path(output_dir, "verb_adj_set.txt"), 'w', encoding='utf-8') as file:
+        for pair in verb_adj_set:
+            file.write(pair)
