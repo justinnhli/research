@@ -1,24 +1,21 @@
-import re
-import sys
-from os.path import dirname, realpath, join as join_path, exists as file_exists
-from collections import defaultdict, namedtuple, Counter
-from students.lijia.worddb import CondProbDict
-from students.lijia.utils import get_filename_from_folder
+"""DumpStats is a class that organize and compute all the statistics of a dump (given extraction)"""
+
+from os.path import join as join_path, exists as file_exists
+from collections import defaultdict, Counter
+from students.lijia.worddb import CondProbDict  # pylint disable=import-error
+from students.lijia.utils import get_filename_from_folder  # pylint disable=import-error
 
 # todo(Lijia): looging
-
-VPO = namedtuple('VPO', ('verb', 'prep', 'object'))
-NP = namedtuple('NP', ['noun', 'adjectives'])
 
 
 class DumpStats:
     """a class for organizing all the statistics for a dump """
     def __init__(self, dump_dir, stat_dir):
         self.dump_dir = dump_dir
-        self.stat_dir = stat_dir # todo: how should dump_dir and stat_dir work?
+        self.stat_dir = stat_dir  # todo: how should dump_dir and stat_dir work?
 
-        self.adj_noun_extract_folder = join_path(self.stat_dir, "adj_noun")
-        self.verb_noun_extract_folder = join_path(self.stat_dir, "verb_noun")
+        self.AN_extract_dir = join_path(self.stat_dir, "adj_noun")  # pylint: disable=invalid-name
+        self.VN_extract_dir = join_path(self.stat_dir, "verb_noun")  # pylint: disable=invalid-name
 
         self.prob_verb_noun_file = join_path(self.stat_dir, 'prob_verb_noun.sqlite')
         self.prob_noun_verb_file = join_path(self.stat_dir, 'prob_verb_noun.sqlite')
@@ -31,7 +28,6 @@ class DumpStats:
         self._prob_noun_adj_db = None
         self._prob_adj_noun_db = None
         self._prob_verb_adj_db = None
-
 
     @property
     def prob_verb_noun_db(self):
@@ -162,13 +158,12 @@ class DumpStats:
         Returns:
             cache_prob function
         """
-
         # read from a extract_dir to a nested dictionary
         file_gen = get_filename_from_folder(extract_dir)
         dict_counter = defaultdict(Counter)
         for file in file_gen:
             lines = [line for line in open(join_path(extract_dir, file), 'r', encoding='utf-8')]
-            # add to defaultdict with cond as key and a counter as value where the counter counts variable's appearance
+            # create defaultdict in {condition: {variable: count}} format
             for line in lines:
                 cond = line.split()[cond_idx]
                 var = line.split()[var_idx]
@@ -182,8 +177,8 @@ class DumpStats:
 
 
 def cache_count(db_filename, dict_counter):
-    """ Cache the count of the extraction
-    
+    """
+    Cache the count of the extraction
     Args:
         db_filename: the file name for sql
         dict_counter: dictionary nested with a counter as in {condition: {variable: count}}
@@ -195,12 +190,13 @@ def cache_count(db_filename, dict_counter):
     if file_exists(filename):
         print("failed to cache beacause the file %s already exist" % filename)
         return
-    with open(filename, 'w', encoding='utf-8') as f:
+    with open(filename, 'w', encoding='utf-8') as file:
         for cond in dict_counter:
             counter = dict_counter[cond]
-            f.write("%s (%s)\n" % (cond, sum(counter.values())))
+            file.write("%s (%s)\n" % (cond, sum(counter.values())))
             for var in dict_counter[cond]:
-                f.write("---%s (%s)\n" % (var, counter[var]))
+                file.write("---%s (%s)\n" % (var, counter[var]))
+
 
 def cache_verb_adj_set(output_dir, verb_adj_set):
     """cache verb adjective verb_adj_set in output stat directory as txt file """
