@@ -30,10 +30,16 @@ class DumpStats:
         self._prob_noun_verb_db = None
         self._prob_noun_adj_db = None
         self._prob_adj_noun_db = None
+        self._prob_verb_adj_db = None
 
 
     @property
     def prob_verb_noun_db(self):
+        """
+        return p(verb|noun) database if already exist, else initiate database and return
+        Returns:
+            a instance of CondProbDict for p(verb|noun)
+        """
         if self._prob_verb_noun_db is not None:
             return self._prob_verb_noun_db
         else:
@@ -43,6 +49,11 @@ class DumpStats:
 
     @property
     def prob_noun_verb_db(self):
+        """
+        return p(noun|verb) database if already exist, else initiate database and return
+        Returns:
+            a instance of CondProbDict for p(noun|verb)
+        """
         if self._prob_noun_verb_db is not None:
             return self._prob_noun_verb_db
         else:
@@ -52,6 +63,11 @@ class DumpStats:
 
     @property
     def prob_noun_adj_db(self):
+        """
+        return p(noun|adj) database if already exist, else initiate database and return
+        Returns:
+            a instance of CondProbDict for p(noun|adj)
+        """
         if self._prob_noun_adj_db is not None:
             return self._prob_noun_adj_db
         else:
@@ -61,6 +77,11 @@ class DumpStats:
 
     @property
     def prob_adj_noun_db(self):
+        """
+        return p(adj|noun) database if already exist, else initiate database and return
+        Returns:
+            a instance of CondProbDict for p(adj|noun)
+        """
         if self._prob_adj_noun_db is not None:
             return self._prob_adj_noun_db
         else:
@@ -68,64 +89,76 @@ class DumpStats:
                 self.adj_noun_extract_folder, self.prob_adj_noun_file, 1, 0)
             return self._prob_adj_noun_db
 
-    def cache_prob(self, filename, count_dict):
-        if file_exists(filename):
-            print("failed to cache beacause, the file %s already exist" % filename)
-            return
-        d = CondProbDict(self.prob_verb_noun_file)
-        for condition in count_dict:
-            c = count_dict[condition]
-            total = sum(c.values())
-            for variable in count_dict[condition]:
-                d.add_probability(condition, variable, float(c[variable] / total))
-        return d
-
-    def calculate_prob_from_extraction(self, directory, db_name, outer_index, inner_index):
+    def cache_prob(self, db_name, dict_count):
         """
-        a generic function that calculate probability and count
-        :param directory: the folder that contains extracted words
-        :param output_filename
-        :param outer_index: the index for condition (default dictionary's key)
-        :param inner_index: the index for marginal (counter's key)
-        :return:
-        """
-        # FIXME: check for existance
-        # if file_exists(join_path(OUTPUT_DIR, "count_" + output_filename)) \
-        #         and file_exists(join_path(OUTPUT_DIR, "prob_" + output_filename)):
-        #     print("both count and probability for (%s) exist" % output_filename)
-        #     return
+        cache probability of the dictionary_counter
+        Args:
+            db_name (str): database's name
+            dict_count (dict): a dictionary of counter as in {condition: {variable: count}}
 
-        # read from a directory to a nested dictionary
-        file_gen = get_filename_from_folder(directory)
-        d = defaultdict(Counter)
-        i = 0
+        Returns:
+            an instance of CondProbDict
+        """
+        if file_exists(db_name):
+            print("failed to cache beacause, the file %s already exist" % db_name)
+            return CondProbDict(self.prob_verb_noun_file)
+        else:
+            dict_db = CondProbDict(self.prob_verb_noun_file)
+            for cond in dict_count:
+                counter = dict_count[cond]
+                total = sum(counter.values())
+                for var in dict_count[cond]:
+                    dict_db.add_probability(cond, var, float(counter[var] / total))
+            return dict_db
+
+    def calculate_prob_from_extraction(self, extract_dir, db_name, cond_idx, var_idx):
+        """
+        Read from extraction folder and calculate the appearance of variable given condition
+        Args:
+            extract_dir (str): the directory which stores extraction
+            db_name (str): database's name
+            cond_idx (int): condition's index
+            var_idx (int): variable's index
+
+        Returns:
+            cache_prob function
+        """
+
+        # read from a extract_dir to a nested dictionary
+        file_gen = get_filename_from_folder(extract_dir)
+        dict_counter = defaultdict(Counter)
         for file in file_gen:
-            i += 1
-            lines = [line for line in open(join_path(directory, file), 'r', encoding='utf-8')]
-            # add to defaultdict with x as key and a counter as value
-            # the counter counts y's appearance
+            lines = [line for line in open(join_path(extract_dir, file), 'r', encoding='utf-8')]
+            # add to defaultdict with cond as key and a counter as value where the counter counts variable's appearance
             for line in lines:
-                x = line.split()[outer_index]
-                y = line.split()[inner_index]
-                if d[x]:
-                    d[x].update([y])
+                cond = line.split()[cond_idx]
+                var = line.split()[var_idx]
+                if dict_counter[cond]:
+                    dict_counter[cond].update([var])
                 else:
-                    d[x] = Counter([y])
+                    dict_counter[cond] = Counter([var])
 
-        cache_count(db_name, d)
-        print("Finished writing count. Total file processed: ", i)
-        return self.cache_prob(db_name, d)
+        cache_count(db_name, dict_counter)
+        return self.cache_prob(db_name, dict_counter)
 
 
-def cache_count(filename, count_dict):
-    """ write out counts"""
-    filename = "count_" + filename[:-7] + ".txt"
+def cache_count(db_filename, dict_counter):
+    """ Cache the count of the extraction
+    
+    Args:
+        db_filename: the file name for sql
+        dict_counter: dictionary nested with a counter as in {condition: {variable: count}}
+
+    Returns:
+        write out a count file for the given dictionary-counter
+    """
+    filename = "count_" + db_filename[:-7] + ".txt"
     if file_exists(filename):
-        print("failed to cache beacause, the file %s already exist" % filename)
+        print("failed to cache beacause the file %s already exist" % filename)
         return
     with open(filename, 'w', encoding='utf-8') as f:
-        for k in count_dict:
-            c = count_dict[k]
-            f.write("%s (%s)\n" % (k, sum(c.values())))
-            for word in count_dict[k]:
-                f.write("---%s (%s)\n" % (word, c[word]))
+        for cond in dict_counter:
+            counter = dict_counter[cond]
+            f.write("%s (%s)\n" % (cond, sum(counter.values())))
+            for var in dict_counter[cond]:
+                f.write("---%s (%s)\n" % (var, counter[var]))
