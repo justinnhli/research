@@ -10,42 +10,11 @@ from os.path import dirname, realpath, join as join_path, exists as file_exists
 import spacy
 from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
-from ifai import wn_is_manipulable_noun, umbel_is_manipulable_noun
+from students.lijia.word2vec import wn_is_manipulable_noun, umbel_is_manipulable_noun
+from students.lijia.utils import *
 
-
-# setting up static parameters
-ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
-sys.path.insert(0, ROOT_DIRECTORY)
-# STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'data/fanfic_stories')
-STORY_DIRECTORY = join_path(ROOT_DIRECTORY, 'students/lijia/fantacy')
-# OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'students/lijia/output_files/retest_output')
-OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'students/lijia/temp_test')
-NP_DIR = join_path(OUTPUT_DIR, "np")
-VO_DIR = join_path(OUTPUT_DIR, "vpo")
-
-# SVO = namedtuple('SVO', ('subject', 'verb', 'preposition', 'object'))
 VPO = namedtuple('VPO', ('verb', 'prep', 'object'))
 NP = namedtuple('NP', ['noun', 'adjectives'])
-
-# load nlp model
-model = 'en_core_web_sm'
-nlp = spacy.load(model)
-
-
-# UTILS
-def get_filename_from_folder(directory):
-    """yield filename from given folder"""
-    for filename in listdir(directory):
-        if not filename.startswith("."):
-            yield filename
-
-
-def get_nlp_sentence_from_file(directory, filename):
-    """yield tokenized individual sentences from given file"""
-    for line in open(join_path(directory, filename), encoding='utf-8'):
-        sentence_ls = line.replace("\"", "").split(". ")
-        for sentence in sentence_ls:
-            yield nlp(sentence)
 
 
 def has_number(string):
@@ -104,53 +73,6 @@ def is_manipulable(token):
 def replace_wsd(doc, token):
     """return the wsd token of a doc"""
     return lesk(doc.text.split(), str(token))
-
-
-def read_to_nested_dict(filename, outer_index, inner_index, value_index):
-    """read three arguments from file and store in nested dict
-
-    :param filename
-    :param outer_index: outer dictionary key index
-    :param inner_index: inner dictionary key index
-    :param value_index: value index
-    :return: {outer_index: { inner_index: value_index }}
-    """
-    d = defaultdict(lambda: defaultdict(float))
-    with open(filename, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            ls = line.split()
-            d[ls[outer_index]][ls[inner_index]] = float(ls[value_index])
-    return d
-
-
-def read_to_dict(filename, key_index, value_index):
-    """
-
-    :param filename:
-    :param key_index:
-    :param value_index:
-    :return: key: [value1, value2, ..., valuen]
-    """
-    d = {}
-    with open(filename, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            ls = line.split()
-            if ls[key_index] in d:
-                d[ls[key_index]].append(ls[value_index])
-            else:
-                d[ls[key_index]] = [ls[value_index]]
-    return d
-
-
-def search_file(filename, string):
-    """search specific string in file"""
-    with open(filename, 'r', encoding='utf-8') as f:
-        results = {}
-        for line in f.readlines():
-            ls = line.split()
-            if string == ls[0]:
-                results[ls[1]] = float(ls[2])
-    return results
 
 
 def extract_vpo(doc):
