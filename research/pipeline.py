@@ -55,7 +55,7 @@ class PipelineStep:
             fd (File): The read-only object of the infile.
 
         Returns:
-            obj: The deserialized data.
+            any: The deserialized data.
         """
         raise NotImplementedError()
 
@@ -63,10 +63,10 @@ class PipelineStep:
         """Process the data.
 
         Arguments:
-            data (obj): The deserialized data from the infile.
+            data (any): The deserialized data from the infile.
 
         Returns:
-            obj: The processed data.
+            any: The processed data.
         """
         raise NotImplementedError()
 
@@ -74,7 +74,7 @@ class PipelineStep:
         """Serialize the processed data.
 
         Arguments:
-            data (obj): The processed data.
+            data (any): The processed data.
 
         Returns:
             List[str]: The lines of strings to be saved to outfile.

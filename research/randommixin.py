@@ -10,7 +10,7 @@ class RandomMixin:
         """Initialize the RandomClass.
 
         Arguments:
-            random_seed (Object): The random seed.
+            random_seed (any): The random seed.
         """
         if random_seed is None:
             random_seed = random()
