@@ -12,16 +12,16 @@ class DumpStats:
     """a class for organizing all the statistics for a dump """
     def __init__(self, dump_dir, stat_dir):
         self.dump_dir = dump_dir
-        self.stat_dir = stat_dir  # todo: how should dump_dir and stat_dir work?
+        self.stats_dir = stat_dir  # todo: how should dump_dir and stats_dir work?
 
-        self.AN_extract_dir = join_path(self.stat_dir, "adj_noun")  # pylint: disable=invalid-name
-        self.VN_extract_dir = join_path(self.stat_dir, "verb_noun")  # pylint: disable=invalid-name
+        self.AN_extract_dir = join_path(self.stats_dir, "adj_noun")  # pylint: disable=invalid-name
+        self.VN_extract_dir = join_path(self.stats_dir, "verb_noun")  # pylint: disable=invalid-name
 
-        self.prob_verb_noun_file = join_path(self.stat_dir, 'prob_verb_noun.sqlite')
-        self.prob_noun_verb_file = join_path(self.stat_dir, 'prob_verb_noun.sqlite')
-        self.prob_noun_adj_file = join_path(self.stat_dir, 'prob_noun_adj.sqlite')
-        self.prob_adj_noun_file = join_path(self.stat_dir, 'prob_adj_noun.sqlite')
-        self.prob_verb_adj_file = join_path(self.stat_dir, 'prob_verb_adj.sqlite')
+        self.prob_verb_noun_file = join_path(self.stats_dir, 'prob_verb_noun.sqlite')
+        self.prob_noun_verb_file = join_path(self.stats_dir, 'prob_verb_noun.sqlite')
+        self.prob_noun_adj_file = join_path(self.stats_dir, 'prob_noun_adj.sqlite')
+        self.prob_adj_noun_file = join_path(self.stats_dir, 'prob_adj_noun.sqlite')
+        self.prob_verb_adj_file = join_path(self.stats_dir, 'prob_verb_adj.sqlite')
 
         self._prob_verb_noun_db = None
         self._prob_noun_verb_db = None
