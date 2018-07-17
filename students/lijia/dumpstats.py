@@ -104,32 +104,44 @@ class DumpStats:
             pass
         elif file_exists(self.prob_verb_adj_file):
             self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
-
         else:
-            self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
-            # compute verb adj combination set (also cached)
-            verb_adj_set = set()
-            for obj in self.prob_verb_noun_db:
-                for adj, _ in self.prob_noun_adj_db.get_variable_dict(obj):
-                    for verb, _ in self.prob_verb_noun_db.get_given_dict(obj):
-                        verb_adj_set.add("%s %s" % (adj, verb))
-
-            verb_adj_set = sorted(verb_adj_set)
-            cache_verb_adj_set(self.stat_dir, verb_adj_set)
-
-            # calculate the real probability and add to database
-            for pair in verb_adj_set:
-                adj, verb = pair.split()
-                prob = sum(
-                    # P(V_O) * P(O_A)
-                    self.prob_verb_noun_db.get_probability(obj, verb) *
-                    self.prob_noun_adj_db.get_probability(adj, obj)
-                    for obj in self.prob_verb_noun_db.get_variable_dict(verb)
-                )
-                if not 0 <= prob <= 1:
-                    continue
-                self._prob_verb_adj_db.add_probability(adj, verb, prob)
+            verb_adj_set = self.compute_verb_adj_pair()
+            self.init_prob_verb_adj(verb_adj_set)
         return self._prob_verb_adj_db
+
+    def compute_verb_adj_pair(self):
+        """
+        Compute the unique "verb adj" pair of the dump and return sorted tuple of the set
+        Returns:
+            (tuple) sorted "verb adj" set
+        """
+        verb_adj_set = set()
+        for obj in self.prob_verb_noun_db:
+            for adj, _ in self.prob_noun_adj_db.get_variable_dict(obj):
+                for verb, _ in self.prob_verb_noun_db.get_given_dict(obj):
+                    verb_adj_set.add("%s %s" % (adj, verb))
+        verb_adj_set = sorted(verb_adj_set)
+        # cache the set
+        with open(join_path(self.stats_dir, "verb_adj_set.txt"), 'w', encoding='utf-8') as file:
+            for pair in verb_adj_set:
+                file.write(pair)
+        print("finish writing verb adj pair")
+        return verb_adj_set
+
+    def init_prob_verb_adj(self, verb_adj_set):
+        print("initiating p(verb|adj) database")
+        self._prob_verb_adj_db = CondProbDict(self.prob_verb_adj_file)
+        for pair in verb_adj_set:
+            adj, verb = pair.split()
+            prob = sum(
+                # P(V_O) * P(O_A)
+                self.prob_verb_noun_db.get_probability(obj, verb) *
+                self.prob_noun_adj_db.get_probability(adj, obj)
+                for obj in self.prob_verb_noun_db.get_variable_dict(verb)
+            )
+            if not 0 <= prob <= 1:
+                continue
+            self._prob_verb_adj_db.add_probability(adj, verb, prob)
 
     def cache_prob(self, db_name, dict_count):
         """
@@ -149,7 +161,7 @@ class DumpStats:
             counter = dict_count[cond]
             total = sum(counter.values())
             for var in dict_count[cond]:
-                dict_db.add_probability(cond, var, float(counter[var] / total))
+                dict_db.add_probability(cond, var, float(counter[var] / total), update=True)
         return dict_db
 
     def calculate_prob_from_extraction(self, extract_dir, db_name, cond_idx, var_idx):
@@ -192,7 +204,7 @@ def cache_count(db_filename, dict_counter):
     Returns:
         write out a count file for the given dictionary-counter
     """
-    filename = "count_" + db_filename[:-7] + ".txt"
+    filename = db_filename[:-7].replace("prob", "count") + ".txt"
     if file_exists(filename):
         print("failed to cache beacause the file %s already exist" % filename)
         return
@@ -203,9 +215,3 @@ def cache_count(db_filename, dict_counter):
             for var in dict_counter[cond]:
                 file.write("---%s (%s)\n" % (var, counter[var]))
 
-
-def cache_verb_adj_set(output_dir, verb_adj_set):
-    """cache verb adjective verb_adj_set in output stat directory as txt file """
-    with open(join_path(output_dir, "verb_adj_set.txt"), 'w', encoding='utf-8') as file:
-        for pair in verb_adj_set:
-            file.write(pair)
