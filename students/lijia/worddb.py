@@ -38,6 +38,13 @@ class CondProbDict:
                 )
             ''')
 
+    def __iter__(self):
+        with self.connection as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT given, variable FROM probabilities')
+            for given, variable in cursor:
+                yield given, variable
+
     def add_probability(self, given, variable, probability, update=False):
         with self.connection as conn:
             cursor = conn.cursor()
