@@ -1,78 +1,13 @@
 """extract phrase from folder and calculate p(verb_adj)"""
 
-import re
-import sys
-import time
-import datetime
-from collections import Counter, defaultdict, namedtuple
-from os import listdir
-from os.path import dirname, realpath, join as join_path, exists as file_exists
-import spacy
-from nltk.wsd import lesk
-from nltk.corpus import wordnet as wn
-from students.lijia.word2vec import wn_is_manipulable_noun, umbel_is_manipulable_noun
+from collections import namedtuple
+from os import mkdir
+from os.path import exists as file_exists
+from students.lijia.dumpstats import DumpStats
 from students.lijia.utils import *
 
 VPO = namedtuple('VPO', ('verb', 'prep', 'object'))
 NP = namedtuple('NP', ['noun', 'adjectives'])
-
-
-def has_number(string):
-    """check if the string contains a number"""
-    return bool(re.search(r'\d', string))
-
-
-def is_good_verb(token):
-    """check if the token is an acceptable verb"""
-    exclude_verbs = ['have']
-    return token.pos_ == "VERB" \
-           and wn.morphy(token.text, wn.VERB) \
-           and not token.is_stop \
-           and token.text not in exclude_verbs \
-           and not token.text.startswith('\'')
-
-
-def is_good_noun(token):
-    """check if the token is an acceptable noun"""
-    return token.pos_ == "NOUN"\
-           and wn.morphy(token.text, wn.NOUN) \
-           and not has_number(token.text)
-
-
-def is_good_adj(token):
-    """check if the token is an acceptable adj"""
-    return token.pos_ == "ADJ" \
-            and wn.morphy(token.text, wn.ADJ) \
-            and not has_number(token.text)
-
-
-def is_person(token):
-    """check if the token refers to a person"""
-    return token.lemma_ == "-PRON-" or token.ent_type_ == "PERSON" or token.tag_ == "WP"
-
-
-def is_good_subj(token):
-    """check if the token is a subject in the sentence"""
-    return (token.pos_ == "NOUN" or token.pos_ == "PRON" or token.pos_ == "PROPN")\
-           and token.dep_ == "nsubj"\
-           and not has_number(token.text)
-
-
-def is_good_obj(token):
-    """check if the token is a object in the sentence"""
-    return is_good_noun(token) and not is_person(token) and token.dep_ == "dobj"
-
-
-def is_manipulable(token):
-    """check if the token is manipubale or not by wordnet and umbel"""
-    return is_good_noun(token) \
-           and not is_person(token) \
-           and (wn_is_manipulable_noun(token.lemma_) or umbel_is_manipulable_noun(token.lemma_))
-
-
-def replace_wsd(doc, token):
-    """return the wsd token of a doc"""
-    return lesk(doc.text.split(), str(token))
 
 
 def extract_vpo(doc):
@@ -120,7 +55,6 @@ def extract_np(doc):
         if token.dep_ == "amod" and is_manipulable(token.head):
             # eg. "The tall and skinny girl..."
             subjects = [token.head.lemma_]
-        # elif token.dep_ == "acomp" and len([child for child in token.children]) == 0:
         elif token.dep_ == "acomp":
             # eg. "The girl is tall and skinny."
             subjects = [
@@ -139,12 +73,19 @@ def extract_np(doc):
     return results
 
 
-def extract_from_directory(directory):
-    """extract and write (adj noun) and (verb_prep noun) from given dump"""
-    for file in get_filename_from_folder(directory):
+def extract_from_folder(dump_dir, stats_dir):
+    extract_adj_noun_dir = join_path(stats_dir, "adj_noun")
+    extract_verb_noun_dir = join_path(stats_dir, "verb_noun")
+    try:
+        mkdir(extract_adj_noun_dir)
+        mkdir(extract_verb_noun_dir)
+    except FileExistsError:
+        pass
+
+    for file in get_filename_from_folder(dump_dir):
         print(file)
-        file_name_vo = join_path(VO_DIR, file[:-4] + "_vo.txt")
-        file_name_np = join_path(NP_DIR, file[:-4] + "_np.txt")
+        file_name_vo = join_path(extract_verb_noun_dir, file[:-4] + "_vo.txt")
+        file_name_np = join_path(extract_adj_noun_dir, file[:-4] + "_np.txt")
 
         # start extraction if the file does not exist yet
         if file_exists(file_name_vo) and file_exists(file_name_np):
@@ -152,7 +93,7 @@ def extract_from_directory(directory):
 
         vo_lines = []
         np_lines = []
-        for doc in get_nlp_sentence_from_file(directory, file):
+        for doc in get_nlp_sentence_from_file(dump_dir, file):
             for vo in extract_vpo(doc):
                 try:
                     assert vo.verb != 'takes', "takes output occurs in sentence %s" % doc
@@ -170,174 +111,37 @@ def extract_from_directory(directory):
             vo_file.write('\n'.join(vo_lines))
         with open(file_name_np, 'w', encoding='utf-8') as np_file:
             np_file.write('\n'.join(np_lines))
+    print("finish extracting")
 
 
-def calculate_individual_p(directory, output_filename, outer_index, inner_index):
-    """
-    a generic function that calculate probability and count
-    :param directory: the folder that contains extracted words
-    :param output_filename
-    :param outer_index: the index for condition (default dictionary's key)
-    :param inner_index: the index for marginal (counter's key)
-    :return:
-    """
-    if file_exists(join_path(OUTPUT_DIR, "count_" + output_filename)) \
-            and file_exists(join_path(OUTPUT_DIR, "prob_" + output_filename)):
-        print("both count and probability for (%s) exist" % output_filename)
-        return
-
-    def write_out_count():
-        """ write out counts"""
-        with open(join_path(OUTPUT_DIR, "count_" + output_filename), 'w', encoding='utf-8') as f:
-            for k in d:
-                c = d[k]
-                f.write("%s (%s)\n" % (k, sum(c.values())))
-                for word in d[k]:
-                    f.write("---%s (%s)\n" % (word, c[word]))
-
-    def write_out_prob():
-        """write out probability for each pair"""
-        with open(join_path(OUTPUT_DIR, "prob_" + output_filename), 'w', encoding='utf-8') as f:
-            for k in d:
-                c = d[k]
-                total = sum(c.values())
-                for word in d[k]:
-                    f.write("%s %s %s\n" % (k, word, float(c[word] / total)))
-
-    # read from a directory to a nested dictionary
-    file_gen = get_filename_from_folder(directory)
-    d = defaultdict(Counter)
-    i = 0
-    for file in file_gen:
-        i += 1
-        lines = [line for line in open(join_path(directory, file), 'r', encoding='utf-8')]
-        # add to defaultdict with x as key and a counter as value
-        # the counter counts y's appearance
-        for line in lines:
-            x = line.split()[outer_index]
-            y = line.split()[inner_index]
-            if d[x]:
-                d[x].update([y])
-            else:
-                d[x] = Counter([y])
-
-    write_out_count()
-    print("Finished writing count. Total file processed: ", i)
-    write_out_prob()
-    print("Finished writing probability")
-    return
+def create_dump_stats(dump_dir, stats_dir):
+    """create a instance of dump stats after extract from the dump"""
+    # extract phrases from dump
+    extract_from_folder(dump_dir, stats_dir)
+    # return a instance of DumpStats
+    return DumpStats(dump_dir, stats_dir)
 
 
-def calculate_stats():
-    """output a file with frequency of extraction from previously stored files"""
-    calculate_individual_p(VO_DIR, "verb_noun.txt", 1, 0)
-    calculate_individual_p(VO_DIR, "noun_verb.txt", 0, 1)
-    calculate_individual_p(NP_DIR, "noun_adj.txt", 0, 1)
-    calculate_individual_p(NP_DIR, "adj_noun.txt", 1, 0)
-    return
+def get_verbs_for_noun(noun):
+    def get_verbs_from_dump(dump_stats, noun):
+        """calculate overall probability of verb given noun"""
 
+        dict_adj_noun = dump_stats.prob_adj_noun_db.get_given_dict(noun)
+        results = {}
+        # p1 is P(adj|noun)
+        for adj, p1 in dict_adj_noun.items():
+            dict_verb_adj = dump_stats.prob_verb_adj_db.get_given_dict(adj)
+            # p2 is P(verb|adj)
+            for verb, p2 in dict_verb_adj.items():
+                if verb in results:
+                    results[verb] += p1 * p2
+                else:
+                    results[verb] = p1 * p2
+        return sorted(results.items(), key=(lambda kv: kv[1]), reverse=True)[:100]
 
-def compute_verb_adj_set():
-    """compute and write out verb adjectives set"""
-    output_filename = join_path(OUTPUT_DIR, 'verb_adj_pair.txt')
-    if file_exists(output_filename):
-        print("%s already exist" % output_filename)
-        return
+    dump_dir = join_path(ROOT_DIRECTORY, "data/temp_test/dump")
+    stats_dir = join_path(ROOT_DIRECTORY, "data/temp_test/stats")
+    dump_stats = create_dump_stats(dump_dir, stats_dir)
+    get_verbs_from_dump(dump_stats, noun)
 
-        # {object : {verb: prob(v_n)}}
-    d_ov = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_verb_noun.txt'), 0, 1, 2)
-
-    # {object: {adj: prob(n_a}}
-    d_oa = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_noun_adj.txt'), 1, 0, 2)
-    print("finish reading into dictionary")
-
-    verb_adj_set = set()
-    for o in d_ov:
-        for adj, _ in d_oa[o].items():
-            for v, _ in d_ov[o].items():
-                verb_adj_set.add((adj, v))
-    verb_adj_set = sorted(verb_adj_set)
-    with open(output_filename, 'w', encoding='utf-8') as w:
-        for adj, v in verb_adj_set:
-            w.write("%s %s\n" % (adj, v))
-
-
-def calculate_verb_given_adj():
-    """calculate and write the prob(verb|adj)"""
-    output_filename = join_path(OUTPUT_DIR, 'prob_verb_adj.txt')
-    if file_exists(output_filename):
-        print("%s already exist" % output_filename)
-        return
-
-    with open(join_path(OUTPUT_DIR, 'verb_adj_pair.txt'), 'r', encoding='utf-8') as r:
-        adj_verb = {}
-        for line in r.readlines():
-            adj_verb[line] = 0
-        # adj_verb = [line.split() for line in r.readlines()]
-
-    # {object : {verb: prob(v_n)}}
-    d_ov = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_verb_noun.txt'), 0, 1, 2)
-
-    # {object: {adj: prob(n_a}}
-    d_oa = read_to_nested_dict(join_path(OUTPUT_DIR, 'prob_noun_adj.txt'), 1, 0, 2)
-
-    # {verb : [objects]}
-    d_vo = read_to_dict(join_path(OUTPUT_DIR, 'prob_verb_noun.txt'), 1, 0)
-
-    for pair in adj_verb:
-        adj, verb = pair.split()
-        prob = sum(
-            # P(V_O) * P(O_A)
-            d_ov[obj][verb] * d_oa[obj][adj]
-            for obj in d_vo[verb]
-        )
-        # print(adj, verb, prob)
-        if not 0 <= prob <= 1:
-            # print(adj, verb, prob)
-            continue
-        adj_verb[pair] = prob
-    with open(output_filename, 'w', encoding='utf-8') as f:
-        for key, value in adj_verb.items():
-            f.write("%s %s\n" % (key, value))
-
-
-def overall(noun):
-    """calculate overall probability of verb given noun"""
-
-    dict_adj_noun = search_file(join_path(OUTPUT_DIR, "prob_adj_noun.txt"), noun)
-    temp_dict = {}
-    # p1 is P(adj|noun)
-    for adj, p1 in dict_adj_noun.items():
-        dict_verb_adj = search_file(join_path(OUTPUT_DIR, "prob_verb_adj_3.txt"), adj)
-        # p2 is P(verb|adj)
-        for verb, p2 in dict_verb_adj.items():
-            if verb in temp_dict:
-                temp_dict[verb] += p1 * p2
-            else:
-                temp_dict[verb] = p1 * p2
-    print(sorted(temp_dict.items(), key=(lambda kv: kv[1]), reverse=True)[:100])
-
-
-def pipe():
-    """pipeline for extraction and probability calculation"""
-    # extract_from_directory(STORY_DIRECTORY)
-    # print("finish extract from directory at %s" % str(datetime.datetime.now()))
-    # calculate_stats()
-    # print("finish calculating stats at %s" % str(datetime.datetime.now()))
-    # compute_verb_adj_set()
-    # calculate_verb_given_adj()
-    # print("finish calculating prob(v|adj) at %s" % str(datetime.datetime.now()))
-    list = ["knife", "lamp", "coffee", "stone", "bottle", "cake"]
-    for word in list:
-        overall(word)
-
-
-def main():  # pylint: disable= missing-docstring
-    start = time.time()
-    pipe()
-    end = time.time()
-    print("total time cost %s" % datetime.timedelta(seconds=(end - start)))
-
-
-if __name__ == '__main__':
-    main()
+# print(get_verbs_for_noun("eye"))
