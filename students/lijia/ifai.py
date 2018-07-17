@@ -1,3 +1,5 @@
+"""ifai is an interface to query possible actions for given sentence from word2vec and probability model"""
+
 import sys
 from os.path import dirname, realpath
 

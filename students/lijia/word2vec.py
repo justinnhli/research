@@ -1,3 +1,5 @@
+"""word2vec contains a list of functions that extract information from word embedding model"""
+
 import time
 import sys
 import re

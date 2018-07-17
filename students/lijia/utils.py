@@ -1,3 +1,5 @@
+"""utils contains a list of functions that are shared in multiple module"""
+
 import re
 import sys
 from os import listdir
