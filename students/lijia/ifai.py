@@ -7,8 +7,8 @@ ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
 from students.lijia.utils import get_manipulable_noun
-from students.lijia.word2vec import get_verbs_for_noun as w2v_get_verbs_for_noun
 from students.lijia.extraction import get_verbs_for_noun as prob_get_verbs_for_noun
+from students.lijia.word2vec import get_verbs_for_noun as w2v_get_verbs_for_noun
 # todo: rename extraction.py
 
 

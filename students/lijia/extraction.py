@@ -1,10 +1,15 @@
 """extract phrase from folder and calculate p(verb_adj)"""
 
-from collections import namedtuple
+import sys
 from os import mkdir
-from os.path import exists as file_exists
+from os.path import exists as file_exists, dirname, realpath
+from collections import namedtuple
 from students.lijia.dumpstats import DumpStats
 from students.lijia.utils import *
+
+# make sure research library code is available
+ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
+sys.path.insert(0, ROOT_DIRECTORY)
 
 VPO = namedtuple('VPO', ('verb', 'prep', 'object'))
 NP = namedtuple('NP', ['noun', 'adjectives'])

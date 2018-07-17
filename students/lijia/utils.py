@@ -1,21 +1,13 @@
 """utils contains a list of functions that are shared in multiple module"""
 
 import re
-import sys
 from os import listdir
-from os.path import dirname, realpath, join as join_path
+from os.path import join as join_path
 import spacy
 import nltk
 from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
 from students.lijia.word2vec import wn_is_manipulable_noun, umbel_is_manipulable_noun
-
-# make sure research library code is available
-ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
-sys.path.insert(0, ROOT_DIRECTORY)
-GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
-UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
-
 
 # update and load models
 nltk.download('wordnet')

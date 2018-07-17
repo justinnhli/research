@@ -9,7 +9,7 @@ ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
 from research.word_embedding import load_model # pylint: disable=wrong-import-position
-from ifai import possible_actions # pylint: disable=wrong-import-position
+from students.lijia.word2vec import possible_actions # pylint: disable=wrong-import-position
 
 GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
 SCENARIO_DIRECTORY = join_path(dirname(realpath(__file__)), 'test-data')
