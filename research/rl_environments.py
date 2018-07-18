@@ -1,6 +1,7 @@
 """Reinforcement learning environments."""
 
 from copy import copy
+from collections import namedtuple
 
 from .randommixin import RandomMixin
 
@@ -132,6 +133,11 @@ class AttrDict:
     def __eq__(self, other):
         # pylint: disable = protected-access
         return type(self) is type(other) and self._attributes_ == other._attributes_
+
+    def __lt__(self, other):
+        if type(self) is not type(self):
+            raise TypeError(f"'<' not supported between instances of '{type(self).__name__}' and '{type(other).__name__}'")
+        return str(sorted(self.as_dict().items())) < str(sorted(other.as_dict().items()))
 
     def __str__(self):
         return '{}({})'.format(
@@ -441,6 +447,275 @@ def fixed_long_term_memory(cls):
 
     return LongTermMemoryMetaEnvironment
 
+
+def memory_architecture(cls):
+    """Decorate an Environment to become a memory architecture.
+
+    Arguments:
+        cls (class): The Environment superclass.
+
+    Returns:
+        class: A subclass with a memory architecture.
+    """
+    assert issubclass(cls, Environment)
+
+    BufferProperties = namedtuple( # pylint: disable = invalid-name
+        'BufferProperties',
+        [
+            'copyable',
+            'overwritable',
+            'appendable',
+            'deletable',
+            'defaults',
+        ],
+    )
+
+    class MemoryElement(AttrDict):
+        """A long-term memory element."""
+
+        pass
+
+    class MemoryArchitectureMetaEnvironment(cls):
+        """A subclass to add a long-term memory to an Environment."""
+
+        # pylint: disable = missing-docstring
+
+        BUFFERS = {
+            'perceptual': BufferProperties(
+                copyable=True,
+                overwritable=False,
+                appendable=False,
+                deletable=False,
+                defaults={},
+            ),
+            'query': BufferProperties(
+                copyable=False,
+                overwritable=False,
+                appendable=True,
+                deletable=True,
+                defaults={},
+            ),
+            'retrieval': BufferProperties(
+                copyable=True,
+                overwritable=False,
+                appendable=False,
+                deletable=False,
+                defaults={},
+            ),
+            'action': BufferProperties(
+                copyable=False,
+                overwritable=True,
+                appendable=True,
+                deletable=False,
+                defaults={
+                    'name': 'no-op',
+                },
+            ),
+        }
+
+        def __init__(self, explicit_actions=False, *args, **kwargs): # noqa: D102
+            # pylint: disable = keyword-arg-before-vararg
+            # parameters
+            self.explicit_actions = explicit_actions
+            # variables
+            self.ltm = set()
+            self.buffers = {}
+            self.query_matches = []
+            self.query_index = None
+            # initialization
+            self._clear_buffers()
+            super().__init__(*args, **kwargs)
+
+        @property
+        def slots(self):
+            for buf, attrs in sorted(self.buffers.items()):
+                for attr, val in attrs.items():
+                    yield buf, attr, val
+
+        def to_dict(self):
+            """Convert the state into a dictionary."""
+            return {buf + '_' + attr: val for buf, attr, val in self.slots}
+
+        def get_state(self): # noqa: D102
+            return State(**self.to_dict())
+
+        def get_observation(self): # noqa: D102
+            return State(**self.to_dict())
+
+        def reset(self): # noqa: D102
+            super().reset()
+            self._clear_buffers()
+
+        def _clear_buffers(self):
+            self.buffers = {}
+            for buf, props in self.BUFFERS.items():
+                self.buffers[buf] = {}
+                for key, value in props.defaults.items():
+                    self.buffers[buf][key] = value
+            self._clear_ltm_buffers()
+
+        def _clear_ltm_buffers(self):
+            self.buffers['query'] = {}
+            self.buffers['retrieval'] = {}
+            self.query_matches = []
+            self.query_index = None
+
+        def start_new_episode(self): # noqa: D102
+            super().start_new_episode()
+            self._clear_buffers()
+            self._sync_input_buffers()
+
+        def get_actions(self): # noqa: D102
+            actions = super().get_actions()
+            if actions == []:
+                return actions
+            actions = []
+            if self.explicit_actions:
+                actions.extend(self._generate_output_actions())
+            actions.extend(self._generate_copy_actions())
+            actions.extend(self._generate_delete_actions())
+            actions.extend(self._generate_cursor_actions())
+            return actions
+
+        def _generate_output_actions(self):
+            actions = []
+            for action in super().get_actions():
+                actions.append(Action('act', super_name=action.name))
+            return actions
+
+        def _generate_copy_actions(self):
+            actions = []
+            for src_buf, src_props in self.BUFFERS.items():
+                if not src_props.copyable:
+                    continue
+                for src_attr in self.buffers[src_buf]:
+                    for dst_buf, dst_prop in self.BUFFERS.items():
+                        if dst_prop.appendable:
+                            if src_attr not in self.buffers[dst_buf]:
+                                actions.append(Action(
+                                    'copy',
+                                    src_buf=src_buf,
+                                    src_attr=src_attr,
+                                    dst_buf=dst_buf,
+                                    dst_attr=src_attr,
+                                ))
+                        if dst_prop.overwritable:
+                            for dst_attr in self.buffers[dst_buf]:
+                                actions.append(Action(
+                                    'copy',
+                                    src_buf=src_buf,
+                                    src_attr=src_attr,
+                                    dst_buf=dst_buf,
+                                    dst_attr=dst_attr,
+                                ))
+            return actions
+
+        def _generate_delete_actions(self):
+            actions = []
+            for buf, prop in self.BUFFERS.items():
+                if not prop.deletable:
+                    continue
+                for attr in self.buffers[buf]:
+                    actions.append(Action(
+                        'delete',
+                        buf=buf,
+                        attr=attr,
+                    ))
+            return actions
+
+        def _generate_cursor_actions(self):
+            # TODO make this into a buffer action
+            actions = []
+            if self.buffers['retrieval']:
+                actions.append(Action('next-retrieval'))
+                actions.append(Action('prev-retrieval'))
+            return actions
+
+        def react(self, action): # noqa: D102
+            # handle internal actions
+            query_changed = self._react_buffer_changes(action)
+            # update memory buffers
+            if query_changed:
+                self._query_ltm()
+            else:
+                self._clear_ltm_buffers()
+            # interface with underlying environment
+            real_action = Action(**self.buffers['action'])
+            reward = super().react(real_action)
+            self._sync_input_buffers()
+            return reward
+
+        def _react_buffer_changes(self, action):
+            query_changed = False
+            if action.name == 'act':
+                self.buffers['action']['name'] = action.super_name
+            elif action.name == 'write':
+                self.buffers[action.buf][action.attr] = action.val
+                if action.buf == 'query':
+                    query_changed = True
+            elif action.name == 'copy':
+                val = self.buffers[action.src_buf][action.src_attr]
+                self.buffers[action.dst_buf][action.dst_attr] = val
+                if action.dst_buf == 'query':
+                    query_changed = True
+            elif action.name == 'delete':
+                del self.buffers[action.buf][action.attr]
+                if action.buf == 'query':
+                    query_changed = True
+            elif action.name == 'next-retrieval':
+                self.query_index = (self.query_index + 1) % len(self.query_matches)
+                self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+            elif action.name == 'prev-retrieval':
+                self.query_index = (self.query_index - 1) % len(self.query_matches)
+                self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+            return query_changed
+
+        def _query_ltm(self):
+            if not self.buffers['query']:
+                return
+            candidates = []
+            for candidate in self.ltm:
+                match = all(
+                    attr in candidate and candidate[attr] == val
+                    for attr, val in self.buffers['query'].items()
+                )
+                if match:
+                    candidates.append(candidate)
+            if candidates:
+                # if the current retrieved item still matches the new query
+                # leave it there but update the cached matches and index
+                if self.query_index is not None:
+                    curr_retrieved = self.query_matches[self.query_index]
+                else:
+                    curr_retrieved = None
+                self.query_matches = sorted(candidates)
+                # use the ValueError from list.index() to determine if the query still matches
+                try:
+                    self.query_index = self.query_matches.index(curr_retrieved)
+                except ValueError:
+                    self.query_index = self.rng.randrange(len(self.query_matches))
+                    self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+            else:
+                self.buffers['retrieval'] = {}
+
+        def _sync_input_buffers(self):
+            # update input buffers
+            self.buffers['perceptual'] = {}
+            for attr, val in sorted(super().get_observation().as_dict().items()):
+                self.buffers['perceptual'][attr] = val
+            # clear output buffer
+            self.buffers['action'] = {}
+            self.buffers['action']['name'] = 'no-op'
+
+        def add_to_ltm(self, **kwargs):
+            """Add a memory element to long-term memory.
+
+            Arguments:
+                **kwargs: The key-value pairs of the memory element.
+            """
+            self.ltm.add(MemoryElement(**kwargs))
+
+    return MemoryArchitectureMetaEnvironment
 
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
