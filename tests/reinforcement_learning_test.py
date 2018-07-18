@@ -10,11 +10,12 @@ sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from research.rl_core import train_and_evaluate
-from research.rl_environments import State, Action
+from research.rl_environments import State, Action, Environment
 from research.rl_environments import GridWorld, SimpleTMaze
-from research.rl_environments import gating_memory, fixed_long_term_memory
+from research.rl_environments import gating_memory, fixed_long_term_memory, memory_architecture
 from research.rl_agents import TabularQLearningAgent
 from research.rl_agents import epsilon_greedy
+from research.randommixin import RandomMixin
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
@@ -263,3 +264,105 @@ def test_agent():
     # the optimal policy takes 8 steps for a 5x5 grid
     # -6 comes from 7 steps of -1 reward and 1 step of +1 reward
     assert returns[-1] == -6
+    
+
+def test_memory_architecture():
+    """Test the memory architecture meta-environment."""
+
+    class TestEnv(Environment, RandomMixin):
+        """A simple environment with a single string state."""
+
+        def __init__(self, string=''):
+            """Initialize the TestEnv.
+
+            Arguments:
+                string (str): The initial string.
+            """
+            self.init_string = string
+            self.string = self.init_string
+            super().__init__()
+
+        def get_state(self): # noqa: D102
+            return self.get_observation()
+
+        def get_observation(self): # noqa: D102
+            return State(string=self.string)
+
+        def get_actions(self): # noqa: D102
+            if self.string == 'done':
+                return []
+            else:
+                return [Action('no-op')]
+
+        def reset(self): # noqa: D102
+            self.start_new_episode()
+
+        def start_new_episode(self): # noqa: D102
+            self.string = self.init_string
+
+        def react(self, action): # noqa: D102
+            if action.name != 'no-op':
+                self.string = action.name
+            if self.string == 'done':
+                return 100
+            else:
+                return -1
+
+        def visualize(self): # noqa: D102
+            pass
+
+    env = memory_architecture(TestEnv)(explicit_actions=False)
+    env.start_new_episode()
+    size = 5
+    for i in range(size * size):
+        env.add_to_ltm(index=i, row=(i // size), col=(i % size))
+    # test observation
+    assert env.get_observation() == State(
+        perceptual_string='',
+        action_name='no-op',
+    ), env.get_observation()
+    # test actions
+    assert (
+        set(env.get_actions()) == set(
+            [
+                Action("copy", dst_attr='string', dst_buf='query', src_attr='string', src_buf='perceptual'),
+                Action("copy", dst_attr='string', dst_buf='action', src_attr='string', src_buf='perceptual'),
+                Action("copy", dst_attr='name', dst_buf='action', src_attr='string', src_buf='perceptual'),
+            ]
+        )
+    ), set(env.get_actions())
+    # test pass-through reaction
+    reward = env.react(Action('write', buf='action', attr='name', val='test-action'))
+    assert env.get_observation() == State(
+        perceptual_string='test-action',
+        action_name='no-op',
+    ), env.get_observation()
+    assert reward == -1, reward
+    # query test
+    env.react(Action('write', buf='query', attr='index', val=9))
+    assert env.get_observation() == State(
+        perceptual_string='test-action',
+        action_name='no-op',
+        query_index=9,
+        retrieval_index=9,
+        retrieval_row=1,
+        retrieval_col=4,
+    ), env.get_observation()
+    # query with no results
+    env.react(Action('write', buf='query', attr='row', val=4))
+    assert env.get_observation() == State(
+        perceptual_string='test-action',
+        action_name='no-op',
+        query_index=9,
+        query_row=4,
+    ), env.get_observation()
+    # query and retrieval should clear on external action
+    env.react(Action('write', buf='action', attr='name', val='clear-memory-buffer'))
+    assert env.get_observation() == State(
+        perceptual_string='clear-memory-buffer',
+        action_name='no-op',
+    ), env.get_observation()
+    # complete the environment
+    reward = env.react(Action('write', buf='action', attr='name', val='done'))
+    assert env.end_of_episode()
+    assert reward == 100, reward
