@@ -136,7 +136,10 @@ class AttrDict:
 
     def __lt__(self, other):
         if type(self) is not type(self):
-            raise TypeError(f"'<' not supported between instances of '{type(self).__name__}' and '{type(other).__name__}'")
+            raise TypeError(''.join([
+                "'<' not supported between instances of ",
+                f"'{type(self).__name__}' and '{type(other).__name__}'",
+            ]))
         return str(sorted(self.as_dict().items())) < str(sorted(other.as_dict().items()))
 
     def __str__(self):
@@ -716,6 +719,7 @@ def memory_architecture(cls):
             self.ltm.add(MemoryElement(**kwargs))
 
     return MemoryArchitectureMetaEnvironment
+
 
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""

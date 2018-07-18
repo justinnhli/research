@@ -264,7 +264,7 @@ def test_agent():
     # the optimal policy takes 8 steps for a 5x5 grid
     # -6 comes from 7 steps of -1 reward and 1 step of +1 reward
     assert returns[-1] == -6
-    
+
 
 def test_memory_architecture():
     """Test the memory architecture meta-environment."""
