@@ -81,7 +81,11 @@ class CondProbDict:
                 'SELECT probability FROM probabilities WHERE given=? AND variable=? LIMIT 1',
                 (given, variable),
             )
-            return cursor.fetchone()[0]
+            result = cursor.fetchone()
+            if result is None:
+                return 0
+            else:
+                return result[0]
 
     def get_given_dict(self, given):
         result = {}
