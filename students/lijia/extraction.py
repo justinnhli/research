@@ -1,6 +1,7 @@
 """extract phrase from folder and calculate p(verb_adj)"""
 
 import sys
+from time import time
 from os import mkdir
 from os.path import exists as file_exists, dirname, realpath
 from collections import namedtuple
@@ -119,14 +120,6 @@ def extract_from_folder(dump_dir, stats_dir):
     print("finish extracting")
 
 
-def create_dump_stats(dump_dir, stats_dir):
-    """create a instance of dump stats after extract from the dump"""
-    # extract phrases from dump
-    extract_from_folder(dump_dir, stats_dir)
-    # return a instance of DumpStats
-    return DumpStats(dump_dir, stats_dir)
-
-
 def get_verbs_for_noun(noun):
     def get_verbs_from_dump(dump_stats, noun):
         """calculate overall probability of verb given noun"""
@@ -146,7 +139,11 @@ def get_verbs_for_noun(noun):
 
     dump_dir = join_path(ROOT_DIRECTORY, "data/temp_test/dump")
     stats_dir = join_path(ROOT_DIRECTORY, "data/temp_test/stats")
-    dump_stats = create_dump_stats(dump_dir, stats_dir)
-    get_verbs_from_dump(dump_stats, noun)
+    extract_from_folder(dump_dir, stats_dir)
+    dump_stats = DumpStats(dump_dir, stats_dir)
+    return get_verbs_from_dump(dump_stats, noun)
 
-# print(get_verbs_for_noun("eye"))
+start = time()
+print(get_verbs_for_noun("cup"))
+end = time()
+print("total time cost: %s s" % (end - start))
