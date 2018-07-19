@@ -116,15 +116,15 @@ class DumpStats:
             (tuple) sorted "verb adj" set
         """
         verb_adj_set = set()
-        for obj in self.prob_verb_noun_db:
-            for adj, _ in self.prob_noun_adj_db.get_variable_dict(obj):
-                for verb, _ in self.prob_verb_noun_db.get_given_dict(obj):
+        for obj, _ in self.prob_verb_noun_db:
+            for adj in self.prob_noun_adj_db.get_variable_dict(obj):
+                for verb in self.prob_verb_noun_db.get_given_dict(obj):
                     verb_adj_set.add("%s %s" % (adj, verb))
         verb_adj_set = sorted(verb_adj_set)
         # cache the set
         with open(join_path(self.stats_dir, "verb_adj_set.txt"), 'w', encoding='utf-8') as file:
             for pair in verb_adj_set:
-                file.write(pair)
+                file.write(pair + "\n")
         print("finish writing verb adj pair")
         return verb_adj_set
 
@@ -155,8 +155,8 @@ class DumpStats:
         """
         if file_exists(db_name):
             print("failed to cache beacause, the file %s already exist" % db_name)
-            return CondProbDict(self.prob_verb_noun_file)
-        dict_db = CondProbDict(self.prob_verb_noun_file)
+            return CondProbDict(db_name)
+        dict_db = CondProbDict(db_name)
         for cond in dict_count:
             counter = dict_count[cond]
             total = sum(counter.values())
