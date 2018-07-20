@@ -5,14 +5,12 @@ from collections import defaultdict, Counter
 from students.lijia.worddb import CondProbDict  # pylint disable=import-error
 from students.lijia.utils import get_filename_from_folder  # pylint disable=import-error
 
-# todo(Lijia): looging
-
 
 class DumpStats:
     """a class for organizing all the statistics for a dump """
     def __init__(self, dump_dir, stat_dir):
         self.dump_dir = dump_dir
-        self.stats_dir = stat_dir  # todo: how should dump_dir and stats_dir work?
+        self.stats_dir = stat_dir
 
         self.AN_extract_dir = join_path(self.stats_dir, "adj_noun")  # pylint: disable=invalid-name
         self.VN_extract_dir = join_path(self.stats_dir, "verb_noun")  # pylint: disable=invalid-name

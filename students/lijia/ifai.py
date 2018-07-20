@@ -51,7 +51,7 @@ def output(i, sentence, noun, prob_model_verbs, w2c_verbs, actions):
 
 def main():
     start = time()
-    for sentence in get_sentence_from_file(dirname(OUTPUT_DIR), "test_sentences.txt"):
+    for sentence in get_sentence_from_file(dirname(OUTPUT_DIR), "test_sentences.txt"): # todo: change this
         get_action(sentence)
     end = time()
     print("total use time %s s" % (end - start))
