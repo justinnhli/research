@@ -43,6 +43,14 @@ def get_nlp_sentence_from_file(directory, filename):
             yield nlp(sentence)
 
 
+def get_sentence_from_file(directory, filename):
+    """yield individual sentences from given file"""
+    for line in open(join_path(directory, filename), encoding='utf-8'):
+        sentence_ls = line.replace("\"", "").split(". ")
+        for sentence in sentence_ls:
+            yield sentence
+
+
 def has_number(string):
     """check if the string contains a number"""
     return bool(re.search(r'\d', string))
