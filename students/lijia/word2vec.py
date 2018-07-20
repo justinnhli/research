@@ -4,8 +4,7 @@ import time
 import sys
 from collections import defaultdict, Counter
 from functools import lru_cache as memoize
-from os.path import dirname, realpath, join as join_path
-
+from os.path import dirname, realpath
 import numpy as np
 import requests
 import spacy
@@ -20,14 +19,12 @@ sys.path.insert(0, ROOT_DIRECTORY)
 
 from students.lijia.utils import *
 from research.knowledge_base import KnowledgeFile, URI
-from research.word_embedding import load_model
 
-GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
+
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 LEMMATIZER = WordNetLemmatizer()
 DICTIONARY = PyDictionary()
-W2V_MODEL = load_model(GOOGLE_NEWS_MODEL_PATH)
 
 
 # Utility Functions
