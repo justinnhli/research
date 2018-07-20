@@ -1,17 +1,27 @@
 """utils contains a list of functions that are shared in multiple module"""
 
 import re
+import sys
 from os import listdir
-from os.path import join as join_path
+from os.path import join as join_path, dirname, realpath
+from functools import lru_cache as memoize
 import spacy
 import nltk
 from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
-from students.lijia.word2vec import wn_is_manipulable_noun, umbel_is_manipulable_noun
+from PyDictionary import PyDictionary
+from research.knowledge_base import KnowledgeFile, URI
 
 # update and load models
 nltk.download('wordnet')
 nltk.download('words')
+DICTIONARY = PyDictionary()
+
+# make sure research library code is available
+ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
+sys.path.insert(0, ROOT_DIRECTORY)
+UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
+UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
 spacy_model = 'en_core_web_sm'
 nlp = spacy.load(spacy_model)
@@ -98,3 +108,80 @@ def get_manipulable_noun(sentence):
         if is_manipulable(token):
             results.append(token.text)
     return results
+
+
+@memoize(maxsize=None)
+def get_synonyms(word, pos=None):
+    """Get synonyms for a word using PyDictionary and WordNet.
+
+    Arguments:
+        word (str): The word to find synonyms for.
+        pos (int): WordNet part-of-speech constant. Defaults to None.
+
+    Returns:
+        set[str]: The set of synonyms.
+    """
+    syn_list = []
+
+    # add WordNet synonyms to the list
+    for synset in wn.synsets(word, pos):
+        for lemma in synset.lemmas():
+            syn = lemma.name()
+            if syn != word:
+                syn_list.append(syn)
+    # add thesaurus synonyms
+    dict_syns = DICTIONARY.synonym(word)
+    # combine them and return
+    if dict_syns:
+        return set(syn_list) | set(dict_syns)
+    else:
+        return set(syn_list)
+
+
+def umbel_is_manipulable_noun(noun):
+
+    def get_all_superclasses(kb, concept):
+        superclasses = set()
+        queue = [str(URI(concept, 'umbel-rc'))]
+        query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
+        while queue:
+            child = queue.pop(0)
+            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
+            for bindings in kb.query_sparql(query):
+                parent = str(bindings['parent'])
+                if parent not in superclasses:
+                    superclasses.add(parent)
+                    queue.append(str(URI(parent)))
+        return superclasses
+
+    # create superclass to check against
+    solid_tangible_thing = URI('SolidTangibleThing', 'umbel-rc').uri
+    for synonym in get_synonyms(noun, wn.NOUN):
+        # find the corresponding concept
+        variations = [synonym, synonym.lower(), synonym.title()]
+        variations = [variation.replace(' ', '') for variation in variations]
+        # find all ancestors of all variations
+        for variation in variations:
+            if solid_tangible_thing in get_all_superclasses(UMBEL, variation):
+                return True
+    return False
+
+
+def wn_is_manipulable_noun(noun):
+
+    def get_all_hypernyms(root_synset):
+        hypernyms = set()
+        queue = [root_synset]
+        while queue:
+            synset = queue.pop(0)
+            new_hypernyms = synset.hypernyms()
+            for hypernym in new_hypernyms:
+                if hypernym.name() not in hypernyms:
+                    hypernyms.add(hypernym.name())
+                    queue.append(hypernym)
+        return hypernyms
+
+    for synset in wn.synsets(noun, pos=wn.NOUN):
+        if 'physical_entity.n.01' in get_all_hypernyms(synset):
+            return True
+    return False

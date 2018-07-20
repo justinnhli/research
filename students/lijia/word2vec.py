@@ -1,17 +1,13 @@
 """word2vec contains a list of functions that extract information from word embedding model"""
 
-import time
 import sys
 from collections import defaultdict, Counter
 from functools import lru_cache as memoize
 from os.path import dirname, realpath
 import numpy as np
 import requests
-import spacy
-import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn, words
-from PyDictionary import PyDictionary
 
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
@@ -358,83 +354,6 @@ def cn_get_locations(noun):
     """
     raw_results = cn_get_relations_for_concept(noun, ['AtLocation', 'LocatedNear', 'PartOf'])
     return [[location, weight] for location, weight in raw_results if location != noun][:10]
-
-
-@memoize(maxsize=None)
-def get_synonyms(word, pos=None):
-    """Get synonyms for a word using PyDictionary and WordNet.
-
-    Arguments:
-        word (str): The word to find synonyms for.
-        pos (int): WordNet part-of-speech constant. Defaults to None.
-
-    Returns:
-        set[str]: The set of synonyms.
-    """
-    syn_list = []
-
-    # add WordNet synonyms to the list
-    for synset in wn.synsets(word, pos):
-        for lemma in synset.lemmas():
-            syn = lemma.name()
-            if syn != word:
-                syn_list.append(syn)
-    # add thesaurus synonyms
-    dict_syns = DICTIONARY.synonym(word)
-    # combine them and return
-    if dict_syns:
-        return set(syn_list) | set(dict_syns)
-    else:
-        return set(syn_list)
-
-
-def umbel_is_manipulable_noun(noun):
-
-    def get_all_superclasses(kb, concept):
-        superclasses = set()
-        queue = [str(URI(concept, 'umbel-rc'))]
-        query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
-        while queue:
-            child = queue.pop(0)
-            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
-            for bindings in kb.query_sparql(query):
-                parent = str(bindings['parent'])
-                if parent not in superclasses:
-                    superclasses.add(parent)
-                    queue.append(str(URI(parent)))
-        return superclasses
-
-    # create superclass to check against
-    solid_tangible_thing = URI('SolidTangibleThing', 'umbel-rc').uri
-    for synonym in get_synonyms(noun, wn.NOUN):
-        # find the corresponding concept
-        variations = [synonym, synonym.lower(), synonym.title()]
-        variations = [variation.replace(' ', '') for variation in variations]
-        # find all ancestors of all variations
-        for variation in variations:
-            if solid_tangible_thing in get_all_superclasses(UMBEL, variation):
-                return True
-    return False
-
-
-def wn_is_manipulable_noun(noun):
-
-    def get_all_hypernyms(root_synset):
-        hypernyms = set()
-        queue = [root_synset]
-        while queue:
-            synset = queue.pop(0)
-            new_hypernyms = synset.hypernyms()
-            for hypernym in new_hypernyms:
-                if hypernym.name() not in hypernyms:
-                    hypernyms.add(hypernym.name())
-                    queue.append(hypernym)
-        return hypernyms
-
-    for synset in wn.synsets(noun, pos=wn.NOUN):
-        if 'physical_entity.n.01' in get_all_hypernyms(synset):
-            return True
-    return False
 
 
 def filter_nouns(nouns):
