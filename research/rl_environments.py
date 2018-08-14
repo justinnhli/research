@@ -460,6 +460,7 @@ def memory_architecture(cls):
     Returns:
         class: A subclass with a memory architecture.
     """
+    # pylint: disable = too-many-statements
     assert issubclass(cls, Environment)
 
     BufferProperties = namedtuple( # pylint: disable = invalid-name
