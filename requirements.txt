@@ -1,23 +1,23 @@
 # knowledge base packages
 rdflib==4.2.2
 rdflib-sqlalchemy==0.3.8
-SPARQLWrapper==1.8.1
+SPARQLWrapper==1.8.2
 
 # word embedding packages
-gensim==3.4.0
+gensim==3.5.0
 
 # NLP packages
-spacy==2.0.11
+spacy==2.0.12
 nltk==3.3
 # Justin's less chatty fork of pydictionary
 git+https://github.com/justinnhli/PyDictionary.git
 
 # jupyter notebook packages
 jupyter==1.0.0
-bokeh==0.12.15
-pandas==0.23.0
-numpy==1.14.2
+bokeh==0.13.0
+pandas==0.23.4
+numpy==1.15.0
 
 # utility packages
-SQLAlchemy==1.2.6
-requests==2.18.4
+SQLAlchemy==1.2.10
+requests==2.19.1
