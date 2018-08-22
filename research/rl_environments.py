@@ -628,7 +628,6 @@ def memory_architecture(cls):
             return actions
 
         def _generate_cursor_actions(self):
-            # TODO make this into a buffer action
             actions = []
             if self.buffers['retrieval']:
                 actions.append(Action('next-retrieval'))
@@ -640,7 +639,8 @@ def memory_architecture(cls):
             query_changed = self._react_buffer_changes(action)
             # update memory buffers
             if query_changed:
-                self._query_ltm()
+                if action.name not in ['next-retrieval', 'prev-retrieval']:
+                    self._query_ltm()
             else:
                 self._clear_ltm_buffers()
             # interface with underlying environment
@@ -669,9 +669,11 @@ def memory_architecture(cls):
             elif action.name == 'next-retrieval':
                 self.query_index = (self.query_index + 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+                query_changed = True
             elif action.name == 'prev-retrieval':
                 self.query_index = (self.query_index - 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+                query_changed = True
             return query_changed
 
         def _query_ltm(self):
