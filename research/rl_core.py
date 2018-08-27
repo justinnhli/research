@@ -25,10 +25,6 @@ def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_ep
         episodic_return = 0
         step = 1
         while not env.end_of_episode() and episodic_return > min_return:
-            action = agent.act(
-                observation=env.get_observation(),
-                actions=env.get_actions(),
-            )
             print(f'Step {step}')
             if show_value_function:
                 agent.print_value_function()
@@ -36,6 +32,10 @@ def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_ep
             print(f'Actions:')
             for possible_action in env.get_actions():
                 print(f'    {possible_action}')
+            action = agent.act(
+                observation=env.get_observation(),
+                actions=env.get_actions(),
+            )
             print(f'Action: {action}')
             print()
             if pause:
