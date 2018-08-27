@@ -573,13 +573,13 @@ def memory_architecture(cls):
             actions = super().get_actions()
             if actions == []:
                 return actions
-            actions = []
+            actions = set()
             if self.explicit_actions:
-                actions.extend(self._generate_output_actions())
-            actions.extend(self._generate_copy_actions())
-            actions.extend(self._generate_delete_actions())
-            actions.extend(self._generate_cursor_actions())
-            return actions
+                actions.update(self._generate_output_actions())
+            actions.update(self._generate_copy_actions())
+            actions.update(self._generate_delete_actions())
+            actions.update(self._generate_cursor_actions())
+            return sorted(actions)
 
         def _generate_output_actions(self):
             actions = []
