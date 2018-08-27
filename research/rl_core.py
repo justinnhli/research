@@ -5,7 +5,7 @@ from statistics import mean
 from .rl_agents import Agent
 
 
-def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_episode_hook=None):
+def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_episode_hook=None, show_value_function=True):
     """Run some episodes and print out what's going on.
 
     Arguments:
@@ -30,7 +30,8 @@ def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_ep
                 actions=env.get_actions(),
             )
             print(f'Step {step}')
-            agent.print_value_function()
+            if show_value_function:
+                agent.print_value_function()
             print(f'Observation: {env.get_observation()}')
             print(f'Actions:')
             for possible_action in env.get_actions():
