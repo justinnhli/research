@@ -506,6 +506,13 @@ def memory_architecture(cls):
                 deletable=False,
                 defaults={},
             ),
+            'scratch': BufferProperties(
+                copyable=True,
+                overwritable=True,
+                appendable=True,
+                deletable=True,
+                defaults={},
+            ),
             'action': BufferProperties(
                 copyable=False,
                 overwritable=True,
@@ -517,10 +524,14 @@ def memory_architecture(cls):
             ),
         }
 
-        def __init__(self, explicit_actions=False, *args, **kwargs): # noqa: D102
+        def __init__(self, explicit_actions=False, buf_ignore=None, *args, **kwargs): # noqa: D102
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             self.explicit_actions = explicit_actions
+            if buf_ignore is None:
+                self.buf_ignore = set()
+            else:
+                self.buf_ignore = set(buf_ignore)
             # variables
             self.ltm = set()
             self.buffers = {}
@@ -551,8 +562,17 @@ def memory_architecture(cls):
             self._clear_buffers()
 
         def _clear_buffers(self):
+            if 'scratch' not in self.buf_ignore:
+                if 'scratch' in self.buffers:
+                    scratch = self.buffers['scratch']
+                else:
+                    scratch = {}
             self.buffers = {}
+            if 'scratch' not in self.buf_ignore:
+                self.buffers['scratch'] = scratch
             for buf, props in self.BUFFERS.items():
+                if buf in self.buf_ignore:
+                    continue
                 self.buffers[buf] = {}
                 for key, value in props.defaults.items():
                     self.buffers[buf][key] = value
@@ -590,10 +610,12 @@ def memory_architecture(cls):
         def _generate_copy_actions(self):
             actions = []
             for src_buf, src_props in self.BUFFERS.items():
-                if not src_props.copyable:
+                if src_buf in self.buf_ignore or not src_props.copyable:
                     continue
                 for src_attr in self.buffers[src_buf]:
                     for dst_buf, dst_prop in self.BUFFERS.items():
+                        if dst_buf in self.buf_ignore:
+                            continue
                         if dst_prop.appendable:
                             if src_attr not in self.buffers[dst_buf]:
                                 actions.append(Action(
@@ -617,7 +639,7 @@ def memory_architecture(cls):
         def _generate_delete_actions(self):
             actions = []
             for buf, prop in self.BUFFERS.items():
-                if not prop.deletable:
+                if buf in self.buf_ignore or not prop.deletable:
                     continue
                 for attr in self.buffers[buf]:
                     actions.append(Action(
@@ -636,12 +658,12 @@ def memory_architecture(cls):
 
         def react(self, action): # noqa: D102
             # handle internal actions
-            query_changed = self._react_buffer_changes(action)
+            query_changed, external_action = self._react_buffer_changes(action)
             # update memory buffers
             if query_changed:
                 if action.name not in ['next-retrieval', 'prev-retrieval']:
                     self._query_ltm()
-            else:
+            if external_action:
                 self._clear_ltm_buffers()
             # interface with underlying environment
             real_action = Action(**self.buffers['action'])
@@ -651,21 +673,29 @@ def memory_architecture(cls):
 
         def _react_buffer_changes(self, action):
             query_changed = False
+            external_action = False
             if action.name == 'act':
                 self.buffers['action']['name'] = action.super_name
+                external_action = True
             elif action.name == 'write':
                 self.buffers[action.buf][action.attr] = action.val
                 if action.buf == 'query':
                     query_changed = True
+                if acttion.dst_buf == 'action':
+                    external_action = True
             elif action.name == 'copy':
                 val = self.buffers[action.src_buf][action.src_attr]
                 self.buffers[action.dst_buf][action.dst_attr] = val
                 if action.dst_buf == 'query':
                     query_changed = True
+                if action.dst_buf == 'action':
+                    external_action = True
             elif action.name == 'delete':
                 del self.buffers[action.buf][action.attr]
                 if action.buf == 'query':
                     query_changed = True
+                if action.buf == 'action':
+                    external_action = True
             elif action.name == 'next-retrieval':
                 self.query_index = (self.query_index + 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
@@ -674,10 +704,11 @@ def memory_architecture(cls):
                 self.query_index = (self.query_index - 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
                 query_changed = True
-            return query_changed
+            return query_changed, external_action
 
         def _query_ltm(self):
             if not self.buffers['query']:
+                self.buffers['retrieval'] = {}
                 return
             candidates = []
             for candidate in self.ltm:
