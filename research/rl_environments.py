@@ -382,7 +382,9 @@ def fixed_long_term_memory(cls):
         WM_PREFIX = 'wm_' # pylint: disable = invalid-name
         LTM_PREFIX = 'ltm_' # pylint: disable = invalid-name
 
-        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
+        def __init__(
+            self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs
+        ): # pylint: disable = keyword-arg-before-vararg
             """Initialize a LongTermMemoryMetaEnvironment.
 
             Arguments:
@@ -467,9 +469,7 @@ def memory_architecture(cls):
         'BufferProperties',
         [
             'copyable',
-            'overwritable',
-            'appendable',
-            'deletable',
+            'writable',
             'defaults',
         ],
     )
@@ -487,47 +487,29 @@ def memory_architecture(cls):
         BUFFERS = {
             'perceptual': BufferProperties(
                 copyable=True,
-                overwritable=False,
-                appendable=False,
-                deletable=False,
+                writable=False,
                 defaults={},
             ),
             'query': BufferProperties(
                 copyable=False,
-                overwritable=False,
-                appendable=True,
-                deletable=True,
+                writable=True,
                 defaults={},
             ),
             'retrieval': BufferProperties(
                 copyable=True,
-                overwritable=False,
-                appendable=False,
-                deletable=False,
+                writable=False,
                 defaults={},
             ),
             'scratch': BufferProperties(
                 copyable=True,
-                overwritable=True,
-                appendable=True,
-                deletable=True,
+                writable=True,
                 defaults={},
-            ),
-            'action': BufferProperties(
-                copyable=False,
-                overwritable=True,
-                appendable=True,
-                deletable=False,
-                defaults={
-                    'name': 'no-op',
-                },
             ),
         }
 
-        def __init__(self, explicit_actions=False, buf_ignore=None, *args, **kwargs): # noqa: D102
+        def __init__(self, buf_ignore=None, *args, **kwargs): # noqa: D102
             # pylint: disable = keyword-arg-before-vararg
             # parameters
-            self.explicit_actions = explicit_actions
             if buf_ignore is None:
                 self.buf_ignore = set()
             else:
@@ -593,19 +575,12 @@ def memory_architecture(cls):
             actions = super().get_actions()
             if actions == []:
                 return actions
-            actions = set()
-            if self.explicit_actions:
-                actions.update(self._generate_output_actions())
+            actions = set(actions)
             actions.update(self._generate_copy_actions())
             actions.update(self._generate_delete_actions())
             actions.update(self._generate_cursor_actions())
-            return sorted(actions)
 
-        def _generate_output_actions(self):
-            actions = []
-            for action in super().get_actions():
-                actions.append(Action('act', super_name=action.name))
-            return actions
+            return sorted(actions)
 
         def _generate_copy_actions(self):
             actions = []
@@ -616,7 +591,7 @@ def memory_architecture(cls):
                     for dst_buf, dst_prop in self.BUFFERS.items():
                         if dst_buf in self.buf_ignore:
                             continue
-                        if dst_prop.appendable:
+                        if dst_prop.writable:
                             if src_attr not in self.buffers[dst_buf]:
                                 actions.append(Action(
                                     'copy',
@@ -625,7 +600,6 @@ def memory_architecture(cls):
                                     dst_buf=dst_buf,
                                     dst_attr=src_attr,
                                 ))
-                        if dst_prop.overwritable:
                             for dst_attr in self.buffers[dst_buf]:
                                 actions.append(Action(
                                     'copy',
@@ -639,7 +613,7 @@ def memory_architecture(cls):
         def _generate_delete_actions(self):
             actions = []
             for buf, prop in self.BUFFERS.items():
-                if buf in self.buf_ignore or not prop.deletable:
+                if buf in self.buf_ignore or not prop.writable:
                     continue
                 for attr in self.buffers[buf]:
                     actions.append(Action(
@@ -653,58 +627,32 @@ def memory_architecture(cls):
             actions = []
             if self.buffers['retrieval']:
                 actions.append(Action('next-retrieval'))
-                actions.append(Action('prev-retrieval'))
             return actions
 
         def react(self, action): # noqa: D102
-            # handle internal actions
-            query_changed, external_action = self._react_buffer_changes(action)
-            # update memory buffers
-            if query_changed:
-                if action.name not in ['next-retrieval', 'prev-retrieval']:
-                    self._query_ltm()
-            if external_action:
-                self._clear_ltm_buffers()
-            # interface with underlying environment
-            real_action = Action(**self.buffers['action'])
-            reward = super().react(real_action)
+            # handle internal actions and update internal buffers
+            self._process_internal_actions(action)
+            reward = super().react(action)
             self._sync_input_buffers()
             return reward
 
-        def _react_buffer_changes(self, action):
-            query_changed = False
-            external_action = False
-            if action.name == 'act':
-                self.buffers['action']['name'] = action.super_name
-                external_action = True
-            elif action.name == 'write':
-                self.buffers[action.buf][action.attr] = action.val
-                if action.buf == 'query':
-                    query_changed = True
-                if acttion.dst_buf == 'action':
-                    external_action = True
-            elif action.name == 'copy':
+        def _process_internal_actions(self, action):
+            if action.name == 'copy':
                 val = self.buffers[action.src_buf][action.src_attr]
                 self.buffers[action.dst_buf][action.dst_attr] = val
                 if action.dst_buf == 'query':
-                    query_changed = True
-                if action.dst_buf == 'action':
-                    external_action = True
+                    self._query_ltm()
             elif action.name == 'delete':
                 del self.buffers[action.buf][action.attr]
                 if action.buf == 'query':
-                    query_changed = True
-                if action.buf == 'action':
-                    external_action = True
+                    self._query_ltm()
             elif action.name == 'next-retrieval':
                 self.query_index = (self.query_index + 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
-                query_changed = True
-            elif action.name == 'prev-retrieval':
-                self.query_index = (self.query_index - 1) % len(self.query_matches)
-                self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
-                query_changed = True
-            return query_changed, external_action
+            else:
+                self._clear_ltm_buffers()
+                return True
+            return False
 
         def _query_ltm(self):
             if not self.buffers['query']:
@@ -737,12 +685,7 @@ def memory_architecture(cls):
 
         def _sync_input_buffers(self):
             # update input buffers
-            self.buffers['perceptual'] = {}
-            for attr, val in sorted(super().get_observation().as_dict().items()):
-                self.buffers['perceptual'][attr] = val
-            # clear output buffer
-            self.buffers['action'] = {}
-            self.buffers['action']['name'] = 'no-op'
+            self.buffers['perceptual'] = {**super().get_observation().as_dict()}
 
         def add_to_ltm(self, **kwargs):
             """Add a memory element to long-term memory.
