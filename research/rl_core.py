@@ -48,7 +48,7 @@ def trace_episode(env, agent, num_episodes, min_return=-500, pause=False, new_ep
         print()
 
 
-def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, new_episode_hook=None):
+def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, new_episode_hook=None, debug=False):
     """Run some episodes and return the mean return.
 
     Arguments:
@@ -69,16 +69,33 @@ def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, n
         if new_episode_hook is not None:
             new_episode_hook(env, agent)
         episodic_return = 0
+        step = 0
         while not env.end_of_episode() and episodic_return > min_return:
             action = agent.act(
                 observation=env.get_observation(),
                 actions=env.get_actions(),
             )
+            if update_agent and debug:
+                print(step)
+                print(env.get_observation())
+                print(action)
             reward = env.react(action)
+            if update_agent and debug:
+                print(reward)
             if update_agent:
                 agent.observe_reward(env.get_observation(), reward)
             episodic_return += reward
+            step += 1
         returns.append(episodic_return)
+        if update_agent and debug:
+            print()
+            for observation, values in sorted(agent.value_function.items(), key=(lambda kv: str(kv[0]))):
+                print(f'{observation}')
+                for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
+                    print('    {}: {:.3f}'.format(action, value))
+            print()
+            print(50 * '-')
+            print()
     return mean(returns)
 
 
