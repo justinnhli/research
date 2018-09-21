@@ -601,22 +601,13 @@ def memory_architecture(cls):
                         if dst_buf in self.buf_ignore:
                             continue
                         if dst_prop.writable:
-                            if src_attr not in self.buffers[dst_buf]:
-                                actions.append(Action(
-                                    'copy',
-                                    src_buf=src_buf,
-                                    src_attr=src_attr,
-                                    dst_buf=dst_buf,
-                                    dst_attr=src_attr,
-                                ))
-                            for dst_attr in self.buffers[dst_buf]:
-                                actions.append(Action(
-                                    'copy',
-                                    src_buf=src_buf,
-                                    src_attr=src_attr,
-                                    dst_buf=dst_buf,
-                                    dst_attr=dst_attr,
-                                ))
+                            actions.append(Action(
+                                'copy',
+                                src_buf=src_buf,
+                                src_attr=src_attr,
+                                dst_buf=dst_buf,
+                                dst_attr=src_attr,
+                            ))
             return actions
 
         def _generate_delete_actions(self):
@@ -666,6 +657,8 @@ def memory_architecture(cls):
         def _query_ltm(self):
             if not self.buffers['query']:
                 self.buffers['retrieval'] = {}
+                self.query_matches = []
+                self.query_index = None
                 return
             candidates = []
             for candidate in self.ltm:
