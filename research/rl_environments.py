@@ -140,7 +140,7 @@ class AttrDict:
                 "'<' not supported between instances of ",
                 f"'{type(self).__name__}' and '{type(other).__name__}'",
             ]))
-        return str(sorted(self.as_dict().items())) < str(sorted(other.as_dict().items()))
+        return sorted(self.as_dict().items()) < sorted(other.as_dict().items())
 
     def __str__(self):
         return '{}({})'.format(
@@ -175,6 +175,15 @@ class Action(AttrDict):
 
     def __hash__(self):
         return hash(tuple([self.name, *sorted(self)]))
+
+    def __lt__(self, other):
+        return (
+            (self.name, *sorted(self.as_dict().items())) <
+            (other.name, *sorted(other.as_dict().items()))
+        )
+
+    def __eq__(self, other):
+        return self.name == other.name and self._attributes_ == other._attributes_
 
     def __str__(self):
         return 'Action("{}", {})'.format(
