@@ -148,9 +148,7 @@ class TabularQLearningAgent(Agent):
         self.discount_rate = discount_rate
 
     def get_value(self, observation, action): # noqa: D102
-        if observation not in self.value_function:
-            return 0
-        return self.value_function[observation][action]
+        return self.value_function.get(observation, {}).get(action, 0)
 
     def get_stored_actions(self, observation): # noqa: D102
         if observation not in self.value_function:
