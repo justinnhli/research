@@ -182,15 +182,21 @@ def train_and_evaluate(env, agent, num_episodes, **kwargs):
     # pylint: disable = differing-param-doc, differing-type-doc, missing-param-doc
     eval_frequency = kwargs.get('eval_frequency', 10)
     eval_num_episodes = kwargs.get('eval_num_episodes', 10)
+    train_episodes = num_episodes if eval_frequency == 0 else eval_frequency
     min_return = kwargs.get('min_return', -500)
     new_episode_hook = kwargs.get('new_episode_hook', None)
-    for _ in range(int(num_episodes / eval_frequency)):
-        train_agent(env, agent, eval_frequency, new_episode_hook=new_episode_hook)
-        mean_return = evaluate_agent(
-            env,
-            agent,
-            eval_num_episodes,
-            min_return=min_return,
-            new_episode_hook=new_episode_hook
+    for episode_num in range(0, num_episodes, train_episodes):
+        train_agent(env, agent, train_episodes, new_episode_hook=new_episode_hook)
+        should_evaluate = (
+            eval_frequency == 0 or
+            (eval_frequency > 0 and episode_num % eval_frequency == 0)
         )
-        yield mean_return
+        if should_evaluate:
+            mean_return = evaluate_agent(
+                env,
+                agent,
+                eval_num_episodes,
+                min_return=min_return,
+                new_episode_hook=new_episode_hook
+            )
+            yield mean_return
