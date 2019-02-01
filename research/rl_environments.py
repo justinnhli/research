@@ -585,18 +585,17 @@ def memory_architecture(cls):
             for src_buf, src_props in self.BUFFERS.items():
                 if src_buf in self.buf_ignore or not src_props.copyable:
                     continue
-                for src_attr in self.buffers[src_buf]:
+                for attr in self.buffers[src_buf]:
                     for dst_buf, dst_prop in self.BUFFERS.items():
-                        if dst_buf in self.buf_ignore:
+                        if dst_buf in self.buf_ignore or not dst_prop.writable:
                             continue
-                        if dst_prop.writable:
-                            actions.append(Action(
-                                'copy',
-                                src_buf=src_buf,
-                                src_attr=src_attr,
-                                dst_buf=dst_buf,
-                                dst_attr=src_attr,
-                            ))
+                        actions.append(Action(
+                            'copy',
+                            src_buf=src_buf,
+                            src_attr=attr,
+                            dst_buf=dst_buf,
+                            dst_attr=attr,
+                        ))
             return actions
 
         def _generate_delete_actions(self):
