@@ -589,6 +589,12 @@ def memory_architecture(cls):
                     for dst_buf, dst_prop in self.BUFFERS.items():
                         if dst_buf in self.buf_ignore or not dst_prop.writable:
                             continue
+                        if src_buf == 'perceptual' and dst_buf == 'scratch':
+                            continue
+                        if src_buf == dst_buf:
+                            continue
+                        if attr in self.buffers[dst_buf] and self.buffers[src_buf][attr] == self.buffers[dst_buf][attr]:
+                            continue
                         actions.append(Action(
                             'copy',
                             src_buf=src_buf,
