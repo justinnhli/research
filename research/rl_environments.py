@@ -506,13 +506,14 @@ def memory_architecture(cls):
             ),
         }
 
-        def __init__(self, buf_ignore=None, *args, **kwargs): # noqa: D102
+        def __init__(self, buf_ignore=None, internal_reward=-0.1, *args, **kwargs): # noqa: D102
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             if buf_ignore is None:
                 self.buf_ignore = set()
             else:
                 self.buf_ignore = set(buf_ignore)
+            self.internal_reward = internal_reward
             # variables
             self.ltm = set()
             self.buffers = {}
@@ -619,12 +620,23 @@ def memory_architecture(cls):
 
         def react(self, action): # noqa: D102
             # handle internal actions and update internal buffers
-            self._process_internal_actions(action)
-            reward = super().react(action)
+            external_action = self._process_internal_actions(action)
+            if external_action:
+                reward = super().react(action)
+            else:
+                reward = self.internal_reward
             self._sync_input_buffers()
             return reward
 
         def _process_internal_actions(self, action):
+            """Process internal actions, if appropriate.
+
+            Arguments:
+                action (Action): The action, which may or may not be internal.
+
+            Returns:
+                bool: Whether the action was external.
+            """
             if action.name == 'copy':
                 val = self.buffers[action.src_buf][action.src_attr]
                 self.buffers[action.dst_buf][action.dst_attr] = val
