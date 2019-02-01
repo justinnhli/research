@@ -164,7 +164,7 @@ class TabularQLearningAgent(Agent):
     def print_value_function(self): # noqa: D102
         for observation, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
             print(observation)
-            for action, value in sorted(values.items(), key=(lambda kv: str(kv[1]))):
+            for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
                 print('    {}: {:.3f}'.format(action, value))
 
     def print_policy(self): # noqa: D102
