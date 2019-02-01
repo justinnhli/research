@@ -474,14 +474,8 @@ def memory_architecture(cls):
     # pylint: disable = too-many-statements
     assert issubclass(cls, Environment)
 
-    BufferProperties = namedtuple( # pylint: disable = invalid-name
-        'BufferProperties',
-        [
-            'copyable',
-            'writable',
-            'defaults',
-        ],
-    )
+    # pylint: disable = invalid-name
+    BufferProperties = namedtuple('BufferProperties', ['copyable', 'writable'])
 
     class MemoryElement(AttrDict):
         """A long-term memory element."""
@@ -497,22 +491,18 @@ def memory_architecture(cls):
             'perceptual': BufferProperties(
                 copyable=True,
                 writable=False,
-                defaults={},
             ),
             'query': BufferProperties(
                 copyable=False,
                 writable=True,
-                defaults={},
             ),
             'retrieval': BufferProperties(
                 copyable=True,
                 writable=False,
-                defaults={},
             ),
             'scratch': BufferProperties(
                 copyable=True,
                 writable=True,
-                defaults={},
             ),
         }
 
@@ -565,8 +555,6 @@ def memory_architecture(cls):
                 if buf in self.buf_ignore:
                     continue
                 self.buffers[buf] = {}
-                for key, value in props.defaults.items():
-                    self.buffers[buf][key] = value
             self._clear_ltm_buffers()
 
         def _clear_ltm_buffers(self):
