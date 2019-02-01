@@ -174,6 +174,41 @@ class TabularQLearningAgent(Agent):
             print('    {}: {:.3f}'.format(best_action, self.get_value(observation, best_action)))
 
 
+class LinearQLearner(Agent):
+    def __init__(self, learning_rate, discount_rate, feature_extractor, *args, **kwargs):
+        """Construct a tabular Q-learning agent.
+
+        Arguments:
+            learning_rate (float): The learning rate (alpha).
+            discount_rate (float): The discount rate (gamma).
+            *args: Arbitrary positional arguments.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self.value_function = defaultdict((lambda: defaultdict(float)))
+        self.learning_rate = learning_rate
+        self.discount_rate = discount_rate
+        self.feature_extractor = feature_extractor
+        self.weights = defaultdict(lambda: defaultdict(int))
+
+    def get_value(self, observation, action): # noqa: D102
+        if action not in self.weights:
+            return 0
+        weights = self.weights[action]
+        return sum(weights[feature] for feature in self.feature_extractor(observation))
+    
+    def get_stored_actions(self, observation): # noqa: D102
+        return self.weights.keys()
+
+    def observe_reward(self, observation, reward): # noqa: D102
+        prev_value = self.get_value(self.prev_observation, self.prev_action)
+        next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
+        diff = next_value - prev_value
+        for feature in self.feature_extractor(observation):
+            weight = self.weights[self.prev_action][feature]
+            self.weights[self.prev_action][feature] = weight + self.learning_rate * diff
+
+
 def epsilon_greedy(cls):
     """Decorate an Agent to be epsilon-greedy.
 
@@ -213,3 +248,21 @@ def epsilon_greedy(cls):
                 return super().act(observation, actions)
 
     return EpsilonGreedyMetaAgent
+
+
+def feature_function(cls):
+
+    class FeatureMetaAgent(cls):
+        
+        def __init__(self, feature_fn, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.feature_fn = feature_fn
+
+        def get_value(self, observation, action): # noqa: D102
+            return super().get_value(self.feature_fn(observation), action)
+
+        def get_stored_actions(self, observation, actions): # noqa: D102
+            return super().get_stored_actions(self.feature_fn(observation))
+
+        def observe_reward(self, observation, reward): # noqa: D102
+            return super().observe_reward(self.feature_fn(observation), reward)
