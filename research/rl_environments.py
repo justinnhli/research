@@ -638,7 +638,6 @@ def memory_architecture(cls):
                 self.query_index = (self.query_index + 1) % len(self.query_matches)
                 self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
             else:
-                self._clear_ltm_buffers()
                 return True
             return False
 
