@@ -248,21 +248,3 @@ def epsilon_greedy(cls):
                 return super().act(observation, actions)
 
     return EpsilonGreedyMetaAgent
-
-
-def feature_function(cls):
-
-    class FeatureMetaAgent(cls):
-        
-        def __init__(self, feature_fn, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.feature_fn = feature_fn
-
-        def get_value(self, observation, action): # noqa: D102
-            return super().get_value(self.feature_fn(observation), action)
-
-        def get_stored_actions(self, observation, actions): # noqa: D102
-            return super().get_stored_actions(self.feature_fn(observation))
-
-        def observe_reward(self, observation, reward): # noqa: D102
-            return super().observe_reward(self.feature_fn(observation), reward)
