@@ -477,7 +477,7 @@ def memory_architecture(cls):
     class MemoryElement(AttrDict):
         """A long-term memory element."""
 
-    class MemoryArchitectureMetaEnvironment(cls):
+    class MemoryArchitectureMetaEnvironment(cls, RandomMixin):
         """A subclass to add a long-term memory to an Environment."""
 
         # pylint: disable = missing-docstring
