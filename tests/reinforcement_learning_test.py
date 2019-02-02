@@ -322,8 +322,8 @@ def test_memory_architecture():
     # test actions
     assert (
         set(env.get_actions()) == set([
-                *(Action(str(i)) for i in range(-1, size * size)),
-                Action('copy', src_buf='perceptual', src_attr='index', dst_buf='query', dst_attr='index'),
+            *(Action(str(i)) for i in range(-1, size * size)),
+            Action('copy', src_buf='perceptual', src_attr='index', dst_buf='query', dst_attr='index'),
         ])
     ), set(env.get_actions())
     # test pass-through reaction
