@@ -183,6 +183,7 @@ class Action(AttrDict):
         )
 
     def __eq__(self, other):
+        # pylint: disable = protected-access
         return self.name == other.name and self._attributes_ == other._attributes_
 
     def __str__(self):
@@ -194,8 +195,6 @@ class Action(AttrDict):
 
 class State(AttrDict):
     """A state or observation in a reinforcement learning environment."""
-
-    pass
 
 
 class GridWorld(Environment):
@@ -391,9 +390,7 @@ def fixed_long_term_memory(cls):
         WM_PREFIX = 'wm_' # pylint: disable = invalid-name
         LTM_PREFIX = 'ltm_' # pylint: disable = invalid-name
 
-        def __init__(
-            self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs
-        ): # pylint: disable = keyword-arg-before-vararg
+        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
             """Initialize a LongTermMemoryMetaEnvironment.
 
             Arguments:
@@ -480,8 +477,6 @@ def memory_architecture(cls):
     class MemoryElement(AttrDict):
         """A long-term memory element."""
 
-        pass
-
     class MemoryArchitectureMetaEnvironment(cls):
         """A subclass to add a long-term memory to an Environment."""
 
@@ -552,7 +547,7 @@ def memory_architecture(cls):
             self.buffers = {}
             if 'scratch' not in self.buf_ignore:
                 self.buffers['scratch'] = scratch
-            for buf, props in self.BUFFERS.items():
+            for buf, _ in self.BUFFERS.items():
                 if buf in self.buf_ignore:
                     continue
                 self.buffers[buf] = {}
@@ -589,9 +584,9 @@ def memory_architecture(cls):
                     for dst_buf, dst_prop in self.BUFFERS.items():
                         if dst_buf in self.buf_ignore or not dst_prop.writable:
                             continue
-                        if src_buf == 'perceptual' and dst_buf == 'scratch':
-                            continue
                         if src_buf == dst_buf:
+                            continue
+                        if src_buf == 'perceptual' and dst_buf == 'scratch':
                             continue
                         if attr in self.buffers[dst_buf] and self.buffers[src_buf][attr] == self.buffers[dst_buf][attr]:
                             continue

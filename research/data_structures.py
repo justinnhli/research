@@ -35,7 +35,7 @@ class UnionFind:
         return iter(self.parents)
 
     def __bool__(self):
-        return True if self.parents else False
+        return bool(self.parents)
 
     def union(self, node1, node2):
         """Join two discrete sets.

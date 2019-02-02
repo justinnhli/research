@@ -175,12 +175,17 @@ class TabularQLearningAgent(Agent):
 
 
 class LinearQLearner(Agent):
+    """A Q learning with linear value function approximation."""
+
+    # pylint: disable = abstract-method
+
     def __init__(self, learning_rate, discount_rate, feature_extractor, *args, **kwargs):
         """Construct a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            feature_extractor (function): A function that extracts features from a state.
             *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
@@ -196,7 +201,7 @@ class LinearQLearner(Agent):
             return 0
         weights = self.weights[action]
         return sum(weights[feature] for feature in self.feature_extractor(observation))
-    
+
     def get_stored_actions(self, observation): # noqa: D102
         return self.weights.keys()
 

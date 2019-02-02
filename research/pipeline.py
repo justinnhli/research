@@ -6,8 +6,6 @@ from os.path import exists, getmtime
 class PipelineError(Exception):
     """Custom error for pipelines."""
 
-    pass
-
 
 class PipelineStep:
     """A step in a pipeline."""
