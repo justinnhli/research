@@ -13,7 +13,7 @@ jobs:
       stage: test
       env: step=TEST
       before_install: pip3 install pylint pydocstyle pytest-cov coveralls
-      script: py.test --cov . && coveralls
+      script: py.test --verbose --cov . && coveralls
     - <<: *python-testing
       env: step=LINT
       script: pylint *.py research/ tests/*.py
