@@ -572,7 +572,6 @@ def memory_architecture(cls):
             actions.update(self._generate_copy_actions())
             actions.update(self._generate_delete_actions())
             actions.update(self._generate_cursor_actions())
-
             return sorted(actions)
 
         def _generate_copy_actions(self):
