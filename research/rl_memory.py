@@ -46,7 +46,7 @@ def memory_architecture(cls):
                 knowledge_store, buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
                 *args, **kwargs,
         ): # noqa: D102
-            """Construct a memory architecture.
+            """Initialize a memory architecture.
 
             Arguments:
                 knowledge_store (KnowledgeStore): The memory model to use.
@@ -306,7 +306,7 @@ class NaiveDictKB(KnowledgeStore):
     """A list-of-dictionary implementation of a knowledge store."""
 
     def __init__(self):
-        """Construct the NaiveDictKB."""
+        """Initialize the NaiveDictKB."""
         self.knowledge = []
         self.query_index = None
         self.query_matches = []

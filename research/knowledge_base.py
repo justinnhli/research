@@ -39,7 +39,7 @@ class URI:
     )
 
     def __init__(self, uri, namespace=None):
-        """Construct the URI.
+        """Initialize the URI.
 
         Arguments:
             uri (str): The full URI, or the after-prefix fragment.
@@ -106,7 +106,7 @@ class KnowledgeFile(KnowledgeSource):
     """A knowledge base in a local file."""
 
     def __init__(self, source=None, kb_name='rdflib_test', sqlize=True):
-        """Construct the KnowledgeFile.
+        """Initialize the KnowledgeFile.
 
         Arguments:
             source (str): Path to the knowledge base. If None, an in-memory
@@ -161,7 +161,7 @@ class SparqlEndpoint(KnowledgeSource):
     """A knowledge base from a remote SPARQL endpoint."""
 
     def __init__(self, url):
-        """Construct the SparqlEndpoint.
+        """Initialize the SparqlEndpoint.
 
         Arguments:
             url (str): The URL to the SPARQL endpoint.

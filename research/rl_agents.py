@@ -134,7 +134,7 @@ class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
     def __init__(self, learning_rate, discount_rate, *args, **kwargs):
-        """Construct a tabular Q-learning agent.
+        """Initialize a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
@@ -180,7 +180,7 @@ class LinearQLearner(Agent):
     # pylint: disable = abstract-method
 
     def __init__(self, learning_rate, discount_rate, feature_extractor, *args, **kwargs):
-        """Construct a tabular Q-learning agent.
+        """Initialize a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).

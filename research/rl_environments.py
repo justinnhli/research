@@ -107,7 +107,7 @@ class AttrDict:
     """
 
     def __init__(self, **kwargs):
-        """Construct an AttrDict object.
+        """Initialize an AttrDict object.
 
         Arguments:
             **kwargs: Arbitrary keyword arguments.
@@ -163,7 +163,7 @@ class Action(AttrDict):
     """An action in a reinforcement learning environment."""
 
     def __init__(self, name, **kwargs):
-        """Construct an Action object.
+        """Initialize an Action object.
 
         Arguments:
             name (str): The name of the Action
@@ -200,7 +200,7 @@ class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
 
     def __init__(self, width, height, start, goal, *args, **kwargs):
-        """Construct a GridWorld.
+        """Initialize a GridWorld.
 
         Arguments:
             width (int): The width of the grid.
@@ -462,7 +462,7 @@ class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
     def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
-        """Construct the TMaze.
+        """Initialize the TMaze.
 
         Arguments:
             length (int): The length of the hallway before the choice point.

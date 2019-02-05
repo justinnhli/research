@@ -11,7 +11,7 @@ class PipelineStep:
     """A step in a pipeline."""
 
     def __init__(self, infile, outfile=None):
-        """Construct a pipeline.
+        """Initialize a pipeline.
 
         Arguments:
             infile (str): The input data file.
