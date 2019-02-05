@@ -20,9 +20,6 @@ def memory_architecture(cls):
     # pylint: disable = invalid-name
     BufferProperties = namedtuple('BufferProperties', ['copyable', 'writable'])
 
-    class MemoryElement(AttrDict):
-        """A long-term memory element."""
-
     class MemoryArchitectureMetaEnvironment(cls, RandomMixin):
         """A subclass to add a long-term memory to an Environment."""
 
@@ -47,12 +44,13 @@ def memory_architecture(cls):
 
         def __init__(
                 self,
-                buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
+                knowledge_store, buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Construct a memory architecture.
 
             Arguments:
+                knowledge_store (KnowledgeStore): The memory model to use.
                 buf_ignore (List[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
@@ -61,6 +59,7 @@ def memory_architecture(cls):
             """
             # pylint: disable = keyword-arg-before-vararg
             # parameters
+            self.knowledge_store = knowledge_store
             if buf_ignore is None:
                 self.buf_ignore = set()
             else:
@@ -68,10 +67,7 @@ def memory_architecture(cls):
             self.internal_reward = internal_reward
             self.max_internal_actions = max_internal_actions
             # variables
-            self.ltm = set()
             self.buffers = {}
-            self.query_matches = []
-            self.query_index = None
             self.internal_action_count = 0
             # initialization
             self._clear_buffers()
@@ -123,8 +119,6 @@ def memory_architecture(cls):
         def _clear_ltm_buffers(self):
             self.buffers['query'] = {}
             self.buffers['retrieval'] = {}
-            self.query_matches = []
-            self.query_index = None
 
         def start_new_episode(self): # noqa: D102
             # pylint: disable = missing-docstring
@@ -223,9 +217,10 @@ def memory_architecture(cls):
                 del self.buffers[action.buf][action.attr]
                 if action.buf == 'query':
                     self._query_ltm()
+            elif action.name == 'prev-retrieval':
+                self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
             elif action.name == 'next-retrieval':
-                self.query_index = (self.query_index + 1) % len(self.query_matches)
-                self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
+                self.buffers['retrieval'] = self.knowledge_store.next_result().as_dict()
             else:
                 return True
             return False
@@ -233,33 +228,12 @@ def memory_architecture(cls):
         def _query_ltm(self):
             if not self.buffers['query']:
                 self.buffers['retrieval'] = {}
-                self.query_matches = []
-                self.query_index = None
                 return
-            candidates = []
-            for candidate in self.ltm:
-                match = all(
-                    attr in candidate and candidate[attr] == val
-                    for attr, val in self.buffers['query'].items()
-                )
-                if match:
-                    candidates.append(candidate)
-            if candidates:
-                # if the current retrieved item still matches the new query
-                # leave it there but update the cached matches and index
-                if self.query_index is not None:
-                    curr_retrieved = self.query_matches[self.query_index]
-                else:
-                    curr_retrieved = None
-                self.query_matches = sorted(candidates)
-                # use the ValueError from list.index() to determine if the query still matches
-                try:
-                    self.query_index = self.query_matches.index(curr_retrieved)
-                except ValueError:
-                    self.query_index = self.rng.randrange(len(self.query_matches))
-                    self.buffers['retrieval'] = self.query_matches[self.query_index].as_dict()
-            else:
+            result = self.knowledge_store.query(**self.buffers['query'])
+            if result is None:
                 self.buffers['retrieval'] = {}
+            else:
+                self.buffers['retrieval'] = result.as_dict()
 
         def _sync_input_buffers(self):
             # update input buffers
@@ -271,7 +245,7 @@ def memory_architecture(cls):
             Arguments:
                 **kwargs: The key-value pairs of the memory element.
             """
-            self.ltm.add(MemoryElement(**kwargs))
+            self.knowledge_store.store(**kwargs)
 
     return MemoryArchitectureMetaEnvironment
 
