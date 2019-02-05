@@ -13,7 +13,7 @@ from research.rl_core import train_and_evaluate
 from research.rl_environments import State, Action, Environment
 from research.rl_environments import GridWorld, SimpleTMaze
 from research.rl_environments import gating_memory, fixed_long_term_memory
-from research.rl_memory import memory_architecture
+from research.rl_memory import memory_architecture, NaiveDictKB
 from research.rl_agents import TabularQLearningAgent
 from research.rl_agents import epsilon_greedy
 
@@ -312,7 +312,13 @@ def test_memory_architecture():
             pass
 
     size = 5
-    env = memory_architecture(TestEnv)(size=size, index=0)
+    env = memory_architecture(TestEnv)(
+        # memory architecture
+        NaiveDictKB(),
+        # TestEnv
+        size=size,
+        index=0,
+    )
     env.start_new_episode()
     for i in range(size * size):
         env.add_to_ltm(index=i, row=(i // size), col=(i % size))
