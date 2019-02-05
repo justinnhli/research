@@ -45,12 +45,17 @@ def memory_architecture(cls):
             ),
         }
 
-        def __init__(self, buf_ignore=None, internal_reward=-0.1, *args, **kwargs): # noqa: D102
+        def __init__(
+                self,
+                buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
+                *args, **kwargs,
+        ): # noqa: D102
             """Construct a memory architecture.
 
             Arguments:
                 buf_ignore (List[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
+                max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
@@ -61,11 +66,13 @@ def memory_architecture(cls):
             else:
                 self.buf_ignore = set(buf_ignore)
             self.internal_reward = internal_reward
+            self.max_internal_actions = max_internal_actions
             # variables
             self.ltm = set()
             self.buffers = {}
             self.query_matches = []
             self.query_index = None
+            self.internal_action_count = 0
             # initialization
             self._clear_buffers()
             super().__init__(*args, **kwargs)
@@ -124,6 +131,7 @@ def memory_architecture(cls):
             super().start_new_episode()
             self._clear_buffers()
             self._sync_input_buffers()
+            self.internal_action_count = 0
 
         def get_actions(self): # noqa: D102
             # pylint: disable = missing-docstring
@@ -131,9 +139,14 @@ def memory_architecture(cls):
             if actions == []:
                 return actions
             actions = set(actions)
-            actions.update(self._generate_copy_actions())
-            actions.update(self._generate_delete_actions())
-            actions.update(self._generate_cursor_actions())
+            allow_internal_actions = (
+                self.max_internal_actions is None
+                or self.internal_action_count < self.max_internal_actions
+            )
+            if allow_internal_actions:
+                actions.update(self._generate_copy_actions())
+                actions.update(self._generate_delete_actions())
+                actions.update(self._generate_cursor_actions())
             return sorted(actions)
 
         def _generate_copy_actions(self):
@@ -185,8 +198,10 @@ def memory_architecture(cls):
             external_action = self._process_internal_actions(action)
             if external_action:
                 reward = super().react(action)
+                self.internal_action_count = 0
             else:
                 reward = self.internal_reward
+                self.internal_action_count += 1
             self._sync_input_buffers()
             return reward
 
