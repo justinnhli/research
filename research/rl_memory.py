@@ -274,3 +274,57 @@ def memory_architecture(cls):
             self.ltm.add(MemoryElement(**kwargs))
 
     return MemoryArchitectureMetaEnvironment
+
+
+class MemoryStore:
+
+    def add(self, **kwargs):
+        raise NotImplementedError()
+
+    def query(self, **kwargs):
+        raise NotImplementedError()
+
+    def retrieve(self, mem_id):
+        raise NotImplementedError()
+
+
+class NaiveDictMem(MemoryStore):
+
+    def __init__(self):
+        self.store = []
+        self.query_index = None
+        self.query_matches = []
+        self.prev_query = {}
+        self.prev_result = {}
+
+    def add(self, **kwargs):
+        self.story.append(AttrDict(**kwargs))
+
+    def query(self, **kwargs):
+        candidates = []
+        for candidate in self.store:
+            match = all(
+                attr in candidate and candidate[attr] == val
+                for attr, val in kwargs
+            )
+            if match:
+                candidates.append(candidate)
+        if candidates:
+            # if the current retrieved item still matches the new query
+            # leave it there but update the cached matches and index
+            if self.query_index is not None:
+                curr_retrieved = self.query_matches[self.query_index]
+            else:
+                curr_retrieved = None
+            self.query_matches = sorted(candidates)
+            # use the ValueError from list.index() to determine if the query still matches
+            try:
+                self.query_index = self.query_matches.index(curr_retrieved)
+            except ValueError:
+                self.query_index = self.rng.randrange(len(self.query_matches))
+            self.prev_result = self.query_matches[self.query_index]
+            return self.prev_result
+        return None
+
+    def retrieve(self, mem_id):
+        raise NotImplementedError()
