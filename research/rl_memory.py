@@ -1,3 +1,5 @@
+"""Memory architecture for reinforcement learning."""
+
 from collections import namedtuple
 
 from .rl_environments import AttrDict, State, Action, Environment
@@ -17,6 +19,9 @@ def memory_architecture(cls):
 
     # pylint: disable = invalid-name
     BufferProperties = namedtuple('BufferProperties', ['copyable', 'writable'])
+
+    class MemoryElement(AttrDict):
+        """A long-term memory element."""
 
     class MemoryArchitectureMetaEnvironment(cls, RandomMixin):
         """A subclass to add a long-term memory to an Environment."""
@@ -41,6 +46,14 @@ def memory_architecture(cls):
         }
 
         def __init__(self, buf_ignore=None, internal_reward=-0.1, *args, **kwargs): # noqa: D102
+            """Construct a memory architecture.
+
+            Arguments:
+                buf_ignore (List[str]): Buffers that should not be created.
+                internal_reward (float): Reward for internal actions. Defaults to -0.1.
+                *args: Arbitrary positional arguments.
+                **kwargs: Arbitrary keyword arguments.
+            """
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             if buf_ignore is None:
@@ -73,12 +86,15 @@ def memory_architecture(cls):
             return {buf + '_' + attr: val for buf, attr, val in self.slots}
 
         def get_state(self): # noqa: D102
+            # pylint: disable = missing-docstring
             return State(**self.to_dict())
 
         def get_observation(self): # noqa: D102
+            # pylint: disable = missing-docstring
             return State(**self.to_dict())
 
         def reset(self): # noqa: D102
+            # pylint: disable = missing-docstring
             super().reset()
             self._clear_buffers()
 
@@ -104,11 +120,13 @@ def memory_architecture(cls):
             self.query_index = None
 
         def start_new_episode(self): # noqa: D102
+            # pylint: disable = missing-docstring
             super().start_new_episode()
             self._clear_buffers()
             self._sync_input_buffers()
 
         def get_actions(self): # noqa: D102
+            # pylint: disable = missing-docstring
             actions = super().get_actions()
             if actions == []:
                 return actions
@@ -162,6 +180,7 @@ def memory_architecture(cls):
             return actions
 
         def react(self, action): # noqa: D102
+            # pylint: disable = missing-docstring
             # handle internal actions and update internal buffers
             external_action = self._process_internal_actions(action)
             if external_action:

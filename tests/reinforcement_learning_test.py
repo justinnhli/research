@@ -12,7 +12,8 @@ sys.path.insert(0, dirname(DIRECTORY))
 from research.rl_core import train_and_evaluate
 from research.rl_environments import State, Action, Environment
 from research.rl_environments import GridWorld, SimpleTMaze
-from research.rl_environments import gating_memory, fixed_long_term_memory, memory_architecture
+from research.rl_environments import gating_memory, fixed_long_term_memory
+from research.rl_memory import memory_architecture
 from research.rl_agents import TabularQLearningAgent
 from research.rl_agents import epsilon_greedy
 
