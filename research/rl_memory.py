@@ -341,6 +341,8 @@ class NaiveDictKB(KnowledgeStore):
             except ValueError:
                 self.query_index = 0
             return self.query_matches[self.query_index]
+        self.query_index = None
+        self.query_matches = []
         return None
 
     def prev_result(self): # noqa: D102
