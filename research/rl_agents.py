@@ -263,6 +263,7 @@ def feature_function(cls):
     Returns:
         class: An Agent subclass that uses features.
     """
+    assert issubclass(cls, Agent)
 
     class FeatureMetaAgent(cls):
         """An Agent subclass that uses features."""
