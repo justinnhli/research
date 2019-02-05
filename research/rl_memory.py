@@ -3,7 +3,6 @@
 from collections import namedtuple
 
 from .rl_environments import AttrDict, State, Action, Environment
-from .randommixin import RandomMixin
 
 def memory_architecture(cls):
     """Decorate an Environment to become a memory architecture.
@@ -20,7 +19,7 @@ def memory_architecture(cls):
     # pylint: disable = invalid-name
     BufferProperties = namedtuple('BufferProperties', ['copyable', 'writable'])
 
-    class MemoryArchitectureMetaEnvironment(cls, RandomMixin):
+    class MemoryArchitectureMetaEnvironment(cls):
         """A subclass to add a long-term memory to an Environment."""
 
         BUFFERS = {
@@ -251,20 +250,55 @@ def memory_architecture(cls):
 
 
 class KnowledgeStore:
+    """Generic interface to a knowledge base."""
 
     def store(self, **kwargs):
+        """Add knowledge to the KB.
+
+        Arguments:
+            **kwargs: Attributes and values of the element to add.
+
+        Returns:
+            bool: True if the add was successful.
+        """
         raise NotImplementedError()
 
     def retrieve(self, mem_id):
+        """Retrieve the element with the given ID.
+
+        Arguments:
+            mem_id (any): The ID of the desired element.
+
+        Returns:
+            AttrDict: The desired element, or None.
+        """
         raise NotImplementedError()
 
     def query(self, **kwargs):
+        """Search the KB for elements with the given attributes.
+
+        Arguments:
+            **kwargs: Attributes and values of the desired element.
+
+        Returns:
+            AttrDict: A search result, or None.
+        """
         raise NotImplementedError()
 
     def prev_result(self):
+        """Get the prev element that matches the most recent search.
+
+        Returns:
+            AttrDict: A search result, or None.
+        """
         raise NotImplementedError()
 
     def next_result(self):
+        """Get the next element that matches the most recent search.
+
+        Returns:
+            AttrDict: A search result, or None.
+        """
         raise NotImplementedError()
 
 
