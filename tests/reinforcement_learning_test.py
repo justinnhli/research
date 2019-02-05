@@ -350,12 +350,39 @@ def test_memory_architecture():
     ), env.get_observation()
     # query with no results
     env.react(Action('copy', src_buf='retrieval', src_attr='row', dst_buf='query', dst_attr='row'))
-    reward = env.react(Action('0'))
+    env.react(Action('0'))
     env.react(Action('copy', src_buf='perceptual', src_attr='index', dst_buf='query', dst_attr='index'))
     assert env.get_observation() == State(
         perceptual_index=0,
         query_index=0,
         query_row=1,
+    ), env.get_observation()
+    # delete test
+    env.react(Action('delete', buf='query', attr='index'))
+    assert env.get_observation() == State(
+        perceptual_index=0,
+        query_row=1,
+        retrieval_index=5,
+        retrieval_row=1,
+        retrieval_col=0,
+    ), env.get_observation()
+    # next result test
+    env.react(Action('next-retrieval'))
+    assert env.get_observation() == State(
+        perceptual_index=0,
+        query_row=1,
+        retrieval_index=6,
+        retrieval_row=1,
+        retrieval_col=1,
+    ), env.get_observation()
+    # delete test
+    env.react(Action('prev-retrieval'))
+    assert env.get_observation() == State(
+        perceptual_index=0,
+        query_row=1,
+        retrieval_index=5,
+        retrieval_row=1,
+        retrieval_col=0,
     ), env.get_observation()
     # complete the environment
     reward = env.react(Action('-1'))
