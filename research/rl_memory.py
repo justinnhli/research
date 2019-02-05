@@ -276,36 +276,46 @@ def memory_architecture(cls):
     return MemoryArchitectureMetaEnvironment
 
 
-class MemoryStore:
+class KnowledgeStore:
 
-    def add(self, **kwargs):
-        raise NotImplementedError()
-
-    def query(self, **kwargs):
+    def store(self, **kwargs):
         raise NotImplementedError()
 
     def retrieve(self, mem_id):
         raise NotImplementedError()
 
+    def query(self, **kwargs):
+        raise NotImplementedError()
 
-class NaiveDictMem(MemoryStore):
+    def prev_result(self):
+        raise NotImplementedError()
+
+    def next_result(self):
+        raise NotImplementedError()
+
+
+class NaiveDictKB(KnowledgeStore):
+    """A list-of-dictionary implementation of a knowledge store."""
 
     def __init__(self):
-        self.store = []
+        """Construct the NaiveDictKB."""
+        self.knowledge = []
         self.query_index = None
         self.query_matches = []
-        self.prev_query = {}
-        self.prev_result = {}
 
-    def add(self, **kwargs):
-        self.story.append(AttrDict(**kwargs))
+    def store(self, **kwargs): # noqa: D102
+        self.knowledge.append(AttrDict(**kwargs))
+        return True
 
-    def query(self, **kwargs):
+    def retrieve(self, mem_id): # noqa: D102
+        raise NotImplementedError()
+
+    def query(self, **kwargs): # noqa: D102
         candidates = []
-        for candidate in self.store:
+        for candidate in self.knowledge:
             match = all(
                 attr in candidate and candidate[attr] == val
-                for attr, val in kwargs
+                for attr, val in kwargs.items()
             )
             if match:
                 candidates.append(candidate)
@@ -321,10 +331,14 @@ class NaiveDictMem(MemoryStore):
             try:
                 self.query_index = self.query_matches.index(curr_retrieved)
             except ValueError:
-                self.query_index = self.rng.randrange(len(self.query_matches))
-            self.prev_result = self.query_matches[self.query_index]
-            return self.prev_result
+                self.query_index = 0
+            return self.query_matches[self.query_index]
         return None
 
-    def retrieve(self, mem_id):
-        raise NotImplementedError()
+    def prev_result(self): # noqa: D102
+        self.query_index = (self.query_index - 1) % len(self.query_matches)
+        return self.query_matches[self.query_index]
+
+    def next_result(self): # noqa: D102
+        self.query_index = (self.query_index + 1) % len(self.query_matches)
+        return self.query_matches[self.query_index]
