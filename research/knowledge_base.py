@@ -3,6 +3,8 @@
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 
 from SPARQLWrapper import SPARQLWrapper2
+from SPARQLWrapper.SmartWrapper import Value as SparqlValue
+from SPARQLWrapper.SPARQLExceptions import QueryBadFormed
 from rdflib import Graph, Literal, URIRef, plugin
 from rdflib.store import Store
 from rdflib.util import guess_format
@@ -97,7 +99,7 @@ class KnowledgeSource:
             sparql (str): The SPARQL query.
 
         Returns:
-            list[dict[str:str]]: A list of variable bindings.
+            list[dict[str:Value]]: A list of variable bindings.
         """
         raise NotImplementedError()
 
@@ -157,6 +159,124 @@ class KnowledgeFile(KnowledgeSource):
         return results
 
 
+class Value:
+    """Wrapper around SPARQLWrapper.SmartWrapper.Value."""
+
+    def __init__(self, sparql_value):
+        """Initialize a Value.
+
+        Arguments:
+            sparql_value (SPARQLWrapper.SmartWrapper.Value):
+                The original value.
+        """
+        self.sparql_value = sparql_value
+
+    @property
+    def is_uri(self):
+        """Whether this is a URI node.
+
+        Returns:
+            bool: True if this is a URI node.
+        """
+        return self.sparql_value.type == SparqlValue.URI
+
+    @property
+    def is_literal(self):
+        """Whether this is a literal node.
+
+        Returns:
+            bool: True if this is a literal node.
+        """
+        return self.sparql_value.type in (SparqlValue.Literal, SparqlValue.TypedLiteral)
+
+    @property
+    def is_blank(self):
+        """Whether this is a blank node.
+
+        Returns:
+            bool: True if this is a blank node.
+        """
+        return self.sparql_value.type == SparqlValue.BNODE
+
+    @property
+    def uri(self):
+        """The URI of this URI node.
+
+        Returns:
+            str: The URI of this URI node.
+
+        Raises:
+            ValueError: If this is not a URI node.
+        """
+        if not self.is_uri:
+            raise ValueError('Value is not a URI')
+        return self.sparql_value.value
+
+    @property
+    def value(self):
+        """The value of this literal node.
+
+        Returns:
+            Union[int,float,str]: The value of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self.sparql_value.value
+
+    @property
+    def datatype(self):
+        """The datatype of this literal node.
+
+        Returns:
+            str: The datatype of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self.sparql_value.datatype
+
+    @property
+    def lang(self):
+        """The language of this literal node.
+
+        Returns:
+            str: The language of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self.sparql_value.lang
+
+    @property
+    def rdf_format(self):
+        """Convert this node into RDF format.
+
+        Returns:
+            str: This node as an RDF/SPARQL string.
+
+        Raises:
+            ValueError: If this is a blank node.
+        """
+        if self.is_uri:
+            return f'<{self.sparql_value.value}>'
+        elif self.is_literal:
+            # FIXME there may be issues with escaping quote here
+            result = f'"{self.sparql_value.value}"'
+            if self.lang:
+                result += '@{self.lang}'
+            if self.datatype:
+                result += f'^^<{self.datatype}>'
+            return result
+        raise ValueError(repr(self.sparql_value))
+
+
 class SparqlEndpoint(KnowledgeSource):
     """A knowledge base from a remote SPARQL endpoint."""
 
@@ -170,7 +290,17 @@ class SparqlEndpoint(KnowledgeSource):
 
     def query_sparql(self, sparql): # noqa: D102
         self.endpoint.setQuery(sparql)
+        try:
+            query_bindings = self.endpoint.query().bindings
+        except QueryBadFormed as qbf:
+            message = '\n'.join([
+                'Failed to parse SPARQL',
+                sparql,
+                'Original error:',
+                str(qbf),
+            ])
+            raise ValueError(message)
         results = []
-        for bindings in self.endpoint.query().bindings:
-            results.append({key: value.value for key, value in bindings.items()})
+        for bindings in query_bindings:
+            results.append({key: Value(value) for key, value in bindings.items()})
         return results
