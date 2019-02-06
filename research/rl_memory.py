@@ -228,7 +228,7 @@ def memory_architecture(cls):
             if not self.buffers['query']:
                 self.buffers['retrieval'] = {}
                 return
-            result = self.knowledge_store.query(**self.buffers['query'])
+            result = self.knowledge_store.query(self.buffers['query'])
             if result is None:
                 self.buffers['retrieval'] = {}
             else:
@@ -274,11 +274,11 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
-    def query(self, **kwargs):
+    def query(self, attr_vals):
         """Search the KB for elements with the given attributes.
 
         Arguments:
-            **kwargs: Attributes and values of the desired element.
+            attr_vals (dict): Attributes and values of the desired element.
 
         Returns:
             AttrDict: A search result, or None.
@@ -318,12 +318,12 @@ class NaiveDictKB(KnowledgeStore):
     def retrieve(self, mem_id): # noqa: D102
         raise NotImplementedError()
 
-    def query(self, **kwargs): # noqa: D102
+    def query(self, attr_vals): # noqa: D102
         candidates = []
         for candidate in self.knowledge:
             match = all(
                 attr in candidate and candidate[attr] == val
-                for attr, val in kwargs.items()
+                for attr, val in attr_vals.items()
             )
             if match:
                 candidates.append(candidate)
