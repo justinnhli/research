@@ -119,10 +119,18 @@ def main():
                 break
         print(trial, total)
     env.start_new_episode()
+    visited = set()
     for step in range(10):
         print(step)
-        print(env.get_observation())
-        print(feature_extractor(env.get_observation()))
+        observation = env.get_observation()
+        print(observation)
+        if observation in visited:
+            print('\n')
+            print('Looped; quitting.\n')
+            break
+        elif env.end_of_episode():
+            break
+        print(feature_extractor(observation))
         actions = env.get_actions()
         for action in sorted(actions):
             print(action)
