@@ -270,7 +270,7 @@ class Value:
             # FIXME there may be issues with escaping quote here
             result = f'"{self.sparql_value.value}"'
             if self.lang:
-                result += '@{self.lang}'
+                result += f'@{self.lang}'
             if self.datatype:
                 result += f'^^<{self.datatype}>'
             return result
