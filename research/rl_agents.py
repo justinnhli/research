@@ -212,9 +212,11 @@ class LinearQLearner(Agent):
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
-        for feature in self.feature_extractor(observation):
+        features = self.feature_extractor(observation)
+        num_features = len(features)
+        for feature in features:
             weight = self.weights[self.prev_action][feature]
-            self.weights[self.prev_action][feature] = weight + self.learning_rate * diff
+            self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) / num_features
 
 
 def epsilon_greedy(cls):
