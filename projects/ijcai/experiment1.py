@@ -2,19 +2,24 @@
 
 import sys
 from collections import namedtuple
+from datetime import datetime
+from math import isnan
 from os.path import realpath, dirname
-from uuid import uuid4 as uuid
 
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
+from permspace import PermutationSpace
+
+from research.rl_core import train_and_evaluate
 from research.rl_agents import epsilon_greedy, LinearQLearner
 from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, NaiveDictKB
 from research.randommixin import RandomMixin
 
 Album = namedtuple('Album', 'title, artist, year, genre')
+
 
 class RecordStore(Environment, RandomMixin):
 
@@ -67,6 +72,9 @@ class RecordStore(Environment, RandomMixin):
         self.album = self.albums[self.rng.choice(self.titles)]
         self.location = '-1'
 
+    def visualize(self):
+        raise NotImplementedError()
+
 
 def feature_extractor(state):
     features = set()
@@ -79,7 +87,7 @@ def feature_extractor(state):
     return features
 
 
-def main():
+def testing():
     agent = epsilon_greedy(LinearQLearner)(
         # Linear Q Learner
         learning_rate=0.1,
@@ -139,6 +147,104 @@ def main():
         print(action)
         env.react(action)
         print()
+
+
+def run_experiment(params):
+    agent = epsilon_greedy(LinearQLearner)(
+        # Linear Q Learner
+        learning_rate=0.1,
+        discount_rate=0.9,
+        feature_extractor=feature_extractor,
+        # Epsilon Greedy
+        exploration_rate=0.05,
+        # Random Mixin
+        random_seed=params.random_seed,
+    )
+    env = memory_architecture(RecordStore)(
+        # record store
+        num_albums=params.num_albums,
+        num_artists=params.num_artists,
+        num_years=params.num_years,
+        num_genres=params.num_genres,
+        # memory architecture
+        knowledge_store=NaiveDictKB(),
+        # Random Mixin
+        random_seed=params.random_seed,
+    )
+    for album in env.albums.values():
+        env.add_to_ltm(**album._asdict())
+    trial_result = train_and_evaluate(
+        env,
+        agent,
+        num_episodes=params.num_episodes,
+        eval_frequency=params.eval_frequency,
+        min_return=-100,
+    )
+    filename = '-'.join([
+        f'seed{params.random_seed}',
+        f'ratio{params.albums_per_artist}',
+        f'albums{params.num_albums}',
+        f'years{params.num_years}',
+        f'genres{params.num_genres}',
+    ])
+    episodes = range(0, params.num_episodes, params.eval_frequency)
+    for episode, mean_return in zip(episodes, trial_result):
+        with open(f'{DIRECTORY}/data/exp1/{filename}', 'a') as fd:
+            fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+        if (episode + params.eval_frequency) % 1000 == 0:
+            has_nan = False
+            with open(f'{DIRECTORY}/data/exp1/{filename}', 'a') as fd:
+                fd.write(30 * '-' + '\n')
+                visited = set()
+                env.start_new_episode()
+                for step in range(10):
+                    fd.write(f'{step}\n')
+                    observation = env.get_observation()
+                    fd.write(f'{observation}\n')
+                    if observation in visited:
+                        fd.write('\n')
+                        fd.write('Looped; quitting.\n')
+                        break
+                    elif env.end_of_episode():
+                        break
+                    visited.add(observation)
+                    fd.write(f'{feature_extractor(observation)}\n')
+                    actions = env.get_actions()
+                    for action in sorted(actions):
+                        fd.write(f'{action}\n')
+                        fd.write(f'    {agent.get_value(env.get_observation(), action)}\n')
+                        for feature, weight in agent.weights[action].items():
+                            if isnan(weight):
+                                has_nan = True
+                            fd.write(f'        {feature}: {weight}\n')
+                    action = agent.get_best_stored_action(env.get_observation(), actions=env.get_actions())
+                    fd.write(f'{action}\n')
+                    env.react(action)
+                    fd.write('\n')
+                fd.write(30 * '-' + '\n')
+            if has_nan:
+                return
+
+
+def main():
+    pspace = PermutationSpace(
+        ['num_albums', 'albums_per_artist', 'num_genres', 'num_years', 'random_seed'],
+        random_seed=[
+            0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
+            #0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
+        ],
+        num_episodes=10000,
+        eval_frequency=100,
+        num_albums=[100, 1000],
+        albums_per_artist=[3, 5, 10],
+        num_artists=(lambda num_albums, albums_per_artist: num_albums // albums_per_artist),
+        num_years=[2, 10, 30],
+        num_genres=[10, 30],
+    )
+    size = len(pspace)
+    for i, params in enumerate(pspace, start=1):
+        print(f'{i}/{size} running {params}')
+        run_experiment(params)
 
 
 if __name__ == '__main__':
