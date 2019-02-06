@@ -419,7 +419,7 @@ class SparqlKB(KnowledgeStore):
 
     def query(self, attr_vals): # noqa: D102
         condition = ' ; '.join(
-            f'<{attr}> {val}' for attr, val in attr_vals.items()
+            f'{attr} {val}' for attr, val in attr_vals.items()
         )
         query = f'''
         SELECT DISTINCT ?concept WHERE {{
@@ -429,7 +429,7 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         if not results:
             return None
-        return self.retrieve(results[0]['concept'].uri)
+        return AttrDict.from_dict(self.retrieve(results[0]['concept'].uri))
 
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
