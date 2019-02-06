@@ -190,11 +190,10 @@ class LinearQLearner(Agent):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.value_function = defaultdict((lambda: defaultdict(float)))
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
         self.feature_extractor = feature_extractor
-        self.weights = defaultdict(lambda: defaultdict(int))
+        self.weights = defaultdict(lambda: defaultdict(float))
 
     def get_value(self, observation, action): # noqa: D102
         if action not in self.weights:
