@@ -89,6 +89,3 @@ def test_sparql_endpoint():
         'http://dbpedia.org/resource/Wisconsin',
         'http://dbpedia.org/resource/Wyoming',
     ]
-
-
-test_sparql_endpoint()
