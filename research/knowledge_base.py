@@ -200,7 +200,7 @@ class Value:
 
     @property
     def uri(self):
-        """The URI of this URI node.
+        """Get the URI of this URI node.
 
         Returns:
             str: The URI of this URI node.
@@ -214,7 +214,7 @@ class Value:
 
     @property
     def value(self):
-        """The value of this literal node.
+        """Get the value of this literal node.
 
         Returns:
             Union[int,float,str]: The value of this literal node.
@@ -228,7 +228,7 @@ class Value:
 
     @property
     def datatype(self):
-        """The datatype of this literal node.
+        """Get the datatype of this literal node.
 
         Returns:
             str: The datatype of this literal node.
@@ -242,7 +242,7 @@ class Value:
 
     @property
     def lang(self):
-        """The language of this literal node.
+        """Get the language of this literal node.
 
         Returns:
             str: The language of this literal node.
