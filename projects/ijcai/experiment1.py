@@ -10,7 +10,8 @@ sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from research.rl_agents import epsilon_greedy, LinearQLearner
-from research.rl_environments import State, Action, Environment, memory_architecture
+from research.rl_environments import State, Action, Environment
+from research.rl_memory import memory_architecture, NaiveDictKB
 from research.randommixin import RandomMixin
 
 Album = namedtuple('Album', 'title, artist, year, genre')
@@ -89,6 +90,8 @@ def main():
         random_seed=8675309,
     )
     env = memory_architecture(RecordStore)(
+        # memory architecture
+        knowledge_store=NaiveDictKB(),
         # Random Mixin
         random_seed=8675309,
     )
