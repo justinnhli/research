@@ -424,15 +424,12 @@ class SparqlKB(KnowledgeStore):
         query = f'''
         SELECT DISTINCT ?concept WHERE {{
             ?concept {condition} .
-        }}
+        }} ORDER BY ?concept
         '''
         results = self.source.query_sparql(query)
-        # FIXME there may be multiple results
-        # FIXME check for null results
         if not results:
             return None
-        first_binding = results[0]
-        return self.retrieve(first_binding['concept'].uri)
+        return self.retrieve(results[0]['concept'].uri)
 
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
