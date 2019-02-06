@@ -176,10 +176,9 @@ class Action(AttrDict):
         return hash(tuple([self.name, *sorted(self)]))
 
     def __lt__(self, other):
-        return (
-            (self.name, *sorted(self.as_dict().items())) <
-            (other.name, *sorted(other.as_dict().items()))
-        )
+        self_tuple = (self.name, *sorted(self.as_dict().items()))
+        other_tuple = (other.name, *sorted(other.as_dict().items()))
+        return self_tuple < other_tuple
 
     def __eq__(self, other):
         # pylint: disable = protected-access
@@ -313,7 +312,7 @@ def gating_memory(cls):
 
         ATTR_PREFIX = 'memory_'
 
-        def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
+        def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs):
             """Initialize a GatingMemoryMetaEnvironment.
 
             Arguments:
@@ -322,6 +321,7 @@ def gating_memory(cls):
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
+            # pylint: disable = keyword-arg-before-vararg
             super().__init__(*args, **kwargs)
             self.reward = reward
             self.memories = num_memory_slots * [None]
@@ -389,7 +389,7 @@ def fixed_long_term_memory(cls):
         WM_PREFIX = 'wm_' # pylint: disable = invalid-name
         LTM_PREFIX = 'ltm_' # pylint: disable = invalid-name
 
-        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
+        def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs):
             """Initialize a LongTermMemoryMetaEnvironment.
 
             Arguments:
@@ -399,6 +399,7 @@ def fixed_long_term_memory(cls):
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
+            # pylint: disable = keyword-arg-before-vararg
             super().__init__(*args, **kwargs)
             self.reward = reward
             self.wm = num_wm_slots * [None] # pylint: disable = invalid-name
@@ -461,7 +462,7 @@ def fixed_long_term_memory(cls):
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs): # pylint: disable = keyword-arg-before-vararg
+    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs):
         """Initialize the TMaze.
 
         Arguments:
@@ -472,6 +473,7 @@ class SimpleTMaze(Environment, RandomMixin):
             *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
+        # pylint: disable = keyword-arg-before-vararg
         assert 0 <= hint_pos < length
         super().__init__(*args, **kwargs)
         self.length = length

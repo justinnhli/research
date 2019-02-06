@@ -4,6 +4,7 @@ from collections import namedtuple
 
 from .rl_environments import AttrDict, State, Action, Environment
 
+
 def memory_architecture(cls):
     """Decorate an Environment to become a memory architecture.
 
@@ -156,13 +157,14 @@ def memory_architecture(cls):
                     continue
                 for attr in self.buffers[src_buf]:
                     for dst_buf, dst_prop in self.BUFFERS.items():
-                        if dst_buf in self.buf_ignore or not dst_prop.writable:
-                            continue
-                        if src_buf == dst_buf:
-                            continue
-                        if src_buf == 'perceptual' and dst_buf == 'scratch':
-                            continue
-                        if attr in self.buffers[dst_buf] and self.buffers[src_buf][attr] == self.buffers[dst_buf][attr]:
+                        copyable = (
+                            src_buf != dst_buf
+                            and dst_buf not in self.buf_ignore
+                            and dst_prop.writable
+                            and not (src_buf == 'perceptual' and dst_buf == 'scratch')
+                            and self.buffers[src_buf][attr] != self.buffers[dst_buf].get(attr, None)
+                        )
+                        if not copyable:
                             continue
                         actions.append(Action(
                             'copy',
