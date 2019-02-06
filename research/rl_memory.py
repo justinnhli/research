@@ -43,7 +43,7 @@ def memory_architecture(cls):
 
         def __init__(
                 self,
-                knowledge_store, buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
+                knowledge_store=None, buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
@@ -58,6 +58,8 @@ def memory_architecture(cls):
             """
             # pylint: disable = keyword-arg-before-vararg
             # parameters
+            if knowledge_store is None:
+                knowledge_store = NaiveDictKB()
             self.knowledge_store = knowledge_store
             if buf_ignore is None:
                 self.buf_ignore = set()
