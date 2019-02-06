@@ -1,6 +1,6 @@
 """Reinforcement learning environments."""
 
-from copy import copy
+from copy import deepcopy
 
 from .randommixin import RandomMixin
 
@@ -156,7 +156,22 @@ class AttrDict:
         Returns:
             dict[str, any]: The internal dictionary.
         """
-        return copy(self._attributes_)
+        return deepcopy(self._attributes_)
+
+    @staticmethod
+    def from_dict(attributes):
+        """Create an AttrDict from a dictionary
+
+        Arguments:
+            attributes (dict[str, str]): A dictionary of strings.
+
+        Returns:
+            AttrDict: The resulting AttrDict.
+        """
+        # pylint: disable = protected-access
+        result = AttrDict()
+        result._attributes_ = deepcopy(attributes)
+        return result
 
 
 class Action(AttrDict):
