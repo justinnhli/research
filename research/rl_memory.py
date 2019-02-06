@@ -43,30 +43,34 @@ def memory_architecture(cls):
 
         def __init__(
                 self,
-                knowledge_store=None, buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
+                buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
+                knowledge_store=None, ismemid_fn=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
 
             Arguments:
-                knowledge_store (KnowledgeStore): The memory model to use.
                 buf_ignore (List[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
+                knowledge_store (KnowledgeStore): The memory model to use.
+                ismemid_fn (Function[str, bool]): Function that returns true is a value is a memory ID (ie. retrievable)
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
             # pylint: disable = keyword-arg-before-vararg
             # parameters
-            if knowledge_store is None:
-                knowledge_store = NaiveDictKB()
-            self.knowledge_store = knowledge_store
             if buf_ignore is None:
                 self.buf_ignore = set()
             else:
                 self.buf_ignore = set(buf_ignore)
             self.internal_reward = internal_reward
             self.max_internal_actions = max_internal_actions
+            # infrastructure
+            if knowledge_store is None:
+                knowledge_store = NaiveDictKB()
+            self.knowledge_store = knowledge_store
+            self.ismemid_fn = ismemid_fn
             # variables
             self.buffers = {}
             self.internal_action_count = 0
@@ -141,6 +145,7 @@ def memory_architecture(cls):
             if allow_internal_actions:
                 actions.update(self._generate_copy_actions())
                 actions.update(self._generate_delete_actions())
+                actions.update(self._generate_retrieve_actions())
                 actions.update(self._generate_cursor_actions())
             return sorted(actions)
 
@@ -179,6 +184,20 @@ def memory_architecture(cls):
                         buf=buf,
                         attr=attr,
                     ))
+            return actions
+
+        def _generate_retrieve_actions(self):
+            if self.buffers['query']:
+                return []
+            if self.ismemid_fn is None:
+                return []
+            actions = []
+            for buf, buf_props in self.BUFFERS.items():
+                if buf in self.buf_ignore or not buf_props.copyable:
+                    continue
+                for attr, value in self.buffers[buf].items():
+                    if self.ismemid_fn(value):
+                        actions.append('retrieve', buf=buf, attr=attr)
             return actions
 
         def _generate_cursor_actions(self):
@@ -220,6 +239,13 @@ def memory_architecture(cls):
                 del self.buffers[action.buf][action.attr]
                 if action.buf == 'query':
                     self._query_ltm()
+            elif action.name == 'retrieve':
+                # FIXME need to determine interaction with query buffer
+                result = self.knowledge_store.retrieve(self.buffers[action.buf][action.attr])
+                if result is None:
+                    self.buffers['retrieval'] = {}
+                else:
+                    self.buffers['retrieval'] = result
             elif action.name == 'prev-retrieval':
                 self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
             elif action.name == 'next-retrieval':
@@ -401,6 +427,8 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         # FIXME there may be multiple results
         # FIXME check for null results
+        if not results:
+            return None
         first_binding = results[0]
         return self.retrieve(first_binding['concept'].uri)
 
