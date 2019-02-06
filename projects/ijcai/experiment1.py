@@ -24,6 +24,7 @@ Album = namedtuple('Album', 'title, artist, year, genre')
 class RecordStore(Environment, RandomMixin):
 
     def __init__(self, num_albums=100, num_artists=20, num_years=2, num_genres=100, *args, **kwargs):
+        # pylint: disable = keyword-arg-before-vararg
         super().__init__(*args, **kwargs)
         # parameters
         self.num_albums = num_albums
