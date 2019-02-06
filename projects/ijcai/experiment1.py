@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import sys
-from os.path import realpath, dirname
 from collections import namedtuple
+from os.path import realpath, dirname
 from uuid import uuid4 as uuid
 
 DIRECTORY = dirname(realpath(__file__))
@@ -17,17 +17,20 @@ from research.randommixin import RandomMixin
 Album = namedtuple('Album', 'title, artist, year, genre')
 
 class RecordStore(Environment, RandomMixin):
-    NUM_ALBUMS = 100
-    NUM_YEARS = 2
-    NUM_GENRES = 100
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, num_albums=100, num_artists=20, num_years=2, num_genres=100, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # parameters
+        self.num_albums = num_albums
+        self.num_artists = num_artists
+        self.num_years = num_years
+        self.num_genres = num_genres
+        # variables
         self.albums = {}
         self.titles = []
-        self.reset()
         self.album = None
         self.location = None
+        self.reset()
 
     def get_state(self):
         return self.get_observation()
@@ -39,7 +42,7 @@ class RecordStore(Environment, RandomMixin):
         actions = []
         if int(self.location) == self.album.year:
             return actions
-        for year in range(self.NUM_YEARS):
+        for year in range(self.num_years):
             actions.append(Action(str(year)))
         return actions
 
@@ -51,13 +54,11 @@ class RecordStore(Environment, RandomMixin):
             return -10
 
     def reset(self):
-        for i in range(self.NUM_ALBUMS):
+        for i in range(self.num_albums):
             title = str(i)
-            artist = str(i)
-            #artist = '-' # FIXME
-            year = self.rng.randrange(self.NUM_YEARS)
-            genre = self.rng.randrange(self.NUM_GENRES)
-            #genre = '-' # FIXME
+            artist = self.rng.randrange(self.num_artists)
+            year = self.rng.randrange(self.num_years)
+            genre = self.rng.randrange(self.num_genres)
             self.albums[title] = Album(title, artist, year, genre)
             self.titles.append(title)
         self.titles = sorted(self.titles)
@@ -90,6 +91,11 @@ def main():
         random_seed=8675309,
     )
     env = memory_architecture(RecordStore)(
+        # record store
+        num_albums=100,
+        num_artists=100 // 3,
+        num_years=2,
+        num_genres=10,
         # memory architecture
         knowledge_store=NaiveDictKB(),
         # Random Mixin
