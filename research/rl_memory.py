@@ -184,6 +184,7 @@ def memory_architecture(cls):
         def _generate_cursor_actions(self):
             actions = []
             if self.buffers['retrieval']:
+                actions.append(Action('prev-retrieval'))
                 actions.append(Action('next-retrieval'))
             return actions
 
