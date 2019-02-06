@@ -8,8 +8,9 @@ DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
+from research.knowledge_base import SparqlEndpoint
 from research.rl_environments import State, Action, Environment
-from research.rl_memory import memory_architecture, NaiveDictKB
+from research.rl_memory import memory_architecture, NaiveDictKB, SparqlKB
 
 
 def test_memory_architecture():
@@ -137,3 +138,22 @@ def test_memory_architecture():
     reward = env.react(Action('-1'))
     assert env.end_of_episode()
     assert reward == 100, reward
+
+def test_sparqlkb():
+    """Test the SPARQL endpoint KnowledgeStore."""
+    release_date_attr = '<http://dbpedia.org/ontology/releaseDate>'
+    release_date_value = '"1979-11-30"^^<http://www.w3.org/2001/XMLSchema#date>'
+    # connect to DBpedia
+    dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
+    # test retrieve
+    store = SparqlKB(dbpedia)
+    result = store.retrieve('http://dbpedia.org/resource/The_Wall')
+    assert release_date_attr in result, sorted(result.keys())
+    assert result[release_date_attr] == release_date_value, result[release_date_attr]
+    # test query
+    result = store.query({
+        'http://dbpedia.org/ontology/releaseDate': '"1979-11-30"^^xsd:date',
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': '<http://dbpedia.org/ontology/Album>',
+    })
+    assert release_date_attr in result, sorted(result.keys())
+    assert result[release_date_attr] == release_date_value, result[release_date_attr]
