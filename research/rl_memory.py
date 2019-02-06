@@ -181,6 +181,9 @@ def memory_architecture(cls):
                     ))
             return actions
 
+        def _generate_retrieve_actions(self):
+            pass # FIXME
+
         def _generate_cursor_actions(self):
             actions = []
             if self.buffers['retrieval']:
@@ -220,6 +223,13 @@ def memory_architecture(cls):
                 del self.buffers[action.buf][action.attr]
                 if action.buf == 'query':
                     self._query_ltm()
+            elif action.name == 'retrieve':
+                # FIXME need to determine interaction with query buffer
+                result = self.knowledge_store.retrieve(self.buffers[action.buf][action.attr])
+                if result is None:
+                    self.buffers['retrieval'] = {}
+                else:
+                    self.buffers['retrieval'] = result
             elif action.name == 'prev-retrieval':
                 self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
             elif action.name == 'next-retrieval':
@@ -401,6 +411,8 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         # FIXME there may be multiple results
         # FIXME check for null results
+        if not results:
+            return None
         first_binding = results[0]
         return self.retrieve(first_binding['concept'].uri)
 
