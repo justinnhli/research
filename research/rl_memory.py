@@ -358,7 +358,7 @@ class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
 
     def __init__(self, knowledge_source):
-        """Initialize a SparqlKB
+        """Initialize a SparqlKB.
 
         Arguments:
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
