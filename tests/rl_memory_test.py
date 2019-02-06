@@ -64,7 +64,7 @@ def test_memory_architecture():
     size = 5
     env = memory_architecture(TestEnv)(
         # memory architecture
-        NaiveDictKB(),
+        knowledge_store=NaiveDictKB(),
         # TestEnv
         size=size,
         index=0,
