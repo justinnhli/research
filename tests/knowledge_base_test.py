@@ -36,7 +36,7 @@ def test_sparql_endpoint():
     '''.strip()
 
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
-    result = [binding['state'] for binding in dbpedia.query_sparql(query)]
+    result = [binding['state'].uri for binding in dbpedia.query_sparql(query)]
     assert sorted(result) == [
         'http://dbpedia.org/resource/Alabama',
         'http://dbpedia.org/resource/Alaska',
