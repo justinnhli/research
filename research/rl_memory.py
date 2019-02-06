@@ -352,3 +352,56 @@ class NaiveDictKB(KnowledgeStore):
     def next_result(self): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
+
+
+class SparqlKB(KnowledgeStore):
+    """An adaptor for RL agents to use KnowledgeSources."""
+
+    def __init__(self, knowledge_source):
+        """Initialize a SparqlKB
+
+        Arguments:
+            knowledge_source (KnowledgeSource): A SPARQL knowledge source.
+        """
+        self.source = knowledge_source
+        self.prev_query = {}
+
+    def store(self, **kwargs): # noqa: D102
+        raise NotImplementedError()
+
+    def retrieve(self, mem_id): # noqa: D102
+        if not mem_id.startswith('http'):
+            raise ValueError(f'mem_id should start with http: {mem_id}')
+        query = f'''
+        SELECT DISTINCT ?attr, ?value WHERE {{
+            <{mem_id}> ?attr ?value .
+        }}
+        '''
+        results = self.source.query_sparql(query)
+        # FIXME attr could be repeated
+        result = {}
+        for binding in results:
+            if not binding['value'].is_blank:
+                result[binding['attr'].rdf_format] = binding['value'].rdf_format
+        return result
+
+    def query(self, attr_vals): # noqa: D102
+        condition = ' ; '.join(
+            f'<{attr}> {val}' for attr, val in attr_vals.items()
+        )
+        query = f'''
+        SELECT DISTINCT ?concept WHERE {{
+            ?concept {condition} .
+        }}
+        '''
+        results = self.source.query_sparql(query)
+        # FIXME there may be multiple results
+        # FIXME check for null results
+        first_binding = results[0]
+        return self.retrieve(first_binding['concept'].uri)
+
+    def prev_result(self): # noqa: D102
+        raise NotImplementedError()
+
+    def next_result(self): # noqa: D102
+        raise NotImplementedError()
