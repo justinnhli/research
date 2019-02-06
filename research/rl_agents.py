@@ -25,12 +25,13 @@ class Agent(RandomMixin):
         self.prev_observation = None
         self.prev_action = None
 
-    def observe_reward(self, observation, reward):
+    def observe_reward(self, observation, reward, actions=None):
         """Update the value function with the reward.
 
         Arguments:
             observation (State): The current observation.
             reward (float): The reward from the previous action.
+            actions (Seq[Action]): The available actions. Defaults to None.
         """
         raise NotImplementedError()
 
@@ -57,31 +58,34 @@ class Agent(RandomMixin):
         """
         raise NotImplementedError()
 
-    def get_best_stored_action(self, observation):
+    def get_best_stored_action(self, observation, actions=None):
         """Get the action with the highest value at an observation.
 
         Arguments:
             observation (State): The observation.
+            actions (Seq[Action]): The available actions. Defaults to None.
 
         Returns:
             Action: The best action for the given observation.
         """
-        actions = self.get_stored_actions(observation)
+        if actions is None:
+            actions = self.get_stored_actions(observation)
         if not actions:
             return None
         else:
             return max(actions, key=(lambda action: self.get_value(observation, action)))
 
-    def get_best_stored_value(self, observation):
+    def get_best_stored_value(self, observation, actions=None):
         """Get the highest value at an observation.
 
         Arguments:
             observation (State): The observation.
+            actions (Seq[Action]): The available actions. Defaults to None.
 
         Returns:
             float: The value of the best action for the given observation.
         """
-        return self.get_value(observation, self.get_best_stored_action(observation))
+        return self.get_value(observation, self.get_best_stored_action(observation, actions=actions))
 
     def act(self, observation, actions):
         """Update the value function and decide on the next action.
@@ -155,7 +159,7 @@ class TabularQLearningAgent(Agent):
             return []
         return self.value_function[observation].keys()
 
-    def observe_reward(self, observation, reward): # noqa: D102
+    def observe_reward(self, observation, reward, actions=None): # noqa: D102
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
@@ -204,9 +208,9 @@ class LinearQLearner(Agent):
     def get_stored_actions(self, observation): # noqa: D102
         return self.weights.keys()
 
-    def observe_reward(self, observation, reward): # noqa: D102
+    def observe_reward(self, observation, reward, actions=None): # noqa: D102
         prev_value = self.get_value(self.prev_observation, self.prev_action)
-        next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
+        next_value = reward + self.discount_rate * self.get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
         for feature in self.feature_extractor(observation):
             weight = self.weights[self.prev_action][feature]

@@ -34,7 +34,7 @@ def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, n
             )
             reward = env.react(action)
             if update_agent:
-                agent.observe_reward(env.get_observation(), reward)
+                agent.observe_reward(env.get_observation(), reward, actions=env.get_actions())
             episodic_return += reward
             step += 1
         returns.append(episodic_return)
@@ -70,7 +70,7 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             self.agent = agent
 
         def act(self, observation, actions): # noqa: D102
-            action = self.agent.get_best_stored_action(observation)
+            action = self.agent.get_best_stored_action(observation, actions=actions)
             if action is None:
                 return self.rng.choice(actions)
             else:
