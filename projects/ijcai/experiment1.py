@@ -112,7 +112,7 @@ def main():
             actions = env.get_actions()
             action = agent.act(observation, actions)
             reward = env.react(action)
-            agent.observe_reward(observation, reward, actions=actions)
+            agent.observe_reward(observation, reward, actions=env.get_actions())
             step += 1
             total += reward
             if total < -100:
@@ -123,10 +123,11 @@ def main():
         print(step)
         print(env.get_observation())
         print(feature_extractor(env.get_observation()))
-        for action in sorted(env.get_actions()):
+        actions = env.get_actions()
+        for action in sorted(actions):
             print(action)
             print('    ', agent.get_value(env.get_observation(), action))
-        action = agent.get_best_stored_action(env.get_observation(), env.get_actions())
+        action = agent.get_best_stored_action(env.get_observation(), actions=actions)
         print(action)
         env.react(action)
         print()
