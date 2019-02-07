@@ -284,6 +284,10 @@ def memory_architecture(cls):
 class KnowledgeStore:
     """Generic interface to a knowledge base."""
 
+    def clear(self):
+        """Remove all knowledge from the KB."""
+        raise NotImplementedError()
+
     def store(self, **kwargs):
         """Add knowledge to the KB.
 
@@ -343,6 +347,11 @@ class NaiveDictKB(KnowledgeStore):
         self.query_index = None
         self.query_matches = []
 
+    def clear(self): # noqa: D102
+        self.knowledge = []
+        self.query_index = None
+        self.query_matches = []
+
     def store(self, **kwargs): # noqa: D102
         self.knowledge.append(AttrDict(**kwargs))
         return True
@@ -397,6 +406,9 @@ class SparqlKB(KnowledgeStore):
         """
         self.source = knowledge_source
         self.prev_query = {}
+
+    def clear(self): # noqa: D102
+        raise NotImplementedError()
 
     def store(self, **kwargs): # noqa: D102
         raise NotImplementedError()
