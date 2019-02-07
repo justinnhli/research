@@ -160,7 +160,7 @@ class AttrDict:
 
     @staticmethod
     def from_dict(attributes):
-        """Create an AttrDict from a dictionary
+        """Create an AttrDict from a dictionary.
 
         Arguments:
             attributes (dict[str, str]): A dictionary of strings.
