@@ -61,14 +61,14 @@ class RecordStore(Environment, RandomMixin):
 
     def reset(self):
         select_statement = f'''
-            SELECT DISTINCT ?title, ?release_date WHERE {{
-                ?album <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> dbo:Album ;
-                       <http://www.w3.org/2000/01/rdf-schema#label> ?title ;
-                       <http://dbpedia.org/ontology/releaseDate> ?release_date .
+            SELECT DISTINCT ?title ?release_date WHERE {{
+                ?album <http://wikidata.dbpedia.org/ontology/type> <http://wikidata.dbpedia.org/resource/Q1242743> ;
+                       <http://xmlns.com/foaf/0.1/name> ?title ;
+                       <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
                 FILTER ( lang(?title) = "en" )
             }} LIMIT {self.num_albums}
         '''
-        endpoint = SparqlEndpoint('https://dbpedia.org/sparql')
+        endpoint = SparqlEndpoint('http://162.233.132.179:8890/sparql')
         self.albums = {}
         for result in endpoint.query_sparql(select_statement):
             title = result['title'].rdf_format
