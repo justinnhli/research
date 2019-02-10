@@ -80,11 +80,9 @@ class RecordStore(Environment, RandomMixin):
 def feature_extractor(state):
     features = set()
     features.add('_bias')
-    for attribute in state:
-        if attribute.startswith('scratch'):
-            features.add((attribute, state[attribute]))
-        else:
-            features.add(attribute)
+    for attribute, value in state.items():
+        features.add((attribute, value))
+        features.add(attribute)
     return features
 
 
