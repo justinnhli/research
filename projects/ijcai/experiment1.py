@@ -166,6 +166,7 @@ def run_experiment(params):
         num_years=params.num_years,
         num_genres=params.num_genres,
         # memory architecture
+        max_internal_actions=params.max_internal_actions,
         knowledge_store=NaiveDictKB(),
         # Random Mixin
         random_seed=params.random_seed,
@@ -241,6 +242,7 @@ def main():
         num_artists=(lambda num_albums, albums_per_artist: num_albums // albums_per_artist),
         num_years=[2, 10, 30],
         num_genres=[10, 30],
+        max_internal_actions=5,
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
