@@ -244,7 +244,7 @@ def main():
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
-        print(f'{i}/{size} running {params}')
+        print(f'{datetime.now().isoformat()} {i}/{size} running {params}')
         run_experiment(params)
 
 
