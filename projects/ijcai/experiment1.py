@@ -4,10 +4,10 @@ import sys
 from collections import namedtuple
 from datetime import datetime
 from math import isnan
-from os.path import realpath, dirname
+from pathlib import Path
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
+DIRECTORY = Path(__file__).resolve().parent
+sys.path.insert(0, str(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from permspace import PermutationSpace
@@ -189,8 +189,10 @@ def run_experiment(params):
         f'genres{params.num_genres}',
     ])
     episodes = range(0, params.num_episodes, params.eval_frequency)
+    results_path = Path(DIRECTORY, 'data', 'exp1')
+    results_path.mkdir(parents=True, exist_ok=True)
     for episode, mean_return in zip(episodes, trial_result):
-        with open(f'{DIRECTORY}/data/exp1/{filename}', 'a') as fd:
+        with results_path.joinpath(filename).open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
         if (episode + params.eval_frequency) % 1000 == 0:
             has_nan = False

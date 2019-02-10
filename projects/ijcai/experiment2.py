@@ -4,10 +4,10 @@ import sys
 from collections import namedtuple
 from datetime import datetime
 from math import isnan
-from os.path import realpath, dirname
+from pathlib import Path
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
+DIRECTORY = Path(__file__).resolve().parent
+sys.path.insert(0, str(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from permspace import PermutationSpace
