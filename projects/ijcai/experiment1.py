@@ -18,7 +18,7 @@ from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, NaiveDictKB
 from research.randommixin import RandomMixin
 
-Album = namedtuple('Album', 'title, artist, year, genre')
+Album = namedtuple('Album', 'title, artist, release_date, genre')
 
 
 class RecordStore(Environment, RandomMixin):
@@ -46,15 +46,15 @@ class RecordStore(Environment, RandomMixin):
 
     def get_actions(self):
         actions = []
-        if int(self.location) == self.album.year:
+        if int(self.location) == self.album.release_date:
             return actions
-        for year in range(self.num_years):
-            actions.append(Action(str(year)))
+        for release_date in range(self.num_years):
+            actions.append(Action(str(release_date)))
         return actions
 
     def react(self, action):
         self.location = action.name
-        if int(self.location) == self.album.year:
+        if int(self.location) == self.album.release_date:
             return 0
         else:
             return -10
@@ -63,9 +63,9 @@ class RecordStore(Environment, RandomMixin):
         for i in range(self.num_albums):
             title = str(i)
             artist = self.rng.randrange(self.num_artists)
-            year = self.rng.randrange(self.num_years)
+            release_date = self.rng.randrange(self.num_years)
             genre = self.rng.randrange(self.num_genres)
-            self.albums[title] = Album(title, artist, year, genre)
+            self.albums[title] = Album(title, artist, release_date, genre)
             self.titles.append(title)
         self.titles = sorted(self.titles)
 

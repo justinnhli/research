@@ -19,7 +19,7 @@ from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, SparqlKB
 from research.randommixin import RandomMixin
 
-Album = namedtuple('Album', 'title, artist, year, genre')
+Album = namedtuple('Album', 'title, release_date')
 
 
 class RecordStore(Environment, RandomMixin):
@@ -48,8 +48,8 @@ class RecordStore(Environment, RandomMixin):
         if self.location == self.albums[self.curr_title]:
             return []
         actions = []
-        for year in set(self.albums.values()):
-            actions.append(Action(year))
+        for release_date in set(self.albums.values()):
+            actions.append(Action(release_date))
         return actions
 
     def react(self, action):
@@ -71,7 +71,9 @@ class RecordStore(Environment, RandomMixin):
         endpoint = SparqlEndpoint('https://dbpedia.org/sparql')
         self.albums = {}
         for result in endpoint.query_sparql(select_statement):
-            self.albums[result['title'].rdf_format] = result['release_date'].rdf_format
+            title = result['title'].rdf_format
+            release_date = result['release_date'].rdf_format
+            self.albums[title] = Album(title, release_date)
         self.titles = sorted(self.albums.keys())
 
     def start_new_episode(self):
