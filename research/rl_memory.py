@@ -450,7 +450,7 @@ class SparqlKB(KnowledgeStore):
         query = f'''
         SELECT DISTINCT ?concept WHERE {{
             ?concept {condition} .
-        }} ORDER BY ?concept
+        }} LIMIT 1
         '''
         results = self.source.query_sparql(query)
         if not results:
