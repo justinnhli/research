@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 from collections import namedtuple
 from datetime import datetime
@@ -19,7 +20,7 @@ from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, SparqlKB
 from research.randommixin import RandomMixin
 
-Album = namedtuple('Album', 'title, release_date')
+Album = namedtuple('Album', 'title, release_year')
 
 
 class RecordStore(Environment, RandomMixin):
@@ -33,6 +34,7 @@ class RecordStore(Environment, RandomMixin):
         self.albums = {}
         self.titles = []
         self.album = None
+        self.release_years = set()
         self.location = None
         self.reset()
 
@@ -45,16 +47,16 @@ class RecordStore(Environment, RandomMixin):
         })
 
     def get_actions(self):
-        if self.location == self.album.release_date:
+        if self.location == self.album.release_year:
             return []
         actions = []
-        for release_date in set(self.albums.values()):
-            actions.append(Action(release_date))
+        for release_year in self.release_years:
+            actions.append(Action(release_year))
         return actions
 
     def react(self, action):
         self.location = action.name
-        if self.location == self.album.release_date:
+        if self.location == self.album.release_year:
             return 0
         else:
             return -10
@@ -73,7 +75,9 @@ class RecordStore(Environment, RandomMixin):
         for result in endpoint.query_sparql(select_statement):
             title = result['title'].rdf_format
             release_date = result['release_date'].rdf_format
-            self.albums[title] = Album(title, release_date)
+            release_year = date_to_year(release_date)
+            self.albums[title] = Album(title, release_year)
+            self.release_years.add(release_year)
         self.titles = sorted(self.albums.keys())
 
     def start_new_episode(self):
@@ -83,6 +87,9 @@ class RecordStore(Environment, RandomMixin):
     def visualize(self):
         raise NotImplementedError()
 
+
+def date_to_year(date):
+    return re.sub('^"([0-9]{4}).*"([@^][^"]*)$', r'"\1-01-01"\2', date)
 
 def feature_extractor(state):
     features = set()
