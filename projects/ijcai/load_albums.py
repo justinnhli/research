@@ -7,6 +7,7 @@ def make_select_statement(limit, offset):
     return f'''
         SELECT DISTINCT ?title ?release_date WHERE {{
             ?album <http://xmlns.com/foaf/0.1/name> ?title ;
+		   <http://wikidata.dbpedia.org/ontology/artist> ?artist_node ;
                    <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
             FILTER ( lang(?title) = "en" )
         }} LIMIT {limit} OFFSET {offset}
@@ -35,6 +36,7 @@ def main():
         if offset % 1000 == 0:
             write_to_file( release_dates, 'albums')
         results = endpoint.query_sparql(make_select_statement(limit, offset))
+    print(f'processed {offset + limit} results; total albums = {len(release_dates)}')
     write_to_file(release_dates, 'albums')
 
 if __name__ == '__main__':
