@@ -64,7 +64,7 @@ class RecordStore(Environment, RandomMixin):
     def reset(self):
         with open('albums') as fd:
             for line, _ in zip(fd, range(self.num_albums)):
-                title, release_date = line.split('\t')
+                title, release_date = line.strip().split('\t')
                 release_year = date_to_year(release_date)
                 self.albums[title] = Album(title, release_year)
                 self.release_years.add(release_year)
