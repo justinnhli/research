@@ -115,7 +115,21 @@ def testing():
         # record store
         num_albums=3,
         # memory architecture
-        knowledge_store=SparqlKB(SparqlEndpoint('https://dbpedia.org/sparql')),
+        knowledge_store=SparqlKB(
+            SparqlEndpoint('https://dbpedia.org/sparql'),
+            augments=[
+                SparqlKB.Augment(
+                    '<http://xmlns.com/foaf/0.1/name>',
+                    '<http://xmlns.com/foaf/0.1/FirstLetter>',
+                    (lambda name: re.sub('"(.).*"([@^][^"]*)', r'"\1"\2', name)),
+                ),
+                SparqlKB.Augment(
+                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
+                    '<http://wikidata.dbpedia.org/ontology/releaseYear>',
+                    date_to_year,
+                ),
+            ],
+        ),
         # Random Mixin
         random_seed=8675309,
     )
