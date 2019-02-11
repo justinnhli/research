@@ -116,7 +116,7 @@ def testing():
         num_albums=3,
         # memory architecture
         knowledge_store=SparqlKB(
-            SparqlEndpoint('https://dbpedia.org/sparql'),
+            SparqlEndpoint('http://162.233.132.179:8890/sparql'),
             augments=[
                 SparqlKB.Augment(
                     '<http://xmlns.com/foaf/0.1/name>',
