@@ -62,22 +62,12 @@ class RecordStore(Environment, RandomMixin):
             return -10
 
     def reset(self):
-        select_statement = f'''
-            SELECT DISTINCT ?title ?release_date WHERE {{
-                ?album <http://wikidata.dbpedia.org/ontology/type> <http://wikidata.dbpedia.org/resource/Q1242743> ;
-                       <http://xmlns.com/foaf/0.1/name> ?title ;
-                       <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
-                FILTER ( lang(?title) = "en" )
-            }} LIMIT {self.num_albums}
-        '''
-        endpoint = SparqlEndpoint('http://162.233.132.179:8890/sparql')
-        self.albums = {}
-        for result in endpoint.query_sparql(select_statement):
-            title = result['title'].rdf_format
-            release_date = result['release_date'].rdf_format
-            release_year = date_to_year(release_date)
-            self.albums[title] = Album(title, release_year)
-            self.release_years.add(release_year)
+        with open('albums') as fd:
+            for line, _ in zip(fd, range(self.num_albums)):
+                title, release_date = line.split('\t')
+                release_year = date_to_year(release_date)
+                self.albums[title] = Album(title, release_year)
+                self.release_years.add(release_year)
         self.titles = sorted(self.albums.keys())
 
     def start_new_episode(self):
