@@ -94,7 +94,7 @@ def date_to_year(date):
 def feature_extractor(state):
     features = set()
     features.add('_bias')
-    for attribute, value in state.items():
+    for attribute, value in state.as_dict().items():
         features.add((attribute, value))
         features.add(attribute)
     return features
