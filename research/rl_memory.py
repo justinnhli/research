@@ -204,7 +204,7 @@ def memory_architecture(cls):
 
         def _generate_cursor_actions(self):
             actions = []
-            if self.buffers['retrieval']:
+            if self.knowledge_store.HAS_RESULT_CURSOR and self.buffers['retrieval']:
                 actions.append(Action('prev-retrieval'))
                 actions.append(Action('next-retrieval'))
             return actions
@@ -282,6 +282,8 @@ def memory_architecture(cls):
 
 class KnowledgeStore:
     """Generic interface to a knowledge base."""
+
+    HAS_RESULT_CURSOR = True
 
     def clear(self):
         """Remove all knowledge from the KB."""
@@ -397,6 +399,8 @@ class NaiveDictKB(KnowledgeStore):
 class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
 
+    HAS_RESULT_CURSOR = False
+
     Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
 
     def __init__(self, knowledge_source, augments=None):
@@ -407,7 +411,6 @@ class SparqlKB(KnowledgeStore):
             augments (Sequence[Augment]): Additional values to add to results.
         """
         self.source = knowledge_source
-        self.prev_query = {}
         if augments is None:
             augments = {}
         self.augments = augments
