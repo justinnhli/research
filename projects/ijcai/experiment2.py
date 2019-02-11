@@ -43,7 +43,7 @@ class RecordStore(Environment, RandomMixin):
 
     def get_observation(self):
         return State.from_dict({
-            '<http://www.w3.org/2000/01/rdf-schema#label>': self.album.title,
+            '<http://xmlns.com/foaf/0.1/name>': self.album.title,
         })
 
     def get_actions(self):
