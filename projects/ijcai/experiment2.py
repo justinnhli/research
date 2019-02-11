@@ -32,7 +32,7 @@ class RecordStore(Environment, RandomMixin):
         # variables
         self.albums = {}
         self.titles = []
-        self.curr_title = None
+        self.album = None
         self.location = None
         self.reset()
 
@@ -41,11 +41,11 @@ class RecordStore(Environment, RandomMixin):
 
     def get_observation(self):
         return State.from_dict({
-            '<http://www.w3.org/2000/01/rdf-schema#label>': self.curr_title,
+            '<http://www.w3.org/2000/01/rdf-schema#label>': self.album.title,
         })
 
     def get_actions(self):
-        if self.location == self.albums[self.curr_title]:
+        if self.location == self.album.release_date:
             return []
         actions = []
         for release_date in set(self.albums.values()):
@@ -54,7 +54,7 @@ class RecordStore(Environment, RandomMixin):
 
     def react(self, action):
         self.location = action.name
-        if self.location == self.albums[self.curr_title]:
+        if self.location == self.album.release_date:
             return 0
         else:
             return -10
@@ -77,7 +77,7 @@ class RecordStore(Environment, RandomMixin):
         self.titles = sorted(self.albums.keys())
 
     def start_new_episode(self):
-        self.curr_title = self.rng.choice(self.titles)
+        self.album = self.albums[self.rng.choice(self.titles)]
         self.location = 'start'
 
     def visualize(self):
