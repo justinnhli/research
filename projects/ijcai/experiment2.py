@@ -105,6 +105,7 @@ def testing():
         # record store
         num_albums=3,
         # memory architecture
+        max_internal_actions=5,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
             augments=[
