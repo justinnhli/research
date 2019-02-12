@@ -1,6 +1,6 @@
 """Memory architecture for reinforcement learning."""
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from .rl_environments import AttrDict, State, Action, Environment
 
@@ -422,12 +422,15 @@ class SparqlKB(KnowledgeStore):
         }}
         '''
         results = self.source.query_sparql(query)
-        # FIXME attr could be repeated
-        result = {}
+        # FIXME HACK to avoid dealing with multi-valued attributes,
+        # we only return the "largest" value for each attribute
+        result = defaultdict(set)
         for binding in results:
             if not binding['value'].is_blank:
-                result[binding['attr'].rdf_format] = binding['value'].rdf_format
-        return result
+                attr = binding['attr'].rdf_format
+                value = binding['value'].rdf_format
+                result[attr].add(value)
+        return {attr: max(vals) for attr, vals in result.items()}
 
     def query(self, attr_vals): # noqa: D102
         condition = ' ; '.join(
