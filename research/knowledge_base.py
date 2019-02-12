@@ -267,8 +267,8 @@ class Value:
         if self.is_uri:
             return f'<{self.sparql_value.value}>'
         elif self.is_literal:
-            # FIXME there may be issues with escaping quote here
-            result = f'"{self.sparql_value.value}"'
+            escaped_value = self.sparql_value.value.replace('"', r'\"')
+            result = f'"{escaped_value}"'
             if self.lang:
                 result += f'@{self.lang}'
             if self.datatype:
