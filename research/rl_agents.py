@@ -179,8 +179,6 @@ class TabularQLearningAgent(Agent):
 class LinearQLearner(Agent):
     """A Q learning with linear value function approximation."""
 
-    # pylint: disable = abstract-method
-
     def __init__(self, learning_rate, discount_rate, feature_extractor, *args, **kwargs):
         """Initialize a tabular Q-learning agent.
 
@@ -216,6 +214,12 @@ class LinearQLearner(Agent):
         for feature in features:
             weight = self.weights[self.prev_action][feature]
             self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) / num_features
+
+    def print_value_function(self): # noqa: D102
+        for action, weights in self.weights.items():
+            print(action)
+            for feature, weight in weights.items():
+                print('   ', feature, weight)
 
 
 def epsilon_greedy(cls):
