@@ -398,14 +398,20 @@ class NaiveDictKB(KnowledgeStore):
 class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
 
-    def __init__(self, knowledge_source):
+    Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
+
+    def __init__(self, knowledge_source, augments=None):
         """Initialize a SparqlKB.
 
         Arguments:
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
+            augments (Sequence[Augment]): Additional values to add to results.
         """
         self.source = knowledge_source
         self.prev_query = {}
+        if augments is None:
+            augments = {}
+        self.augments = augments
 
     def clear(self): # noqa: D102
         raise NotImplementedError()
@@ -430,6 +436,9 @@ class SparqlKB(KnowledgeStore):
                 attr = binding['attr'].rdf_format
                 value = binding['value'].rdf_format
                 result[attr].add(value)
+                if attr in self.augments:
+                    augment = self.augments[attr]
+                    result[augment.attr].add(augment.transform(value))
         return {attr: max(vals) for attr, vals in result.items()}
 
     def query(self, attr_vals): # noqa: D102
