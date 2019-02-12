@@ -81,7 +81,7 @@ class RecordStore(Environment, RandomMixin):
     def start_new_episode(self):
         self.album = self.albums[self.rng.choice(self.titles)]
         self.goal = self.album_to_goal(self.album)
-        self.location = '-1'
+        self.location = '__start__'
 
     def visualize(self):
         raise NotImplementedError()

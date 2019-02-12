@@ -101,7 +101,7 @@ class RecordStore(Environment, RandomMixin):
 
     def start_new_episode(self):
         self.question = self.rng.choice(self.questions)
-        self.location = 'start'
+        self.location = '__start__'
 
     def visualize(self):
         raise NotImplementedError()
