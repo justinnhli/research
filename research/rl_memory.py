@@ -315,7 +315,7 @@ class KnowledgeStore:
         """Search the KB for elements with the given attributes.
 
         Arguments:
-            attr_vals (dict): Attributes and values of the desired element.
+            attr_vals (Mapping): Attributes and values of the desired element.
 
         Returns:
             AttrDict: A search result, or None.

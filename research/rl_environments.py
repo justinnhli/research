@@ -163,7 +163,7 @@ class AttrDict:
         """Create an AttrDict from a dictionary.
 
         Arguments:
-            attributes (dict[str, str]): A dictionary of strings.
+            attributes (Mapping[str, str]): A dictionary of strings.
 
         Returns:
             AttrDict: The resulting AttrDict.
