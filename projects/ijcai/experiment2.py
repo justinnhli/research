@@ -106,6 +106,10 @@ def date_to_year(date):
     return re.sub('^"([0-9]{4}).*"([@^][^"]*)$', r'"\1-01-01"\2', date)
 
 
+def date_to_decade(date):
+    return re.sub('^"([0-9]{3}).*"([@^][^"]*)$', r'"\g<1>0-01-01"\2', date)
+
+
 def feature_extractor(state):
     features = set()
     features.add('_bias')
@@ -143,6 +147,11 @@ def testing():
                 SparqlKB.Augment(
                     '<http://wikidata.dbpedia.org/ontology/releaseDate>',
                     '<http://wikidata.dbpedia.org/ontology/releaseYear>',
+                    date_to_year,
+                ),
+                SparqlKB.Augment(
+                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
+                    '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
                     date_to_year,
                 ),
             ],
@@ -236,6 +245,7 @@ def run_experiment(params):
         min_return=-100,
     )
     filename = '-'.join([
+        f'schema{params.schema_name}',
         f'seed{params.random_seed}',
         f'albums{params.num_albums}',
     ])
@@ -282,7 +292,7 @@ def run_experiment(params):
 
 def main():
     pspace = PermutationSpace(
-        ['random_seed', 'num_albums'],
+        ['schema_name', 'random_seed', 'num_albums'],
         random_seed=[
             0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
             #0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
@@ -291,7 +301,8 @@ def main():
         eval_frequency=100,
         num_albums=[1000,],
         max_internal_actions=5,
-        schema=SCHEMAS['title_year'],
+        schema_name=['title_year', 'title_genre_decade', 'title_country',],
+        schema=(lambda schema_name: SCHEMAS[schema_name]),
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
