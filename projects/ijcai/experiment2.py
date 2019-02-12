@@ -4,8 +4,10 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
+from itertools import chain
 from math import isnan
 from pathlib import Path
+from textwrap import dedent
 
 DIRECTORY = Path(__file__).resolve().parent
 sys.path.insert(0, str(DIRECTORY))
@@ -20,21 +22,90 @@ from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, SparqlKB
 from research.randommixin import RandomMixin
 
-Album = namedtuple('Album', 'title, release_year')
+Schema = namedtuple('Schema', 'name sparql clues categories')
+
+
+TITLE_YEAR = Schema(
+    'title_year',
+    dedent('''
+        SELECT DISTINCT ?title ?release_date WHERE {
+            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
+            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
+		   <http://wikidata.dbpedia.org/ontology/artist> ?artist_node ;
+                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
+            FILTER ( lang(?title) = "en" )
+        }
+    ''').strip(),
+    ['title',],
+    ['release_date',],
+)
+
+TITLE_GENRE_DECADE = Schema(
+    'title_genre_decade',
+    dedent('''
+        SELECT DISTINCT ?title ?genre ?release_date WHERE {
+            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
+            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
+		   <http://wikidata.dbpedia.org/ontology/artist> ?artist_node ;
+                   <http://wikidata.dbpedia.org/ontology/genre> ?genre_node ;
+                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
+            ?genre_node <http://xmlns.com/foaf/0.1/name> ?genre .
+            FILTER ( lang(?title) = "en" )
+            FILTER ( lang(?genre) = "en" )
+        }
+    ''').strip(),
+    ['title',],
+    ['genre', 'release_date',],
+)
+
+TITLE_COUNTRY = Schema(
+    'title_country',
+    dedent('''
+        SELECT DISTINCT ?title ?country WHERE {
+            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
+            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
+                        <http://wikidata.dbpedia.org/ontology/artist> ?artist .
+            ?artist <http://wikidata.dbpedia.org/ontology/hometown> ?hometown .
+            ?hometown <http://wikidata.dbpedia.org/ontology/country> ?country_node .
+            ?country_node <http://xmlns.com/foaf/0.1/name> ?country .
+            FILTER ( lang(?title) = "en" )
+            FILTER ( lang(?country) = "en" )
+        }
+    ''').strip(),
+    ['title',],
+    ['country',],
+)
+
+
+def get_schema_attr(schema, var):
+    matches = [
+        re.search(r'(?P<attr><[^>]*>) \?' + var + ' [;.]', line)
+        for line in schema.sparql.splitlines()
+    ]
+    matches = [match for match in matches if match is not None]
+    assert len(matches) == 1
+    return matches[0].group('attr')
 
 
 class RecordStore(Environment, RandomMixin):
 
-    def __init__(self, num_albums=1000, *args, **kwargs):
+    def __init__(self, schema=None, num_albums=1000, *args, **kwargs):
         # pylint: disable = keyword-arg-before-vararg
         super().__init__(*args, **kwargs)
         # parameters
+        assert schema is not None
+        self.schema = schema
         self.num_albums = num_albums
+        # database
+        self.uris = [
+            get_schema_attr(self.schema, var) for var in
+            chain(self.schema.clues, self.schema.categories)
+        ]
+        self.questions = []
+        self.answers = {}
+        self.actions = set()
         # variables
-        self.albums = {}
-        self.titles = []
-        self.album = None
-        self.release_years = set()
+        self.question = None
         self.location = None
         self.reset()
 
@@ -42,36 +113,43 @@ class RecordStore(Environment, RandomMixin):
         return self.get_observation()
 
     def get_observation(self):
-        return State.from_dict({
-            '<http://xmlns.com/foaf/0.1/name>': self.album.title,
-        })
+        return State.from_dict({uri: val for uri, val in zip(self.uris, self.question)})
 
     def get_actions(self):
-        if self.location == self.album.release_year:
+        if self.location == self.answers[self.question]:
             return []
         actions = []
-        for release_year in self.release_years:
-            actions.append(Action(release_year))
+        for action_str in self.actions:
+            assert isinstance(action_str, str), action_str
+            actions.append(Action(action_str))
         return actions
 
     def react(self, action):
         self.location = action.name
-        if self.location == self.album.release_year:
+        if self.location == self.answers[self.question]:
             return 0
         else:
             return -10
 
     def reset(self):
-        with open('albums') as fd:
+        with Path(__file__).parent.joinpath('schemas', self.schema.name).open() as fd:
             for line, _ in zip(fd, range(self.num_albums)):
-                title, release_date = line.strip().split('\t')
-                release_year = date_to_year(release_date)
-                self.albums[title] = Album(title, release_year)
-                self.release_years.add(release_year)
-        self.titles = sorted(self.albums.keys())
+                vals = []
+                for uri, val in zip(self.uris, line.strip().split('\t')):
+                    if uri == '<http://wikidata.dbpedia.org/ontology/releaseDate>':
+                        vals.append(date_to_year(val))
+                    elif uri == '<http://xmlns.com/foaf/0.1/name>':
+                        vals.append(date_to_year(val))
+                    else:
+                        vals.append(val)
+                question = tuple(vals[:len(self.schema.clues)])
+                answer = tuple(vals[-len(self.schema.categories):])
+                self.answers[question] = str(answer)
+                self.actions.add(str(answer))
+        self.questions = sorted(self.answers.keys())
 
     def start_new_episode(self):
-        self.album = self.albums[self.rng.choice(self.titles)]
+        self.question = self.rng.choice(self.questions)
         self.location = 'start'
 
     def visualize(self):
@@ -103,6 +181,7 @@ def testing():
     )
     env = memory_architecture(RecordStore)(
         # record store
+        schema=TITLE_YEAR,
         num_albums=3,
         # memory architecture
         max_internal_actions=5,
