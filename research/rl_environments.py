@@ -219,8 +219,8 @@ class GridWorld(Environment):
         Arguments:
             width (int): The width of the grid.
             height (int): The height of the grid.
-            start (list[int]): The starting location. Origin is top left.
-            goal (list[int]): The goal location. Origin is top left.
+            start (Tuple[int, int]): The starting location. Origin is top left.
+            goal (Tuple[int, int]): The goal location. Origin is top left.
             *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """

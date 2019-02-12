@@ -99,7 +99,7 @@ class KnowledgeSource:
             sparql (str): The SPARQL query.
 
         Returns:
-            list[dict[str:Value]]: A list of variable bindings.
+            List[Dict[str, Value]]: A list of variable bindings.
         """
         raise NotImplementedError()
 

@@ -14,7 +14,7 @@ def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, n
         num_episodes (int): The number of episodes to run.
         min_return (float): A minimum threshold under which to stop an episode.
         update_agent (bool): Whether the agent will observe rewards
-        new_episode_hook (Function[Environment, Agent]): A hook at each new episode.
+        new_episode_hook (Callable[[Environment, Agent], None]): A hook at each new episode.
 
     Returns:
         float: The mean return over all episodes.
@@ -49,7 +49,7 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
         agent (Agent): The agent.
         num_episodes (int): The number of episodes to run.
         min_return (float): A minimum threshold under which to stop an episode.
-        new_episode_hook (Function[Environment, Agent]): A hook at each new episode.
+        new_episode_hook (Callable[Environment, Agent]): A hook at each new episode.
 
     Returns:
         float: The mean return over all episodes.
@@ -94,7 +94,7 @@ def train_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=None
         agent (Agent): The agent.
         num_episodes (int): The number of episodes to run.
         min_return (float): A minimum threshold under which to stop an episode.
-        new_episode_hook (Function[Environment, Agent]): A hook at each new episode.
+        new_episode_hook (Callable[[Environment, Agent], None]): A hook at each new episode.
     """
     run_episodes(
         env,
@@ -116,7 +116,7 @@ def train_and_evaluate(env, agent, num_episodes, **kwargs):
         eval_frequency (int): The number of episodes between each evaluation
         eval_num_episodes (int): The number of episodes to run for evaluation.
         min_return (float): A minimum threshold under which to stop an episode.
-        new_episode_hook (Function[Environment, Agent]): A hook at each new episode.
+        new_episode_hook (Callable[[Environment, Agent], None]): A hook at each new episode.
 
     Yields:
         float: The mean return of each evaluation.
