@@ -21,6 +21,7 @@ from research.rl_memory import memory_architecture, SparqlKB
 from research.randommixin import RandomMixin
 
 from schemas import SCHEMAS
+from download_schema import download_schema_data
 
 
 def get_schema_attr(schema, var):
@@ -78,6 +79,10 @@ class RecordStore(Environment, RandomMixin):
             return -10
 
     def reset(self):
+        schema_data_path = Path(__file__).parent.joinpath('schemas', self.schema.name)
+        if not schema_data_path.exists():
+            schema_data_path.parent.mkdir(parents=True, exist_ok=True)
+            download_schema_data(self.schema)
         with Path(__file__).parent.joinpath('schemas', self.schema.name).open() as fd:
             for line, _ in zip(fd, range(self.num_albums)):
                 vals = []
