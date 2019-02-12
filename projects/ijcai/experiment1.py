@@ -34,7 +34,9 @@ class RecordStore(Environment, RandomMixin):
         # variables
         self.albums = {}
         self.titles = []
+        self.goals = set()
         self.album = None
+        self.goal = None
         self.location = None
         self.reset()
 
@@ -46,35 +48,47 @@ class RecordStore(Environment, RandomMixin):
 
     def get_actions(self):
         actions = []
-        if int(self.location) == self.album.release_date:
+        if self.location == self.goal:
             return actions
-        for release_date in range(self.num_years):
-            actions.append(Action(str(release_date)))
+        for goal in self.goals:
+            actions.append(Action(goal))
         return actions
 
     def react(self, action):
         self.location = action.name
-        if int(self.location) == self.album.release_date:
+        if self.location == self.goal:
             return 0
         else:
             return -10
 
     def reset(self):
+        self.goals = set()
+        titles = set()
         for i in range(self.num_albums):
             title = str(i)
             artist = self.rng.randrange(self.num_artists)
             release_date = self.rng.randrange(self.num_years)
             genre = self.rng.randrange(self.num_genres)
-            self.albums[title] = Album(title, artist, release_date, genre)
-            self.titles.append(title)
-        self.titles = sorted(self.titles)
+            album = Album(title, artist, release_date, genre)
+            goal = self.album_to_goal(album)
+            self.albums[title] = album
+            if title in titles:
+                raise ValueError(f'Title {title} is ambiguous')
+            titles.add(title)
+            self.goals.add(goal)
+        self.titles = sorted(titles)
 
     def start_new_episode(self):
         self.album = self.albums[self.rng.choice(self.titles)]
+        self.goal = self.album_to_goal(self.album)
         self.location = '-1'
 
     def visualize(self):
         raise NotImplementedError()
+
+    @staticmethod
+    def album_to_goal(album):
+        return str((album.genre, album.release_date))
 
 
 INTERNAL_ACTIONS = set([
