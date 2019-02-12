@@ -190,7 +190,8 @@ class LinearQLearner(Agent):
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
-            feature_extractor (function): A function that extracts features from a state.
+            feature_extractor (Callable[[Observation, Optional[Action]], Set[Hashable]]):
+                A function that extracts features from a state.
             *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
@@ -204,7 +205,7 @@ class LinearQLearner(Agent):
         if action not in self.weights:
             return 0
         weights = self.weights[action]
-        return sum(weights[feature] for feature in self.feature_extractor(observation))
+        return sum(weights[feature] for feature in self.feature_extractor(observation, action=action))
 
     def get_stored_actions(self, observation): # noqa: D102
         return self.weights.keys()
@@ -213,7 +214,7 @@ class LinearQLearner(Agent):
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
-        features = self.feature_extractor(observation)
+        features = self.feature_extractor(observation, action=self.prev_action)
         num_features = len(features)
         for feature in features:
             weight = self.weights[self.prev_action][feature]
