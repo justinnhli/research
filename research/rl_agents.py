@@ -92,7 +92,7 @@ class Agent(RandomMixin):
 
         Arguments:
             observation (State): The observation of the environment.
-            actions (list[Action]): List of available actions.
+            actions (Sequence[Action]): List of available actions.
 
         Returns:
             Action: The action the agent takes.
@@ -114,7 +114,7 @@ class Agent(RandomMixin):
 
         Arguments:
             observation (State): The observation of the environment.
-            action (list[Action]): The action to return.
+            action (Action): The action to return.
 
         Returns:
             Action: The action the agent takes.
@@ -280,7 +280,7 @@ def feature_function(cls):
             """Initialize the feature agent.
 
             Arguments:
-                feature_fn (function): The feature transformation function.
+                feature_fn (Callable[[Observation], Hashable]): The feature transformation function.
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """

@@ -51,20 +51,19 @@ def memory_architecture(cls):
             """Initialize a memory architecture.
 
             Arguments:
-                buf_ignore (List[str]): Buffers that should not be created.
+                buf_ignore (Iterable[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
                 knowledge_store (KnowledgeStore): The memory model to use.
-                ismemid_fn (Function[str, bool]): Function that returns true is a value is a memory ID (ie. retrievable)
+                ismemid_fn (Callable[[str], bool]): Function that returns true is a value is a memory ID (ie. retrievable)
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
             # pylint: disable = keyword-arg-before-vararg
             # parameters
             if buf_ignore is None:
-                self.buf_ignore = set()
-            else:
-                self.buf_ignore = set(buf_ignore)
+                buf_ignore = set()
+            self.buf_ignore = set(buf_ignore)
             self.internal_reward = internal_reward
             self.max_internal_actions = max_internal_actions
             # infrastructure
