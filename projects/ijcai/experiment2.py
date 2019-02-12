@@ -2,12 +2,10 @@
 
 import re
 import sys
-from collections import namedtuple
 from datetime import datetime
 from itertools import chain
 from math import isnan
 from pathlib import Path
-from textwrap import dedent
 
 DIRECTORY = Path(__file__).resolve().parent
 sys.path.insert(0, str(DIRECTORY))
@@ -22,59 +20,7 @@ from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, SparqlKB
 from research.randommixin import RandomMixin
 
-Schema = namedtuple('Schema', 'name sparql clues categories')
-
-
-TITLE_YEAR = Schema(
-    'title_year',
-    dedent('''
-        SELECT DISTINCT ?title ?release_date WHERE {
-            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
-		   <http://wikidata.dbpedia.org/ontology/artist> ?artist_node ;
-                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
-            FILTER ( lang(?title) = "en" )
-        }
-    ''').strip(),
-    ['title',],
-    ['release_date',],
-)
-
-TITLE_GENRE_DECADE = Schema(
-    'title_genre_decade',
-    dedent('''
-        SELECT DISTINCT ?title ?genre ?release_date WHERE {
-            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
-		   <http://wikidata.dbpedia.org/ontology/artist> ?artist_node ;
-                   <http://wikidata.dbpedia.org/ontology/genre> ?genre_node ;
-                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
-            ?genre_node <http://xmlns.com/foaf/0.1/name> ?genre .
-            FILTER ( lang(?title) = "en" )
-            FILTER ( lang(?genre) = "en" )
-        }
-    ''').strip(),
-    ['title',],
-    ['genre', 'release_date',],
-)
-
-TITLE_COUNTRY = Schema(
-    'title_country',
-    dedent('''
-        SELECT DISTINCT ?title ?country WHERE {
-            ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-            ?album <http://xmlns.com/foaf/0.1/name> ?title ;
-                        <http://wikidata.dbpedia.org/ontology/artist> ?artist .
-            ?artist <http://wikidata.dbpedia.org/ontology/hometown> ?hometown .
-            ?hometown <http://wikidata.dbpedia.org/ontology/country> ?country_node .
-            ?country_node <http://xmlns.com/foaf/0.1/name> ?country .
-            FILTER ( lang(?title) = "en" )
-            FILTER ( lang(?country) = "en" )
-        }
-    ''').strip(),
-    ['title',],
-    ['country',],
-)
+from schemas import SCHEMAS
 
 
 def get_schema_attr(schema, var):
@@ -182,7 +128,7 @@ def testing():
     )
     env = memory_architecture(RecordStore)(
         # record store
-        schema=TITLE_YEAR,
+        schema=SCHEMAS['title_year'],
         num_albums=3,
         # memory architecture
         max_internal_actions=5,
@@ -345,7 +291,7 @@ def main():
         eval_frequency=100,
         num_albums=[1000,],
         max_internal_actions=5,
-        schema=TITLE_YEAR,
+        schema=SCHEMAS['title_year'],
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):

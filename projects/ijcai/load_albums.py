@@ -4,6 +4,8 @@ from pathlib import Path
 
 from research.knowledge_base import SparqlEndpoint
 
+from schemas import SCHEMAS
+
 
 def write_to_file(schema, data):
     with Path(__file__).parent.joinpath('schemas', schema.name).open('w') as fd:
@@ -25,7 +27,7 @@ def get_schema_attr(schema, var):
     return matches[0].group('attr')
 
 
-def fetch_data(schema):
+def fetch_schema_data(schema):
     endpoint = SparqlEndpoint('http://162.233.132.179:8890/sparql')
     limit = 10
     offset = 0
@@ -46,6 +48,6 @@ def fetch_data(schema):
     print(f'processed {offset} results; total albums = {len(data)}')
     write_to_file(schema, data)
 
+
 if __name__ == '__main__':
-    from experiment2 import TITLE_COUNTRY
-    fetch_data(TITLE_COUNTRY)
+    fetch_schema_data(SCHEMAS['title_genre_decade'])
