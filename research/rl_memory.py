@@ -381,7 +381,7 @@ class NaiveDictKB(KnowledgeStore):
                 self.query_index = self.query_matches.index(curr_retrieved)
             except ValueError:
                 self.query_index = 0
-            return self.query_matches[self.query_index]
+            return AttrDict.from_dict(self.query_matches[self.query_index])
         self.query_index = None
         self.query_matches = []
         return None
