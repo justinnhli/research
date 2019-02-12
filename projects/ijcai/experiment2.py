@@ -237,6 +237,11 @@ def run_experiment(params):
                     '<http://wikidata.dbpedia.org/ontology/releaseYear>',
                     date_to_year,
                 ),
+                SparqlKB.Augment(
+                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
+                    '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
+                    date_to_year,
+                ),
             ],
         ),
         # Random Mixin
