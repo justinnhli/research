@@ -77,12 +77,25 @@ class RecordStore(Environment, RandomMixin):
         raise NotImplementedError()
 
 
-def feature_extractor(state):
+INTERNAL_ACTIONS = set([
+    'copy',
+    'delete',
+    'retrieve',
+    'next-retrieval',
+    'prev-retrieval',
+])
+
+
+def feature_extractor(state, action=None):
     features = set()
     features.add('_bias')
+    internal = action is None or action.name in INTERNAL_ACTIONS
+    external = action is None or action.name not in INTERNAL_ACTIONS
     for attribute, value in state.as_dict().items():
-        features.add((attribute, value))
-        features.add(attribute)
+        if internal:
+            features.add(attribute)
+        if external:
+            features.add((attribute, value))
     return features
 
 
