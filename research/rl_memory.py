@@ -55,7 +55,8 @@ def memory_architecture(cls):
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
                 knowledge_store (KnowledgeStore): The memory model to use.
-                ismemid_fn (Callable[[str], bool]): Function that returns true is a value is a memory ID (ie. retrievable)
+                ismemid_fn (Callable[[str], bool]):
+                    Function that returns true is a value is a memory ID (ie. retrievable)
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
