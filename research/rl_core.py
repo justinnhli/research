@@ -131,7 +131,7 @@ def train_and_evaluate(env, agent, num_episodes, **kwargs):
     min_return = kwargs.get('min_return', -500)
     new_episode_hook = kwargs.get('new_episode_hook', None)
     for episode_num in range(0, num_episodes, train_episodes):
-        train_agent(env, agent, train_episodes, new_episode_hook=new_episode_hook)
+        train_agent(env, agent, train_episodes, min_return=min_return, new_episode_hook=new_episode_hook)
         should_evaluate = (
             eval_frequency == 0 or
             (eval_frequency > 0 and episode_num % eval_frequency == 0)
