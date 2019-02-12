@@ -130,10 +130,6 @@ class Agent(RandomMixin):
         """Print the value function."""
         raise NotImplementedError()
 
-    def print_policy(self):
-        """Print the policy."""
-        raise NotImplementedError()
-
 
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
@@ -172,7 +168,8 @@ class TabularQLearningAgent(Agent):
             for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
                 print('    {}: {:.3f}'.format(action, value))
 
-    def print_policy(self): # noqa: D102
+    def print_policy(self):
+        """Print the policy."""
         for observation in sorted(self.value_function.keys(), key=str):
             print(observation)
             best_action = self.get_best_stored_action(observation)
