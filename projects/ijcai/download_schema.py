@@ -27,7 +27,7 @@ def get_schema_attr(schema, var):
     return matches[0].group('attr')
 
 
-def fetch_schema_data(schema):
+def download_schema_data(schema):
     endpoint = SparqlEndpoint('http://162.233.132.179:8890/sparql')
     limit = 10
     offset = 0
@@ -50,4 +50,4 @@ def fetch_schema_data(schema):
 
 
 if __name__ == '__main__':
-    fetch_schema_data(SCHEMAS['title_genre_decade'])
+    download_schema_data(SCHEMAS['title_genre_decade'])
