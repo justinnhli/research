@@ -4,7 +4,7 @@ from os.path import exists as file_exists, splitext as split_ext, expanduser, re
 
 from SPARQLWrapper import SPARQLWrapper2
 from SPARQLWrapper.SmartWrapper import Value as SparqlValue
-from SPARQLWrapper.SPARQLExceptions import QueryBadFormed
+from SPARQLWrapper.SPARQLExceptions import QueryBadFormed, EndPointNotFound
 from rdflib import Graph, Literal, URIRef, plugin
 from rdflib.store import Store
 from rdflib.util import guess_format
@@ -280,6 +280,8 @@ class Value:
 class SparqlEndpoint(KnowledgeSource):
     """A knowledge base from a remote SPARQL endpoint."""
 
+    NUM_CONNECTION_ATTEMPTS = 10
+
     def __init__(self, url):
         """Initialize the SparqlEndpoint.
 
@@ -290,8 +292,18 @@ class SparqlEndpoint(KnowledgeSource):
 
     def query_sparql(self, sparql): # noqa: D102
         self.endpoint.setQuery(sparql)
+        query_bindings = None
         try:
-            query_bindings = self.endpoint.query().bindings
+            for _ in range(self.NUM_CONNECTION_ATTEMPTS):
+                try:
+                    query_bindings = self.endpoint.query().bindings
+                    break
+                except EndPointNotFound:
+                    pass
+            if query_bindings is None:
+                raise EndPointNotFound(
+                    f'Tried to connect {self.NUM_CONNECTION_ATTEMPTS} times and failed'
+                )
         except QueryBadFormed as qbf:
             message = '\n'.join([
                 'Failed to parse SPARQL',
