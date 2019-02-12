@@ -170,7 +170,7 @@ class AttrDict:
         """
         # pylint: disable = protected-access
         result = AttrDict()
-        result._attributes_ = deepcopy(attributes.as_dict())
+        result._attributes_ = deepcopy(attributes)
         return result
 
 

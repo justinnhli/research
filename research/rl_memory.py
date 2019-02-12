@@ -382,7 +382,7 @@ class NaiveDictKB(KnowledgeStore):
                 self.query_index = self.query_matches.index(curr_retrieved)
             except ValueError:
                 self.query_index = 0
-            return AttrDict.from_dict(self.query_matches[self.query_index])
+            return self.query_matches[self.query_index]
         self.query_index = None
         self.query_matches = []
         return None
@@ -441,7 +441,7 @@ class SparqlKB(KnowledgeStore):
                 if attr in self.augments:
                     augment = self.augments[attr]
                     result[augment.attr].add(augment.transform(value))
-        return {attr: max(vals) for attr, vals in result.items()}
+        return AttrDict.from_dict({attr: max(vals) for attr, vals in result.items()})
 
     def query(self, attr_vals): # noqa: D102
         condition = ' ; '.join(
@@ -455,7 +455,7 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         if not results:
             return None
-        return AttrDict.from_dict(self.retrieve(results[0]['concept'].uri))
+        return self.retrieve(results[0]['concept'].uri)
 
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
