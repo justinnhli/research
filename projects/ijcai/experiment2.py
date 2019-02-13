@@ -4,7 +4,6 @@ import re
 import sys
 from datetime import datetime
 from itertools import chain
-from math import isnan
 from pathlib import Path
 
 DIRECTORY = Path(__file__).resolve().parent
@@ -270,7 +269,6 @@ def run_experiment(params):
         with results_path.joinpath(filename).open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
         if (episode + params.eval_frequency) % 1000 == 0:
-            has_nan = False
             with results_path.joinpath(filename).open('a') as fd:
                 fd.write(30 * '-' + '\n')
                 visited = set()
@@ -287,21 +285,11 @@ def run_experiment(params):
                         break
                     visited.add(observation)
                     fd.write(f'{feature_extractor(observation)}\n')
-                    actions = env.get_actions()
-                    for action in sorted(actions):
-                        fd.write(f'{action}\n')
-                        fd.write(f'    {agent.get_value(env.get_observation(), action)}\n')
-                        for feature, weight in agent.weights[action].items():
-                            if isnan(weight):
-                                has_nan = True
-                            fd.write(f'        {feature}: {weight}\n')
                     action = agent.get_best_stored_action(env.get_observation(), actions=env.get_actions())
                     fd.write(f'{action}\n')
                     env.react(action)
                     fd.write('\n')
                 fd.write(30 * '-' + '\n')
-            if has_nan:
-                return
 
 
 def main():
