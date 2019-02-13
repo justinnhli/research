@@ -83,8 +83,9 @@ class RecordStore(Environment, RandomMixin):
         if not schema_data_path.exists():
             schema_data_path.parent.mkdir(parents=True, exist_ok=True)
             download_schema_data(self.schema)
+        albums = []
         with Path(__file__).parent.joinpath('schemas', self.schema.name).open() as fd:
-            for line, _ in zip(fd, range(self.num_albums)):
+            for line in fd:
                 vals = []
                 for uri, val in zip(self.uris, line.strip().split('\t')):
                     if uri == '<http://wikidata.dbpedia.org/ontology/releaseDate>':
@@ -96,10 +97,12 @@ class RecordStore(Environment, RandomMixin):
                         vals.append(date_to_year(val))
                     else:
                         vals.append(val)
-                question = tuple(vals[:len(self.schema.clues)])
-                answer = tuple(vals[-len(self.schema.categories):])
-                self.answers[question] = str(answer)
-                self.actions.add(str(answer))
+                albums.append(vals)
+        for vals in self.rng.sample(albums, self.num_albums):
+            question = tuple(vals[:len(self.schema.clues)])
+            answer = tuple(vals[-len(self.schema.categories):])
+            self.answers[question] = str(answer)
+            self.actions.add(str(answer))
         self.questions = sorted(self.answers.keys())
 
     def start_new_episode(self):
