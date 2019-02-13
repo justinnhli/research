@@ -170,7 +170,7 @@ def testing():
                 SparqlKB.Augment(
                     '<http://wikidata.dbpedia.org/ontology/releaseDate>',
                     '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
-                    date_to_year,
+                    date_to_decade,
                 ),
             ],
         ),
@@ -253,7 +253,7 @@ def run_experiment(params):
                 SparqlKB.Augment(
                     '<http://wikidata.dbpedia.org/ontology/releaseDate>',
                     '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
-                    date_to_year,
+                    date_to_decade,
                 ),
             ],
         ),
