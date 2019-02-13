@@ -139,6 +139,23 @@ def feature_extractor(state, action=None):
             features.add((attribute, value))
     return features
 
+AUGMENTS = [
+    SparqlKB.Augment(
+        '<http://xmlns.com/foaf/0.1/name>',
+        '<http://xmlns.com/foaf/0.1/firstLetter>',
+        (lambda name: re.sub('"(.).*"([@^][^"]*)', r'"\1"\2', name)),
+    ),
+    SparqlKB.Augment(
+        '<http://wikidata.dbpedia.org/ontology/releaseDate>',
+        '<http://wikidata.dbpedia.org/ontology/releaseYear>',
+        date_to_year,
+    ),
+    SparqlKB.Augment(
+        '<http://wikidata.dbpedia.org/ontology/releaseDate>',
+        '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
+        date_to_decade,
+    ),
+]
 
 def testing():
     agent = epsilon_greedy(LinearQLearner)(
@@ -159,23 +176,7 @@ def testing():
         max_internal_actions=5,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[
-                SparqlKB.Augment(
-                    '<http://xmlns.com/foaf/0.1/name>',
-                    '<http://xmlns.com/foaf/0.1/FirstLetter>',
-                    (lambda name: re.sub('"(.).*"([@^][^"]*)', r'"\1"\2', name)),
-                ),
-                SparqlKB.Augment(
-                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-                    '<http://wikidata.dbpedia.org/ontology/releaseYear>',
-                    date_to_year,
-                ),
-                SparqlKB.Augment(
-                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-                    '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
-                    date_to_decade,
-                ),
-            ],
+            augments=AUGMENTS,
         ),
         # Random Mixin
         random_seed=8675309,
@@ -242,23 +243,7 @@ def run_experiment(params):
         max_internal_actions=params.max_internal_actions,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[
-                SparqlKB.Augment(
-                    '<http://xmlns.com/foaf/0.1/name>',
-                    '<http://xmlns.com/foaf/0.1/FirstLetter>',
-                    (lambda name: re.sub('"(.).*"([@^][^"]*)', r'"\1"\2', name)),
-                ),
-                SparqlKB.Augment(
-                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-                    '<http://wikidata.dbpedia.org/ontology/releaseYear>',
-                    date_to_year,
-                ),
-                SparqlKB.Augment(
-                    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-                    '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
-                    date_to_decade,
-                ),
-            ],
+            augments=AUGMENTS,
         ),
         # Random Mixin
         random_seed=params.random_seed,
