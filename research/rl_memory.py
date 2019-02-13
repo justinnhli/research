@@ -412,6 +412,7 @@ class SparqlKB(KnowledgeStore):
 
     HAS_RESULT_CURSOR = False
 
+    # FIXME arguably this should be abstracted and moved to KnowledgeStore
     Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
 
     def __init__(self, knowledge_source, augments=None):
@@ -423,8 +424,10 @@ class SparqlKB(KnowledgeStore):
         """
         self.source = knowledge_source
         if augments is None:
-            augments = {}
-        self.augments = augments
+            augments = []
+        self.augments = defaultdict(set)
+        for augment in augments:
+            self.augments[augment.old_attr].add(augment)
 
     def clear(self): # noqa: D102
         raise NotImplementedError()
@@ -446,13 +449,13 @@ class SparqlKB(KnowledgeStore):
         result = defaultdict(set)
         for binding in results:
             if not binding['value'].is_blank:
-                attr = binding['attr'].rdf_format
-                value = binding['value'].rdf_format
-                result[attr].add(value)
-                if attr in self.augments:
-                    augment = self.augments[attr]
-                    result[augment.attr].add(augment.transform(value))
-        return AttrDict.from_dict({attr: max(vals) for attr, vals in result.items()})
+                result[binding['attr'].rdf_format].add(binding['value'].rdf_format)
+        result = {attr: max(vals) for attr, vals in result.items()}
+        for old_attr, augments in self.augments.items():
+            if old_attr in result:
+                for augment in augments:
+                    result[augment.new_attr] = augment.transform(result[old_attr])
+        return AttrDict.from_dict(result)
 
     def query(self, attr_vals): # noqa: D102
         condition = ' ; '.join(
