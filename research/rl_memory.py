@@ -186,8 +186,6 @@ def memory_architecture(cls):
             return actions
 
         def _generate_retrieve_actions(self):
-            if self.buffers['query']:
-                return []
             actions = []
             for buf, buf_props in self.BUFFERS.items():
                 if buf in self.buf_ignore or not buf_props.copyable:
@@ -238,6 +236,7 @@ def memory_architecture(cls):
                     self._query_ltm()
             elif action.name == 'retrieve':
                 result = self.knowledge_store.retrieve(self.buffers[action.buf][action.attr])
+                self.buffers['query'] = {}
                 if result is None:
                     self.buffers['retrieval'] = {}
                 else:
