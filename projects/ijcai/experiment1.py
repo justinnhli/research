@@ -183,7 +183,7 @@ def testing():
             total += reward
             if total < -100:
                 break
-        print(trial, total)
+        print(f'Episode {trial} return: {total}')
     env.start_new_episode()
     visited = set()
     for step in range(10):
@@ -205,6 +205,7 @@ def testing():
         print(action)
         env.react(action)
         print()
+    agent.print_value_function()
 
 
 def run_experiment(params):
