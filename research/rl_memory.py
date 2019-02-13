@@ -45,7 +45,7 @@ def memory_architecture(cls):
         def __init__(
                 self,
                 buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
-                knowledge_store=None, ismemid_fn=None,
+                knowledge_store=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
@@ -55,8 +55,6 @@ def memory_architecture(cls):
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
                 knowledge_store (KnowledgeStore): The memory model to use.
-                ismemid_fn (Callable[[str], bool]):
-                    Function that returns true is a value is a memory ID (ie. retrievable)
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
@@ -71,7 +69,6 @@ def memory_architecture(cls):
             if knowledge_store is None:
                 knowledge_store = NaiveDictKB()
             self.knowledge_store = knowledge_store
-            self.ismemid_fn = ismemid_fn
             # variables
             self.buffers = {}
             self.internal_action_count = 0
@@ -191,14 +188,12 @@ def memory_architecture(cls):
         def _generate_retrieve_actions(self):
             if self.buffers['query']:
                 return []
-            if self.ismemid_fn is None:
-                return []
             actions = []
             for buf, buf_props in self.BUFFERS.items():
                 if buf in self.buf_ignore or not buf_props.copyable:
                     continue
                 for attr, value in self.buffers[buf].items():
-                    if self.ismemid_fn(value):
+                    if self.knowledge_store.retrievable(value):
                         actions.append('retrieve', buf=buf, attr=attr)
             return actions
 
@@ -338,6 +333,18 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
+    @staticmethod
+    def retrievable(mem_id):
+        """Determine if an object is a retrievable memory ID.
+
+        Arguments:
+            mem_id (any): The object to check.
+
+        Returns:
+            bool: True if the object is a retrievable memory ID.
+        """
+        raise NotImplementedError()
+
 
 class NaiveDictKB(KnowledgeStore):
     """A list-of-dictionary implementation of a knowledge store."""
@@ -394,6 +401,10 @@ class NaiveDictKB(KnowledgeStore):
     def next_result(self): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
+
+    @staticmethod
+    def retrievable(mem_id): # noqa: D102
+        return False
 
 
 class SparqlKB(KnowledgeStore):
@@ -462,3 +473,7 @@ class SparqlKB(KnowledgeStore):
 
     def next_result(self): # noqa: D102
         raise NotImplementedError()
+
+    @staticmethod
+    def retrievable(mem_id): # noqa: D102
+        return isinstance(mem_id, str) and mem_id.startswith('<http')
