@@ -112,12 +112,25 @@ class RecordStore(Environment, RandomMixin):
         raise NotImplementedError()
 
 
+def first_letter(literal):
+    if re.fullmatch('"[^a-z]*([a-z]).*"([@^][^"]*)', name, flags=re.IGNORECASE):
+        return re.sub('"[^a-z]*([a-z]).*"([@^][^"]*)', r'"\1"\2', name)
+    else:
+        return None
+
+
 def date_to_year(date):
-    return re.sub('^"([0-9]{4}).*"([@^][^"]*)$', r'"\1-01-01"\2', date)
+    if re.fullmatch('"([0-9]{4}).*"([@^][^"]*)', date):
+        return re.sub('^"([0-9]{4}).*"([@^][^"]*)$', r'"\1-01-01"\2', date)
+    else:
+        return None
 
 
 def date_to_decade(date):
-    return re.sub('^"([0-9]{3}).*"([@^][^"]*)$', r'"\g<1>0-01-01"\2', date)
+    if re.fullmatch('"([0-9]{3}).*"([@^][^"]*)', date):
+        return re.sub('^"([0-9]{3}).*"([@^][^"]*)$', r'"\g<1>0-01-01"\2', date)
+    else:
+        return None
 
 
 INTERNAL_ACTIONS = set([
@@ -141,11 +154,12 @@ def feature_extractor(state, action=None):
             features.add((attribute, value))
     return features
 
+
 AUGMENTS = [
     SparqlKB.Augment(
         '<http://xmlns.com/foaf/0.1/name>',
         '<http://xmlns.com/foaf/0.1/firstLetter>',
-        (lambda name: re.sub('"(.).*"([@^][^"]*)', r'"\1"\2', name)),
+        first_letter,
     ),
     SparqlKB.Augment(
         '<http://wikidata.dbpedia.org/ontology/releaseDate>',
