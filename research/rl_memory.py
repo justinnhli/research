@@ -453,7 +453,9 @@ class SparqlKB(KnowledgeStore):
         for old_attr, augments in self.augments.items():
             if old_attr in result:
                 for augment in augments:
-                    result[augment.new_attr] = augment.transform(result[old_attr])
+                    new_val = augment.transform(result[old_attr])
+                    if new_val is not None:
+                        result[augment.new_attr] = new_val
         return AttrDict.from_dict(result)
 
     def query(self, attr_vals): # noqa: D102
