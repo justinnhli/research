@@ -113,6 +113,37 @@ def feature_extractor(state, action=None):
     return features
 
 
+def set_optimal_weights(agent):
+    from collections import defaultdict
+    agent.weights = defaultdict(lambda: defaultdict(float))
+    w_action = Action('copy', src_buf='perceptual', src_attr='title', dst_attr='title', dst_buf='query')
+    agent.weights[w_action]['perceptual_title'] = -0.8
+    agent.weights[w_action][('genre', 0)] = 0.0
+    agent.weights[w_action][('genre', 1)] = 0.0
+    agent.weights[w_action][('release_date', 0)] = 0.0
+    agent.weights[w_action][('release_date', 1)] = 0.0
+    from itertools import product
+    for genre, release_date in product(range(2), repeat=2):
+        w_action = Action(f'({genre}, {release_date})')
+        agent.weights[w_action]['perceptual_title'] = -1
+        agent.weights[w_action][('retrieval_genre', genre)] = 0.5
+        agent.weights[w_action][('retrieval_release_date', release_date)] = 0.5
+    actions = [
+        Action('copy', dst_attr='artist', dst_buf='query', src_attr='artist', src_buf='retrieval'),
+        Action('copy', dst_attr='artist', dst_buf='scratch', src_attr='artist', src_buf='retrieval'),
+        Action('copy', dst_attr='genre', dst_buf='query', src_attr='genre', src_buf='retrieval'),
+        Action('copy', dst_attr='genre', dst_buf='scratch', src_attr='genre', src_buf='retrieval'),
+        Action('copy', dst_attr='release_date', dst_buf='query', src_attr='release_date', src_buf='retrieval'),
+        Action('copy', dst_attr='release_date', dst_buf='scratch', src_attr='release_date', src_buf='retrieval'),
+        Action('copy', dst_attr='title', dst_buf='scratch', src_attr='title', src_buf='retrieval'),
+        Action('delete', attr='title', buf='query'),
+        Action('next-retrieval'),
+        Action('prev-retrieval'),
+    ]
+    for action in actions:
+        agent.weights[action]['perceptual_title'] = -.19
+
+
 def testing():
     agent = epsilon_greedy(LinearQLearner)(
         # Linear Q Learner
@@ -137,6 +168,7 @@ def testing():
     )
     for album in env.albums.values():
         env.add_to_ltm(**album._asdict())
+    #set_optimal_weights(agent)
     for trial in range(1000):
         env.start_new_episode()
         step = 0
