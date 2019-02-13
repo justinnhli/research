@@ -98,22 +98,22 @@ class RecordStore(Environment, RandomMixin):
 
 
 def first_letter(literal):
-    if re.fullmatch('"[^a-z]*([a-z]).*"([@^][^"]*)', literal, flags=re.IGNORECASE):
-        return re.sub('"[^a-z]*([a-z]).*"([@^][^"]*)', r'"\1"\2', literal)
+    if re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE):
+        return re.sub('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', r'"\1"\2', literal)
     else:
         return None
 
 
 def date_to_year(date):
-    if re.fullmatch('"([0-9]{4}).*"([@^][^"]*)', date):
-        return re.sub('^"([0-9]{4}).*"([@^][^"]*)$', r'"\1-01-01"\2', date)
+    if re.fullmatch('"([0-9]{4}).*"(([@^][^"]*)?)', date):
+        return re.sub('^"([0-9]{4}).*"(([@^][^"]*))?$', r'"\1-01-01"\2', date)
     else:
         return None
 
 
 def date_to_decade(date):
-    if re.fullmatch('"([0-9]{3}).*"([@^][^"]*)', date):
-        return re.sub('^"([0-9]{3}).*"([@^][^"]*)$', r'"\g<1>0-01-01"\2', date)
+    if re.fullmatch('"([0-9]{3}).*"(([@^][^"]*)?)', date):
+        return re.sub('^"([0-9]{3}).*"(([@^][^"]*)?)$', r'"\g<1>0-01-01"\2', date)
     else:
         return None
 
