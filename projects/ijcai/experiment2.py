@@ -88,7 +88,10 @@ class RecordStore(Environment, RandomMixin):
                 vals = []
                 for uri, val in zip(self.uris, line.strip().split('\t')):
                     if uri == '<http://wikidata.dbpedia.org/ontology/releaseDate>':
-                        vals.append(date_to_year(val))
+                        if self.schema.name == 'title_year':
+                            vals.append(date_to_year(val))
+                        elif self.schema.name == 'title_genre_decade':
+                            vals.append(date_to_decade(val))
                     elif uri == '<http://xmlns.com/foaf/0.1/name>':
                         vals.append(date_to_year(val))
                     else:
