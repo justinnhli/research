@@ -188,17 +188,12 @@ def testing():
         step = 0
         total = 0
         while not env.end_of_episode():
-            print(step)
             observation = env.get_observation()
-            print('   ', observation)
             actions = env.get_actions()
             action = agent.act(observation, actions)
-            print('   ', action)
             reward = env.react(action)
-            print('   ', reward)
             agent.observe_reward(observation, reward, actions=env.get_actions())
             step += 1
-            print()
             total += reward
             if total < -100:
                 break
