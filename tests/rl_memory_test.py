@@ -147,7 +147,7 @@ def test_sparqlkb():
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
     # test retrieve
     store = SparqlKB(dbpedia)
-    result = store.retrieve('http://dbpedia.org/resource/The_Wall')
+    result = store.retrieve('<http://dbpedia.org/resource/The_Wall>')
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]
     # test query
