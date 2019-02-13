@@ -192,7 +192,7 @@ def memory_architecture(cls):
                     continue
                 for attr, value in self.buffers[buf].items():
                     if self.knowledge_store.retrievable(value):
-                        actions.append('retrieve', buf=buf, attr=attr)
+                        actions.append(Action('retrieve', buf=buf, attr=attr))
             return actions
 
         def _generate_cursor_actions(self):
