@@ -240,7 +240,7 @@ def memory_architecture(cls):
                 if result is None:
                     self.buffers['retrieval'] = {}
                 else:
-                    self.buffers['retrieval'] = result
+                    self.buffers['retrieval'] = result.as_dict()
             elif action.name == 'prev-retrieval':
                 self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
             elif action.name == 'next-retrieval':
@@ -435,11 +435,11 @@ class SparqlKB(KnowledgeStore):
         raise NotImplementedError()
 
     def retrieve(self, mem_id): # noqa: D102
-        if not mem_id.startswith('http'):
+        if not mem_id.startswith('<http') and mem_id.endswith('>'):
             raise ValueError(f'mem_id should start with http: {mem_id}')
         query = f'''
         SELECT DISTINCT ?attr, ?value WHERE {{
-            <{mem_id}> ?attr ?value .
+            {mem_id} ?attr ?value .
         }}
         '''
         results = self.source.query_sparql(query)
@@ -468,7 +468,7 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         if not results:
             return None
-        return self.retrieve(results[0]['concept'].uri)
+        return self.retrieve(results[0]['concept'].rdf_format)
 
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
