@@ -48,11 +48,13 @@ class RecordStore(Environment, RandomMixin):
             return -10
 
     def reset(self):
+        qnas = []
         with self.data_file.open() as fd:
             for question, answer in literal_eval(fd.read()):
                 question = tuple(sorted(question.items()))
                 answer = ' ; '.join(answer)
-                self.answers[question] = answer
+                qnas.append((question, answer))
+        self.answers = {question: answer for question, answer in self.rng.sample(qnas, self.num_albums)}
         self.questions = sorted(self.answers.keys())
         self.actions = set(self.answers.values())
 
