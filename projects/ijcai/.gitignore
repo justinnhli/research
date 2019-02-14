@@ -1,1 +1,2 @@
-schemas/
+data/*
+!data/*.py
