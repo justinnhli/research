@@ -1,37 +1,22 @@
 import re
-from itertools import chain
+from ast import literal_eval
 from pathlib import Path
 
 from research.rl_environments import State, Action, Environment
 from research.rl_memory import SparqlKB
 from research.randommixin import RandomMixin
 
-from download_schema import download_schema_data
-
-def get_schema_attr(schema, var):
-    matches = [
-        re.search(r'(?P<attr><[^>]*>) \?' + var + ' [;.]', line)
-        for line in schema.sparql.splitlines()
-    ]
-    matches = [match for match in matches if match is not None]
-    assert len(matches) == 1
-    return matches[0].group('attr')
-
 
 class RecordStore(Environment, RandomMixin):
 
-    def __init__(self, schema=None, num_albums=1000, *args, **kwargs):
+    def __init__(self, data_file=None, num_albums=1000, *args, **kwargs):
         # pylint: disable = keyword-arg-before-vararg
         super().__init__(*args, **kwargs)
         # parameters
-        assert schema is not None
-        self.schema = schema
+        assert data_file is not None
+        self.data_file = Path(data_file).resolve()
         self.num_albums = num_albums
         # database
-        self.uris = [
-            get_schema_attr(self.schema, var) for var in
-            chain(self.schema.clues, self.schema.categories)
-        ]
         self.questions = []
         self.answers = {}
         self.actions = set()
@@ -44,7 +29,7 @@ class RecordStore(Environment, RandomMixin):
         return self.get_observation()
 
     def get_observation(self):
-        return State.from_dict({uri: val for uri, val in zip(self.uris, self.question)})
+        return State.from_dict(dict(self.question))
 
     def get_actions(self):
         if self.location == self.answers[self.question]:
@@ -63,31 +48,13 @@ class RecordStore(Environment, RandomMixin):
             return -10
 
     def reset(self):
-        schema_data_path = Path(__file__).parent.joinpath('schemas', self.schema.name)
-        if not schema_data_path.exists():
-            schema_data_path.parent.mkdir(parents=True, exist_ok=True)
-            download_schema_data(self.schema)
-        albums = []
-        with Path(__file__).parent.joinpath('schemas', self.schema.name).open() as fd:
-            for line in fd:
-                vals = []
-                for uri, val in zip(self.uris, line.strip().split('\t')):
-                    if uri == '<http://wikidata.dbpedia.org/ontology/releaseDate>':
-                        if self.schema.name == 'title_year':
-                            vals.append(date_to_year(val))
-                        elif self.schema.name == 'title_genre_decade':
-                            vals.append(date_to_decade(val))
-                    elif uri == '<http://xmlns.com/foaf/0.1/name>':
-                        vals.append(date_to_year(val))
-                    else:
-                        vals.append(val)
-                albums.append(vals)
-        for vals in self.rng.sample(albums, self.num_albums):
-            question = tuple(vals[:len(self.schema.clues)])
-            answer = tuple(vals[-len(self.schema.categories):])
-            self.answers[question] = str(answer)
-            self.actions.add(str(answer))
+        with self.data_file.open() as fd:
+            for question, answer in literal_eval(fd.read()):
+                question = tuple(sorted(question.items()))
+                answer = ' ; '.join(answer)
+                self.answers[question] = answer
         self.questions = sorted(self.answers.keys())
+        self.actions = set(self.answers.values())
 
     def start_new_episode(self):
         self.question = self.rng.choice(self.questions)

@@ -15,7 +15,6 @@ from research.rl_core import train_and_evaluate
 from research.rl_agents import epsilon_greedy, LinearQLearner
 from research.rl_memory import memory_architecture, SparqlKB
 
-from schemas import SCHEMAS
 from record_store import RecordStore, feature_extractor
 from record_store import DATE_YEAR
 
@@ -33,13 +32,12 @@ def testing():
     )
     env = memory_architecture(RecordStore)(
         # record store
-        schema=SCHEMAS['title_year'],
+        data_file='data/title_year',
         num_albums=1000,
         # memory architecture
         max_internal_actions=5,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[DATE_YEAR],
         ),
         # Random Mixin
         random_seed=8675309,
@@ -95,7 +93,7 @@ def run_experiment(params):
     )
     env = memory_architecture(RecordStore)(
         # record store
-        schema=SCHEMAS[params.schema_name],
+        data_file=params.data_file,
         num_albums=params.num_albums,
         # memory architecture
         max_internal_actions=params.max_internal_actions,
@@ -114,7 +112,7 @@ def run_experiment(params):
         min_return=-100,
     )
     episodes = range(0, params.num_episodes, params.eval_frequency)
-    data_file = Path(DIRECTORY, 'results', params.schema_name, f'seed{params.random_seed}')
+    data_file = Path(DIRECTORY, 'results', params.data_file, f'seed{params.random_seed}')
     data_file.parent.mkdir(parents=True, exist_ok=True)
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
@@ -132,7 +130,7 @@ def main():
         eval_frequency=100,
         num_albums=1000,
         max_internal_actions=5,
-        schema_name='title_year',
+        data_file='data/title_year'
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
