@@ -98,8 +98,11 @@ class RecordStore(Environment, RandomMixin):
 
 
 def first_letter(literal):
-    if re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE):
-        return re.sub('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', r'"\1"\2', literal)
+    match = re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE)
+    if match:
+        initial = match.group(1).upper()
+        metadata = match.group(2)
+        return f'"{initial}"{metadata}'
     else:
         return None
 
@@ -138,6 +141,7 @@ def feature_extractor(state, action=None):
         if external:
             features.add((attribute, value))
     return features
+
 
 NAME_FIRST_LETTER = SparqlKB.Augment(
     '<http://xmlns.com/foaf/0.1/name>',
