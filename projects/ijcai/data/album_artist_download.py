@@ -1,3 +1,4 @@
+import re
 from textwrap import dedent
 
 from research.knowledge_base import SparqlEndpoint
@@ -7,10 +8,22 @@ QUERY = dedent('''
     SELECT DISTINCT ?album_uri WHERE {
         ?track_uri <http://wikidata.dbpedia.org/ontology/album> ?album_uri .
         ?album_uri <http://xmlns.com/foaf/0.1/name> ?album_name ;
-                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
+                   <http://wikidata.dbpedia.org/ontology/artist> ?artist_uri .
+        ?artist_uri <http://xmlns.com/foaf/0.1/name> ?artist_name .
         FILTER ( lang(?album_name) = "en" )
+        FILTER ( lang(?artist_name) = "en" )
     }
 ''').strip()
+
+
+def first_letter(literal):
+    match = re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE)
+    if match:
+        initial = match.group(1).upper()
+        metadata = match.group(2)
+        return f'"{initial}"{metadata}'
+    else:
+        return None
 
 
 def main():
@@ -32,20 +45,33 @@ def main():
         results = endpoint.query_sparql(query)
     print(f'found {len(album_uris)} albums')
 
-    filename = 'title_year'
+    filename = 'album_artist'
     name_prop = '<http://xmlns.com/foaf/0.1/name>'
 
     with open(filename, 'w') as fd:
         fd.write('(\n')
 
+    artists = {}
     for i, album_uri in enumerate(album_uris, start=1):
         result = kb_store.retrieve(album_uri).as_dict()
         album_name = result[name_prop]
-        release_date = result['<http://wikidata.dbpedia.org/ontology/releaseDate>']
+        artist_uri = result['<http://wikidata.dbpedia.org/ontology/artist>']
+
+        if artist_uri not in artists:
+            result = kb_store.retrieve(artist_uri).as_dict()
+            if '<http://xmlns.com/foaf/0.1/name>' not in result:
+                continue
+            artist_name = result['<http://xmlns.com/foaf/0.1/name>']
+            artists[artist_uri] = artist_name
+        else:
+            artist_name = artists[artist_uri]
+        artist_initial = first_letter(artist_name)
+        if artist_initial is None:
+            continue
 
         with open(filename, 'a') as fd:
             question = {name_prop: album_name,}
-            answer = (release_date,)
+            answer = (artist_initial,)
             qna = (question, answer)
             fd.write('    ' + repr(qna))
             fd.write(',\n')

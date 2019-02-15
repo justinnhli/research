@@ -1,4 +1,3 @@
-import re
 from textwrap import dedent
 
 from research.knowledge_base import SparqlEndpoint
@@ -9,21 +8,13 @@ QUERY = dedent('''
         ?track_uri <http://wikidata.dbpedia.org/ontology/album> ?album_uri .
         ?album_uri <http://xmlns.com/foaf/0.1/name> ?album_name ;
                    <http://wikidata.dbpedia.org/ontology/artist> ?artist_uri .
-        ?artist_uri <http://xmlns.com/foaf/0.1/name> ?artist_name .
+        ?artist_uri <http://wikidata.dbpedia.org/ontology/hometown> ?hometown_uri .
+        ?hometown_uri <http://wikidata.dbpedia.org/ontology/country> ?country_uri .
+        ?country_uri <http://xmlns.com/foaf/0.1/name> ?country_name .
         FILTER ( lang(?album_name) = "en" )
-        FILTER ( lang(?artist_name) = "en" )
+        FILTER ( lang(?country_name) = "en" )
     }
 ''').strip()
-
-
-def first_letter(literal):
-    match = re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE)
-    if match:
-        initial = match.group(1).upper()
-        metadata = match.group(2)
-        return f'"{initial}"{metadata}'
-    else:
-        return None
 
 
 def main():
@@ -45,13 +36,15 @@ def main():
         results = endpoint.query_sparql(query)
     print(f'found {len(album_uris)} albums')
 
-    filename = 'title_artist'
+    filename = 'album_country'
     name_prop = '<http://xmlns.com/foaf/0.1/name>'
 
     with open(filename, 'w') as fd:
         fd.write('(\n')
 
     artists = {}
+    hometowns = {}
+    countries = {}
     for i, album_uri in enumerate(album_uris, start=1):
         result = kb_store.retrieve(album_uri).as_dict()
         album_name = result[name_prop]
@@ -59,19 +52,33 @@ def main():
 
         if artist_uri not in artists:
             result = kb_store.retrieve(artist_uri).as_dict()
-            if '<http://xmlns.com/foaf/0.1/name>' not in result:
+            if '<http://wikidata.dbpedia.org/ontology/hometown>' not in result:
                 continue
-            artist_name = result['<http://xmlns.com/foaf/0.1/name>']
-            artists[artist_uri] = artist_name
+            hometown_uri = result['<http://wikidata.dbpedia.org/ontology/hometown>']
+            artists[artist_uri] = hometown_uri
         else:
-            artist_name = artists[artist_uri]
-        artist_initial = first_letter(artist_name)
-        if artist_initial is None:
-            continue
+            hometown_uri = artists[artist_uri]
+
+        if hometown_uri not in hometowns:
+            result = kb_store.retrieve(hometown_uri).as_dict()
+            if '<http://wikidata.dbpedia.org/ontology/country>' not in result:
+                continue
+            country_uri = result['<http://wikidata.dbpedia.org/ontology/country>']
+            hometowns[hometown_uri] = country_uri
+        else:
+            country_uri = hometowns[hometown_uri]
+
+        if country_uri not in countries:
+            result = kb_store.retrieve(country_uri).as_dict()
+            if name_prop not in result:
+                continue
+            country_name = result[name_prop]
+        else:
+            country_name = countries[country_uri]
 
         with open(filename, 'a') as fd:
             question = {name_prop: album_name,}
-            answer = (artist_initial,)
+            answer = (country_name,)
             qna = (question, answer)
             fd.write('    ' + repr(qna))
             fd.write(',\n')
