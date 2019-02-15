@@ -1,5 +1,6 @@
 """Memory architecture for reinforcement learning."""
 
+import re
 from collections import namedtuple, defaultdict
 
 from .rl_environments import AttrDict, State, Action, Environment
@@ -435,20 +436,34 @@ class SparqlKB(KnowledgeStore):
         raise NotImplementedError()
 
     def retrieve(self, mem_id): # noqa: D102
+        # FIXME HACK to avoid dealing with multi-valued attributes,
+        # we only return the "largest" value for each attribute
+
         if not mem_id.startswith('<http') and mem_id.endswith('>'):
             raise ValueError(f'mem_id should start with http: {mem_id}')
+        result = defaultdict(set)
+
         query = f'''
         SELECT DISTINCT ?attr ?value WHERE {{
             {mem_id} ?attr ?value .
         }}
         '''
         results = self.source.query_sparql(query)
-        # FIXME HACK to avoid dealing with multi-valued attributes,
-        # we only return the "largest" value for each attribute
-        result = defaultdict(set)
         for binding in results:
             if not binding['value'].is_blank:
                 result[binding['attr'].rdf_format].add(binding['value'].rdf_format)
+
+        query = f'''
+        SELECT DISTINCT ?predicate ?subject WHERE {{
+            ?subject ?predicate {mem_id} .
+        }}
+        '''
+        results = self.source.query_sparql(query)
+        for binding in results:
+            if not binding['value'].is_blank:
+                reverse_predicate = self.reverse_predicate(binding['subject'].rdf_format)
+                result[reverse_predicate].add(binding['value'].rdf_format)
+
         result = {attr: max(vals) for attr, vals in result.items()}
         for old_attr, augments in self.augments.items():
             if old_attr in result:
@@ -459,13 +474,25 @@ class SparqlKB(KnowledgeStore):
         return AttrDict.from_dict(result)
 
     def query(self, attr_vals): # noqa: D102
-        condition = ' ; '.join(
-            f'{attr} {val}' for attr, val in attr_vals.items()
+        predicates = {}
+        reverse_predicates = {}
+        for attr, val in attr_vals.items():
+            if not self.is_literal(val) and self.is_reverse_predicate(attr):
+                reverse_predicates[attr] = val
+            else:
+                predicates[attr] = val
+        conditions = ' ; '.join(
+            f'{attr} {val}' for attr, val in predicates.items()
+        )
+        reverse_conditions = '\n'.join(
+            f'{val} {self.reverse_predicate(attr)} ?concept .'
+            for attr, val in reverse_predicates.items()
         )
         query = f'''
         SELECT DISTINCT ?concept WHERE {{
-            ?concept {condition} ;
+            ?concept {conditions} ;
                      <http://xmlns.com/foaf/0.1/name> ?__name__ .
+            {reverse_conditions}
         }} ORDER BY ?__name__ LIMIT 1
         '''
         results = self.source.query_sparql(query)
@@ -479,6 +506,41 @@ class SparqlKB(KnowledgeStore):
     def next_result(self): # noqa: D102
         raise NotImplementedError()
 
+    # FIXME all functions below should be moved to a unified URI or Value class
+
     @staticmethod
     def retrievable(mem_id): # noqa: D102
         return isinstance(mem_id, str) and mem_id.startswith('<http')
+
+    @staticmethod
+    def is_literal(value):
+        if not isinstance(value, str):
+            return False
+        return not (value.startswith('<') and value.endswith('>'))
+
+    @staticmethod
+    def split_uri(uri):
+        match = re.fullmatch('<(.*[#/])([^#/]*)>', uri)
+        return match.group(1), match.group(2)
+
+    @staticmethod
+    def namespace(uri):
+        return SparqlKB.split_uri(uri)[0]
+
+    @staticmethod
+    def fragment(uri):
+        return SparqlKB.split_uri(uri)[1]
+
+    @staticmethod
+    def is_reverse_predicate(uri):
+        fragment = SparqlKB.fragment(uri)
+        return fragment.startswith('is_') and fragment.endswith('_of')
+
+    @staticmethod
+    def reverse_predicate(uri):
+        namespace, fragment = SparqlKB.split_uri(uri)
+        if SparqlKB.is_reverse_predicate(uri):
+            fragment = fragment[3:-3]
+        else:
+            fragment = f'is_{fragment}_of'
+        return f'<{namespace}{fragment}>'
