@@ -81,7 +81,7 @@ def memory_architecture(cls):
             """Yield all values of all attributes in all buffers.
 
             Yields:
-                tuple[str, str, any]: A tuple of buffer, attribute, and value.
+                Tuple[str, str, Any]: A tuple of buffer, attribute, and value.
             """
             for buf, attrs in sorted(self.buffers.items()):
                 for attr, val in attrs.items():
