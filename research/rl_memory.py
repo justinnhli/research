@@ -197,9 +197,11 @@ def memory_architecture(cls):
 
         def _generate_cursor_actions(self):
             actions = []
-            if self.knowledge_store.HAS_RESULT_CURSOR and self.buffers['retrieval']:
-                actions.append(Action('prev-retrieval'))
-                actions.append(Action('next-retrieval'))
+            if self.buffers['retrieval']:
+                if self.knowledge_store.has_prev_result:
+                    actions.append(Action('prev-retrieval'))
+                if self.knowledge_store.has_next_result:
+                    actions.append(Action('next-retrieval'))
             return actions
 
         def react(self, action): # noqa: D102
@@ -277,8 +279,6 @@ def memory_architecture(cls):
 class KnowledgeStore:
     """Generic interface to a knowledge base."""
 
-    HAS_RESULT_CURSOR = True
-
     def clear(self):
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
@@ -316,11 +316,29 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
+    @property
+    def has_prev_result(self):
+        """Determine if a previous query result is available.
+
+        Returns:
+            bool: True if there is a previous result.
+        """
+        raise NotImplementedError()
+
     def prev_result(self):
         """Get the prev element that matches the most recent search.
 
         Returns:
             AttrDict: A search result, or None.
+        """
+        raise NotImplementedError()
+
+    @property
+    def has_next_result(self):
+        """Determine if a next query result is available.
+
+        Returns:
+            bool: True if there is a next result.
         """
         raise NotImplementedError()
 
@@ -393,9 +411,17 @@ class NaiveDictKB(KnowledgeStore):
         self.query_matches = []
         return None
 
+    @property
+    def has_prev_result(self): # noqa: D102
+        return True
+
     def prev_result(self): # noqa: D102
         self.query_index = (self.query_index - 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
+
+    @property
+    def has_next_result(self): # noqa: D102
+        return True
 
     def next_result(self): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
@@ -408,8 +434,6 @@ class NaiveDictKB(KnowledgeStore):
 
 class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
-
-    HAS_RESULT_CURSOR = False
 
     # FIXME arguably this should be abstracted and moved to KnowledgeStore
     Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
@@ -493,8 +517,16 @@ class SparqlKB(KnowledgeStore):
             return None
         return results[0]['concept'].rdf_format
 
+    @property
+    def has_prev_result(self): # noqa: D102
+        return False
+
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
+
+    @property
+    def has_next_result(self): # noqa: D102
+        return False
 
     def next_result(self): # noqa: D102
         raise NotImplementedError()
