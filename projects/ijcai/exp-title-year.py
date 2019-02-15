@@ -111,7 +111,7 @@ def run_experiment(params):
         min_return=-100,
     )
     episodes = range(0, params.num_episodes, params.eval_frequency)
-    data_file = Path(DIRECTORY, 'results', params.data_file, f'seed{params.random_seed}')
+    data_file = Path(DIRECTORY, 'results', params.data_file.name, f'seed{params.random_seed}')
     data_file.parent.mkdir(parents=True, exist_ok=True)
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
