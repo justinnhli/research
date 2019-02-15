@@ -16,7 +16,6 @@ from research.rl_agents import epsilon_greedy, LinearQLearner
 from research.rl_memory import memory_architecture, SparqlKB
 
 from record_store import RecordStore, feature_extractor
-from record_store import DATE_YEAR
 
 
 def testing():
@@ -111,7 +110,12 @@ def run_experiment(params):
         min_return=-100,
     )
     episodes = range(0, params.num_episodes, params.eval_frequency)
-    data_file = Path(DIRECTORY, 'results', Path(params.data_file).name, f'seed{params.random_seed}')
+    filename = '_'.join([
+        f'seed{params.random_seed}',
+        f'num{params.num_albums}',
+        f'max{params.max_internal_actions}',
+    ])
+    data_file = Path(DIRECTORY, 'results', Path(params.data_file).name, filename)
     data_file.parent.mkdir(parents=True, exist_ok=True)
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
@@ -120,15 +124,15 @@ def run_experiment(params):
 
 def main():
     pspace = PermutationSpace(
-        ['random_seed',],
+        ['random_seed', 'num_albums', 'max_internal_actions'],
         random_seed=[
             0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
-            #0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
+            0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
         ],
         num_episodes=10000,
         eval_frequency=100,
-        num_albums=1000,
-        max_internal_actions=5,
+        num_albums=range(100, 1050, 100),
+        max_internal_actions=range(1, 6),
         data_file='data/title_year'
     )
     size = len(pspace)
