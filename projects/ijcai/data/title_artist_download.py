@@ -66,6 +66,8 @@ def main():
         else:
             artist_name = artists[artist_uri]
         artist_initial = first_letter(artist_name)
+        if artist_initial is None:
+            continue
 
         with open(filename, 'a') as fd:
             question = {name_prop: album_name,}
