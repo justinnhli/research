@@ -6,11 +6,11 @@ from research.rl_memory import SparqlKB
 
 QUERY = dedent('''
     SELECT DISTINCT ?album_uri WHERE {
-        ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-        ?album_uri <http://xmlns.com/foaf/0.1/name> ?title ;
-                    <http://wikidata.dbpedia.org/ontology/artist> ?artist_uri .
+        ?track_uri <http://wikidata.dbpedia.org/ontology/album> ?album_uri .
+        ?album_uri <http://xmlns.com/foaf/0.1/name> ?album_name ;
+                   <http://wikidata.dbpedia.org/ontology/artist> ?artist_uri .
         ?artist_uri <http://xmlns.com/foaf/0.1/name> ?artist_name .
-        FILTER ( lang(?title) = "en" )
+        FILTER ( lang(?album_name) = "en" )
         FILTER ( lang(?artist_name) = "en" )
     }
 ''').strip()

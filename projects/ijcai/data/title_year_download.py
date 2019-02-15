@@ -5,10 +5,10 @@ from research.rl_memory import SparqlKB
 
 QUERY = dedent('''
     SELECT DISTINCT ?album_uri WHERE {
-        ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-        ?album_uri <http://xmlns.com/foaf/0.1/name> ?title ;
-                    <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
-        FILTER ( lang(?title) = "en" )
+        ?track_uri <http://wikidata.dbpedia.org/ontology/album> ?album_uri .
+        ?album_uri <http://xmlns.com/foaf/0.1/name> ?album_name ;
+                   <http://wikidata.dbpedia.org/ontology/releaseDate> ?release_date .
+        FILTER ( lang(?album_name) = "en" )
     }
 ''').strip()
 

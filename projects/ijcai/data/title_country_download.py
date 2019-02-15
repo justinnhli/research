@@ -5,14 +5,14 @@ from research.rl_memory import SparqlKB
 
 QUERY = dedent('''
     SELECT DISTINCT ?album_uri WHERE {
-        ?track <http://wikidata.dbpedia.org/ontology/album> ?album .
-        ?album_uri <http://xmlns.com/foaf/0.1/name> ?title ;
-                    <http://wikidata.dbpedia.org/ontology/artist> ?artist .
-        ?artist <http://wikidata.dbpedia.org/ontology/hometown> ?hometown .
-        ?hometown <http://wikidata.dbpedia.org/ontology/country> ?country_uri .
-        ?country_uri <http://xmlns.com/foaf/0.1/name> ?country .
-        FILTER ( lang(?title) = "en" )
-        FILTER ( lang(?country) = "en" )
+        ?track_uri <http://wikidata.dbpedia.org/ontology/album> ?album_uri .
+        ?album_uri <http://xmlns.com/foaf/0.1/name> ?album_name ;
+                   <http://wikidata.dbpedia.org/ontology/artist> ?artist_uri .
+        ?artist_uri <http://wikidata.dbpedia.org/ontology/hometown> ?hometown_uri .
+        ?hometown_uri <http://wikidata.dbpedia.org/ontology/country> ?country_uri .
+        ?country_uri <http://xmlns.com/foaf/0.1/name> ?country_name .
+        FILTER ( lang(?album_name) = "en" )
+        FILTER ( lang(?country_name) = "en" )
     }
 ''').strip()
 
