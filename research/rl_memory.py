@@ -464,8 +464,9 @@ class SparqlKB(KnowledgeStore):
         )
         query = f'''
         SELECT DISTINCT ?concept WHERE {{
-            ?concept {condition} .
-        }} LIMIT 1
+            ?concept {condition} ;
+                     <http://xmlns.com/foaf/0.1/name> ?__name__ .
+        }} ORDER BY ?__name__ LIMIT 1
         '''
         results = self.source.query_sparql(query)
         if not results:
