@@ -97,6 +97,8 @@ def main():
                 continue
 
             album_initial = first_letter(other_album_name)
+            if album_initial is None:
+                continue
 
             with open(filename, 'a') as fd:
                 question = {
