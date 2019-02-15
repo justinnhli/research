@@ -154,7 +154,7 @@ class AttrDict:
         """Convert to dict.
 
         Returns:
-            dict[str, any]: The internal dictionary.
+            Dict[str, Any]: The internal dictionary.
         """
         return deepcopy(self._attributes_)
 
@@ -286,7 +286,7 @@ def augment_state(state, memories, prefix):
 
     Arguments:
         state (State): The state to augment.
-        memories (list): The memories to augment with.
+        memories (List[Any]): The memories to augment with.
         prefix (str): The prefix to use for memories.
 
     Returns:
