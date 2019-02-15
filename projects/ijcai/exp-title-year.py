@@ -99,7 +99,6 @@ def run_experiment(params):
         max_internal_actions=params.max_internal_actions,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[DATE_YEAR],
         ),
         # Random Mixin
         random_seed=params.random_seed,
