@@ -427,6 +427,9 @@ class SparqlKB(KnowledgeStore):
         self.augments = defaultdict(set)
         for augment in augments:
             self.augments[augment.old_attr].add(augment)
+        # cache
+        self.retrieve_cache = {}
+        self.query_cache = {}
 
     def clear(self): # noqa: D102
         raise NotImplementedError()
@@ -437,6 +440,14 @@ class SparqlKB(KnowledgeStore):
     def retrieve(self, mem_id): # noqa: D102
         if not mem_id.startswith('<http') and mem_id.endswith('>'):
             raise ValueError(f'mem_id should start with http: {mem_id}')
+        if mem_id in self.retrieve_cache:
+            result = self.retrieve_cache[mem_id]
+        else:
+            result = self._true_retrieve(mem_id)
+            self.retrieve_cache[mem_id] = result
+        return AttrDict.from_dict(result)
+
+    def _true_retrieve(self, mem_id):
         query = f'''
         SELECT DISTINCT ?attr ?value WHERE {{
             {mem_id} ?attr ?value .
@@ -456,9 +467,18 @@ class SparqlKB(KnowledgeStore):
                     new_val = augment.transform(result[old_attr])
                     if new_val is not None:
                         result[augment.new_attr] = new_val
-        return AttrDict.from_dict(result)
+        return result
 
     def query(self, attr_vals): # noqa: D102
+        query_terms = tuple((k, v) for k, v in attr_vals.items())
+        if query_terms in self.query_cache:
+            return self.retrieve(self.query_cache[query_terms])
+        else:
+            mem_id = self._true_query(attr_vals)
+            self.query_cache[query_terms] = mem_id
+            return self.retrieve(mem_id)
+
+    def _true_query(self, attr_vals):
         condition = ' ; '.join(
             f'{attr} {val}' for attr, val in attr_vals.items()
         )
@@ -471,7 +491,7 @@ class SparqlKB(KnowledgeStore):
         results = self.source.query_sparql(query)
         if not results:
             return None
-        return self.retrieve(results[0]['concept'].rdf_format)
+        return results[0]['concept'].rdf_format
 
     def prev_result(self): # noqa: D102
         raise NotImplementedError()
