@@ -438,7 +438,7 @@ class SparqlKB(KnowledgeStore):
         if not mem_id.startswith('<http') and mem_id.endswith('>'):
             raise ValueError(f'mem_id should start with http: {mem_id}')
         query = f'''
-        SELECT DISTINCT ?attr, ?value WHERE {{
+        SELECT DISTINCT ?attr ?value WHERE {{
             {mem_id} ?attr ?value .
         }}
         '''
