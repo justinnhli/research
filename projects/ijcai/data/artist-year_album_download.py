@@ -57,12 +57,8 @@ def main():
         album_name = result[name_pred]
 
         results = kb_store.retrieve(album_uri).as_dict()
-        predicates = [
-            '<http://xmlns.com/foaf/0.1/name>',
-            '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-            '<http://wikidata.dbpedia.org/ontology/artist>',
-        ]
-        if not all(predicate in result for predicate in predicates):
+        predicates = [name_pred, date_pred, artist_pred]
+        if any(predicate not in result for predicate in predicates):
             continue
         artist_uri = result[artist_pred]
         release_date = result[date_pred]
