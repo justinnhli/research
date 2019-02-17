@@ -63,7 +63,7 @@ def main():
         artist_uri = result[artist_pred]
         release_date = result[date_pred]
         album_initial = first_letter(album_name)
-        if artist_initial is None:
+        if album_initial is None:
             continue
 
         result = kb_store.query({

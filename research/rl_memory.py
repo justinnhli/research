@@ -462,8 +462,16 @@ class SparqlKB(KnowledgeStore):
         raise NotImplementedError()
 
     def retrieve(self, mem_id): # noqa: D102
-        if not mem_id.startswith('<http') and mem_id.endswith('>'):
-            raise ValueError(f'mem_id should start with http: {mem_id}')
+        valid_mem_id = (
+            isinstance(mem_id, str)
+            and mem_id.startswith('<http')
+            and mem_id.endswith('>')
+        )
+        if not valid_mem_id:
+            raise ValueError(
+                f'mem_id should be a str of the form "<http:.*>", '
+                f'but got: {mem_id}'
+            )
         if mem_id in self.retrieve_cache:
             result = self.retrieve_cache[mem_id]
         else:
@@ -497,10 +505,11 @@ class SparqlKB(KnowledgeStore):
         query_terms = tuple((k, v) for k, v in attr_vals.items())
         if query_terms in self.query_cache:
             return self.retrieve(self.query_cache[query_terms])
-        else:
-            mem_id = self._true_query(attr_vals)
-            self.query_cache[query_terms] = mem_id
-            return self.retrieve(mem_id)
+        mem_id = self._true_query(attr_vals)
+        if mem_id is None:
+            return AttrDict()
+        self.query_cache[query_terms] = mem_id
+        return self.retrieve(mem_id)
 
     def _true_query(self, attr_vals):
         condition = ' ; '.join(

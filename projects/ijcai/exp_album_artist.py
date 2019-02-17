@@ -32,7 +32,7 @@ def testing():
     )
     env = memory_architecture(RecordStore)(
         # record store
-        data_file='data/title_artist',
+        data_file='data/album_artist',
         num_albums=1000,
         # memory architecture
         max_internal_actions=5,
@@ -123,6 +123,14 @@ def run_experiment(params):
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+    weights_file = data_file.parent.joinpath(filename + '.weights')
+    with weights_file.open('w') as fd:
+        for action, weights in agent.weights.items():
+            fd.write(action)
+            fd.write('\n')
+            for feature, weight in weights.items():
+                fd.write('   ', feature, weight)
+                fd.write('\n')
 
 
 def main():
@@ -136,7 +144,7 @@ def main():
         eval_frequency=100,
         num_albums=range(100, 1050, 100),
         max_internal_actions=range(1, 6),
-        data_file='data/title_artist'
+        data_file='data/album_artist'
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
