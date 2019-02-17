@@ -123,6 +123,14 @@ def run_experiment(params):
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+    weights_file = data_file.parent.joinpath(filename + '.weights')
+    with weights_file.open('w') as fd:
+        for action, weights in agent.weights.items():
+            fd.write(action)
+            fd.write('\n')
+            for feature, weight in weights.items():
+                fd.write('   ', feature, weight)
+                fd.write('\n')
 
 
 def main():
