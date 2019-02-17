@@ -31,7 +31,7 @@ def testing():
     )
     env = memory_architecture(RecordStore)(
         # record store
-        data_file='data/title_year',
+        data_file='data/album_year',
         num_albums=1000,
         # memory architecture
         max_internal_actions=5,
@@ -133,7 +133,7 @@ def main():
         eval_frequency=100,
         num_albums=range(100, 1050, 100),
         max_internal_actions=range(1, 6),
-        data_file='data/title_year'
+        data_file='data/album_year'
     )
     size = len(pspace)
     for i, params in enumerate(pspace, start=1):
