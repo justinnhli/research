@@ -126,10 +126,10 @@ def run_experiment(params):
     weights_file = data_file.parent.joinpath(filename + '.weights')
     with weights_file.open('w') as fd:
         for action, weights in agent.weights.items():
-            fd.write(action)
+            fd.write(str(action))
             fd.write('\n')
             for feature, weight in weights.items():
-                fd.write('   ', feature, weight)
+                fd.write(f'    {feature} {weight}')
                 fd.write('\n')
 
 
