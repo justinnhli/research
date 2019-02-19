@@ -502,7 +502,7 @@ class SparqlKB(KnowledgeStore):
         return result
 
     def query(self, attr_vals): # noqa: D102
-        query_terms = tuple((k, v) for k, v in attr_vals.items())
+        query_terms = tuple((k, v) for k, v in sorted(attr_vals.items()))
         if query_terms in self.query_cache:
             return self.retrieve(self.query_cache[query_terms])
         mem_id = self._true_query(attr_vals)
