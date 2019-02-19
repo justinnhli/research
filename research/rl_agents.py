@@ -214,6 +214,8 @@ class LinearQLearner(Agent):
         for feature in features:
             weight = self.weights[self.prev_action][feature]
             self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) / num_features
+            if self.weights[self.prev_action][feature] == 0:
+                del self.weights[self.prev_action][feature]
 
     def print_value_function(self): # noqa: D102
         for action, weights in self.weights.items():
