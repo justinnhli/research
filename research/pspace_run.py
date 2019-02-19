@@ -172,7 +172,3 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
         if getattr(args, arg) is None:
             arg_parser.error('A {} must be provided as an call/function argument'.format(arg))
     cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
-
-
-if __name__ == '__main__':
-    parallel_main()
