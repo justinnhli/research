@@ -149,12 +149,28 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
         num_cores (int): The number of cores to split jobs for.
     """
     arg_parser = ArgumentParser()
-    arg_parser.add_argument('filepath', nargs='?', default=filepath)
-    arg_parser.add_argument('pspace', nargs='?', default=pspace)
-    arg_parser.add_argument('experiment_fn', nargs='?', default=experiment_fn)
+    arg_parser.set_defaults(filepath=filepath, pspace=pspace, experiment_fn=experiment_fn)
+    if filepath is None:
+        arg_parser.add_argument(
+            'filepath',
+            help='The path to the file to run.',
+        )
+    if pspace is None:
+        arg_parser.add_argument(
+            'pspace',
+            help='The import path of the parameter space.',
+        )
+    if experiment_fn is None:
+        arg_parser.add_argument(
+            'experiment_fn',
+            help='The import path of the experiment function.',
+        )
     arg_parser.add_argument('--num-cores', type=int, default=num_cores)
     arg_parser.add_argument('--core', type=int)
     args = arg_parser.parse_args()
+    for arg in ['filepath', 'pspace', 'experiment_fn']:
+        if getattr(args, arg) is None:
+            arg_parser.error('A {} must be provided as an call/function argument'.format(arg))
     cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
 
 
