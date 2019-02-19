@@ -49,7 +49,7 @@ class RecordStore(Environment, RandomMixin):
 
     def reset(self):
         qnas = []
-        with self.data_file.open() as fd:
+        with self.data_file.open(encoding='utf-8') as fd:
             for question, answer in literal_eval(fd.read()):
                 question = tuple(sorted(question.items()))
                 answer = ' ; '.join(answer)
