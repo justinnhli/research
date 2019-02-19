@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 from datetime import datetime
 from importlib import import_module
+from os import environ
 from os.path import dirname
 
 from clusterun import run_cli
@@ -82,18 +83,19 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
     print()
     print(40 * '-')
     variables = [
-        ('cores', list(range(min(len(pspace), num_cores)))),
+        ('core', list(range(min(len(pspace), num_cores)))),
     ]
     commands = [
         f'cd {dirname(filepath)}',
+        f'source PYTHONPATH={environ["PYTHONPATH"]}'
         ' '.join([
             f'/home/justinnhli/.venv/research/bin/python3',
             f"'{filepath}'",
             f"'{filepath}'",
             f"'{pspace_name}'",
             f"'{experiment_fn_name}'",
-            f"'{num_cores}'",
-            f'"$cores"',
+            f"--num-cores'{num_cores}'",
+            f'--core "$core"',
         ]),
     ]
     run_cli(job_name, variables, commands, venv='research')
@@ -150,10 +152,10 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     arg_parser.add_argument('filepath', nargs='?', default=filepath)
     arg_parser.add_argument('pspace', nargs='?', default=pspace)
     arg_parser.add_argument('experiment_fn', nargs='?', default=experiment_fn)
-    arg_parser.add_argument('num_cores', type=int, nargs='?', default=num_cores)
-    arg_parser.add_argument('core', type=int, nargs='?')
+    arg_parser.add_argument('--num-cores', type=int, default=num_cores)
+    arg_parser.add_argument('--core', type=int)
     args = arg_parser.parse_args()
-    cluster_run(args.filepath, args.pspace, args.experiment_fn, 40, args.core)
+    cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
 
 
 if __name__ == '__main__':
