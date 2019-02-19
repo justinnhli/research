@@ -70,7 +70,7 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
         num_cores (int): The number of cores to split jobs for.
     """
     pspace = import_variable(pspace_name)
-    job_name = filepath
+    job_name = 'pbs_' + filepath
     print(40 * '-')
     print('PARAMETERS')
     print()
