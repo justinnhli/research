@@ -11,6 +11,7 @@ sys.path.insert(0, str(DIRECTORY))
 from permspace import PermutationSpace
 
 from research.knowledge_base import SparqlEndpoint
+from research.pspace_run import parallel_main
 from research.rl_core import train_and_evaluate
 from research.rl_agents import epsilon_greedy, LinearQLearner
 from research.rl_memory import memory_architecture, SparqlKB
@@ -133,23 +134,23 @@ def run_experiment(params):
                 fd.write('\n')
 
 
+PSPACE = PermutationSpace(
+    ['random_seed', 'num_albums', 'max_internal_actions'],
+    random_seed=[
+        0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
+        0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
+    ],
+    num_episodes=10000,
+    eval_frequency=100,
+    num_albums=range(100, 1050, 100),
+    max_internal_actions=range(2, 6),
+    data_file='data/album-date_album',
+)
+
+
 def main():
-    pspace = PermutationSpace(
-        ['random_seed', 'num_albums', 'max_internal_actions'],
-        random_seed=[
-            0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
-            0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
-        ],
-        num_episodes=10000,
-        eval_frequency=100,
-        num_albums=range(100, 1050, 100),
-        max_internal_actions=range(2, 6),
-        data_file='data/album-date_album',
-    )
-    size = len(pspace)
-    for i, params in enumerate(pspace, start=1):
-        print(f'{datetime.now().isoformat()} {i}/{size} running {params}')
-        run_experiment(params)
+    curr_file = Path(__file__).resolve()
+    parallel_main(str(curr_file), f'{curr_file.stem}.PSPACE', f'{curr_file.stem}.run_experiment')
 
 
 if __name__ == '__main__':
