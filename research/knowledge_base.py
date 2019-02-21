@@ -1,6 +1,8 @@
 """A module to handle local and remote knowledge bases."""
 
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
+from time import sleep
+from urllib.error import URLError
 
 from SPARQLWrapper import SPARQLWrapper2
 from SPARQLWrapper.SmartWrapper import Value as SparqlValue
@@ -298,8 +300,8 @@ class SparqlEndpoint(KnowledgeSource):
                 try:
                     query_bindings = self.endpoint.query().bindings
                     break
-                except EndPointNotFound:
-                    pass
+                except (EndPointNotFound, URLError):
+                    sleep(3)
             if query_bindings is None:
                 raise EndPointNotFound(
                     f'Tried to connect {self.NUM_CONNECTION_ATTEMPTS} times and failed'
