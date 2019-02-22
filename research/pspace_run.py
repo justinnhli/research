@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 from datetime import datetime
 from importlib import import_module
+from itertools import islice
 from os import environ
 from os.path import dirname
 
@@ -37,12 +38,7 @@ def get_parameters(pspace, num_cores, core):
     Returns:
         Sequence[Namespace]: The relevant section of the parameter space.
     """
-    parameters = list(pspace)
-    chunk_size = len(parameters) // num_cores
-    remainders = len(parameters) % num_cores
-    start = chunk_size * core + min(core, remainders)
-    end = chunk_size * (core + 1) + min(core + 1, remainders)
-    return parameters[start:end]
+    return list(islice(pspace, core, None, num_cores))
 
 
 def run_serial(pspace_name, experiment_fn_name):
