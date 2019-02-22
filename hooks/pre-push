@@ -5,7 +5,11 @@ import subprocess
 
 
 def main():
-    if any(line.split()[2].endswith('/master') for line in sys.stdin):
+    should_run = (
+        '--force' in sys.argv
+        or any(line.split()[2].endswith('/master') for line in sys.stdin)
+    )
+    if should_run:
         subprocess.run('ci/test.sh', check=True)
         subprocess.run('ci/lint.sh', check=True)
         subprocess.run('ci/docstyle.sh', check=True)
