@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# determine appropriate executable
 if [ -e "$HOME/.venv/research/bin/py.test" ]; then
     pydocstyle="$HOME/.venv/research/bin/pydocstyle" 
 elif command -v py.test >/dev/null 2>&1; then
@@ -9,5 +10,9 @@ else
     exit 1
 fi
 
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+# change to current directory
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# go up once to the project root directory
+cd ..
+# run pydocstyle
 "$pydocstyle" *.py research/
