@@ -87,7 +87,7 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
     ]
     commands = [
         f'cd {dirname(filepath)}',
-        f'source PYTHONPATH={environ["PYTHONPATH"]}',
+        f'export PYTHONPATH={environ["PYTHONPATH"]}',
         ' '.join([
             f'/home/justinnhli/.venv/research/bin/python3',
             f"'{filepath}'",
