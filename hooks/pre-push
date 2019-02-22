@@ -9,6 +9,8 @@ def main():
         subprocess.run('ci/test.sh', check=True)
         subprocess.run('ci/lint.sh', check=True)
         subprocess.run('ci/docstyle.sh', check=True)
+        subprocess.run(['coverage', 'html'], check=True)
+        subprocess.run(['coverage', 'report'], check=True)
 
 
 if __name__ == '__main__':
