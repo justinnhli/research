@@ -1,3 +1,4 @@
+import re
 from textwrap import dedent
 
 from research.knowledge_base import SparqlEndpoint
