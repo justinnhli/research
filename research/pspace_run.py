@@ -146,21 +146,24 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     """
     arg_parser = ArgumentParser()
     arg_parser.set_defaults(filepath=filepath, pspace=pspace, experiment_fn=experiment_fn)
-    if filepath is None:
-        arg_parser.add_argument(
-            'filepath',
-            help='The path to the file to run.',
-        )
-    if pspace is None:
-        arg_parser.add_argument(
-            'pspace',
-            help='The import path of the parameter space.',
-        )
-    if experiment_fn is None:
-        arg_parser.add_argument(
-            'experiment_fn',
-            help='The import path of the experiment function.',
-        )
+    arg_parser.add_argument(
+        'filepath',
+        default=filepath,
+        nargs='?',
+        help='The path to the file to run.',
+    )
+    arg_parser.add_argument(
+        'pspace',
+        default=pspace,
+        nargs='?',
+        help='The import path of the parameter space.',
+    )
+    arg_parser.add_argument(
+        'experiment_fn',
+        default=experiment_fn,
+        nargs='?',
+        help='The import path of the experiment function.',
+    )
     arg_parser.add_argument('--num-cores', type=int, default=num_cores)
     arg_parser.add_argument('--core', type=int)
     args = arg_parser.parse_args()
