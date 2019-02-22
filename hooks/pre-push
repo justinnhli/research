@@ -2,9 +2,15 @@
 
 import sys
 import subprocess
+import os
+from pathlib import Path
 
 
 def main():
+    pwd = Path(__file__).resolve()
+    while not pwd.joinpath('ci').exists():
+        pwd = pwd.parent
+    os.chdir(str(pwd))
     should_run = (
         '--force' in sys.argv
         or any(line.split()[2].endswith('/master') for line in sys.stdin)
