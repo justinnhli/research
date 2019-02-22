@@ -1,3 +1,6 @@
-**/data
-**/results
-data/*/*
+# ignore everything under data and results
+**/data/*
+**/results/*
+
+# never ignore python files
+!**/*.py
