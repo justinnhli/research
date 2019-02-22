@@ -9,14 +9,13 @@ cache:
     - $VIRTUAL_ENV
 jobs:
   include:
-    - &python-testing
-      stage: test
+    - stage: test
       env: step=TEST
-      before_install: pip3 install pylint pydocstyle pytest-cov coveralls
-      script: py.test --verbose --cov . && coveralls
-    - <<: *python-testing
-      env: step=LINT
-      script: pylint *.py research/ tests/*.py
-    - <<: *python-testing
-      env: step=DOC
-      script: pydocstyle *.py research/
+      before_install: pip3 install pytest-cov coveralls
+      script: ci/test.sh
+    - env: step=LINT
+      before_install: pip3 install pylint
+      script: ci/lint.sh
+    - env: step=DOCSTYLE
+      before_install: pip3 install pydocstyle
+      script: ci/docstyle.sh
