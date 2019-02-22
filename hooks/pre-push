@@ -3,7 +3,13 @@
 import sys
 import subprocess
 
-if any(line.split()[2].endswith('/master') for line in sys.stdin):
-    subprocess.run('ci/test.sh', check=True)
-    subprocess.run('ci/lint.sh', check=True)
-    subprocess.run('ci/docstyle.sh', check=True)
+
+def main():
+    if any(line.split()[2].endswith('/master') for line in sys.stdin):
+        subprocess.run('ci/test.sh', check=True)
+        subprocess.run('ci/lint.sh', check=True)
+        subprocess.run('ci/docstyle.sh', check=True)
+
+
+if __name__ == '__main__':
+    main()
