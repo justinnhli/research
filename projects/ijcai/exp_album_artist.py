@@ -118,13 +118,14 @@ def run_experiment(params):
         f'seed{params.random_seed}',
         f'num{params.num_albums}',
         f'max{params.max_internal_actions}',
-    ]) + '.csv'
-    data_file = Path(DIRECTORY, 'results', Path(params.data_file).name, filename)
-    data_file.parent.mkdir(parents=True, exist_ok=True)
+    ])
+    results_dir = Path(DIRECTORY, 'results', Path(params.data_file).name)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    data_file = results_dir.joinpath(filename + '.csv')
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
-    weights_file = data_file.parent.joinpath(filename + '.weights')
+    weights_file = results_dir.joinpath(filename + '.weights')
     with weights_file.open('w') as fd:
         for action, weights in agent.weights.items():
             fd.write(str(action))
