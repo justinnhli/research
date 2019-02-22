@@ -46,7 +46,7 @@ def get_parameters(pspace, num_cores, core):
 
 
 def run_serial(pspace_name, experiment_fn_name):
-    """Run the experiment serially in the current thread
+    """Run the experiment serially in the current thread.
 
     Arguments:
         pspace_name (str): The space of parameters.
