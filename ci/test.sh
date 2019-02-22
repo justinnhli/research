@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -e "$HOME/.venv/research/bin/py.test" ]; then
     pytest="$HOME/.venv/research/bin/py.test" 
