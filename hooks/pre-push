@@ -2,8 +2,25 @@
 
 import sys
 import subprocess
+import os
+from pathlib import Path
 
-if any(line.split()[2].endswith('/master') for line in sys.stdin):
-    subprocess.run('ci/test.sh', check=True)
-    subprocess.run('ci/lint.sh', check=True)
-    subprocess.run('ci/docstyle.sh', check=True)
+
+def main():
+    pwd = Path(__file__).resolve()
+    while not pwd.joinpath('ci').exists():
+        pwd = pwd.parent
+    os.chdir(str(pwd))
+    should_run = (
+        '--force' in sys.argv
+        or any(line.split()[2].endswith('/master') for line in sys.stdin)
+    )
+    if should_run:
+        subprocess.run('ci/test.sh', check=True)
+        subprocess.run('ci/lint.sh', check=True)
+        subprocess.run('ci/docstyle.sh', check=True)
+        subprocess.run('ci/coverage.sh', check=True)
+
+
+if __name__ == '__main__':
+    main()

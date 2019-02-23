@@ -438,6 +438,10 @@ class SparqlKB(KnowledgeStore):
     # FIXME arguably this should be abstracted and moved to KnowledgeStore
     Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
 
+    BAD_VALUES = set([
+        '"NAN"^^<http://www.w3.org/2001/XMLSchema#double>',
+    ])
+
     def __init__(self, knowledge_source, augments=None):
         """Initialize a SparqlKB.
 
@@ -491,7 +495,10 @@ class SparqlKB(KnowledgeStore):
         result = defaultdict(set)
         for binding in results:
             if not binding['value'].is_blank:
-                result[binding['attr'].rdf_format].add(binding['value'].rdf_format)
+                val = binding['value'].rdf_format
+                if val in self.BAD_VALUES:
+                    continue
+                result[binding['attr'].rdf_format].add(val)
         result = {attr: max(vals) for attr, vals in result.items()}
         for old_attr, augments in self.augments.items():
             if old_attr in result:
