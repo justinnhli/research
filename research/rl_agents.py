@@ -1,8 +1,10 @@
 """Reinforcement learning agents."""
 
+from ast import literal_eval
 from collections import defaultdict
 
 from .randommixin import RandomMixin
+from .rl_environments import State, Action
 
 
 class Agent(RandomMixin):
@@ -130,6 +132,22 @@ class Agent(RandomMixin):
         """Print the value function."""
         raise NotImplementedError()
 
+    def save_value_function(self, path):
+        """Save the value function to file.
+
+        Arguments:
+            path (Path): The file to save to.
+        """
+        raise NotImplementedError()
+
+    def load_value_function(self, path):
+        """Load the value function from file.
+
+        Arguments:
+            path (Path): The file to load from.
+        """
+        raise NotImplementedError()
+
 
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
@@ -167,6 +185,28 @@ class TabularQLearningAgent(Agent):
             print(observation)
             for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
                 print('    {}: {:.3f}'.format(action, value))
+
+    def save_value_function(self, path): # noqa: D102
+        with path.open('w') as fd:
+            for observation, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
+                fd.write(observation.to_tuple())
+                fd.write('\n')
+                for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
+                    fd.write('    ' + repr(tuple([action.to_tuple(), value])))
+                    fd.write('\n')
+
+    def load_value_function(self, path): # noqa: D102
+        self.value_function = defaultdict((lambda: defaultdict(float)))
+        with path.open() as fd:
+            observation = None
+            for line in fd:
+                line = line.rstrip()
+                if not line.startswith(' '):
+                    observation = State(**dict(literal_eval(line)))
+                else:
+                    action, value = literal_eval(line)
+                    action = Action.from_tuple(action)
+                    self.value_function[observation][action] = value
 
     def print_policy(self):
         """Print the policy."""
@@ -222,6 +262,27 @@ class LinearQLearner(Agent):
             print(action)
             for feature, weight in weights.items():
                 print('   ', feature, weight)
+
+    def save_value_function(self, path): # noqa: D102
+        with path.open('w') as fd:
+            for action, weights in self.weights.items():
+                fd.write(action.to_tuple())
+                fd.write('\n')
+                for feature, weight in weights.items():
+                    fd.write('    ' + repr(tuple([feature, weight])))
+                    fd.write('\n')
+
+    def load_value_function(self, path): # noqa: D102
+        self.weights = defaultdict(lambda: defaultdict(float))
+        with path.open() as fd:
+            action = None
+            for line in fd:
+                line = line.rstrip()
+                if not line.startswith(' '):
+                    action = Action.from_tuple(literal_eval(line))
+                else:
+                    feature, weight = literal_eval(line)
+                    self.weights[action][feature] = weight
 
 
 def epsilon_greedy(cls):

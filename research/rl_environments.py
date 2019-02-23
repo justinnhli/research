@@ -158,6 +158,14 @@ class AttrDict:
         """
         return deepcopy(self._attributes_)
 
+    def to_tuple(self):
+        """Convert to tuple.
+
+        Returns:
+            Tuple[Tuple[str, Any]]: The internal dictionary, as a tuple.
+        """
+        return tuple(*sorted(self))
+
     @staticmethod
     def from_dict(attributes):
         """Create an AttrDict from a dictionary.
@@ -188,7 +196,7 @@ class Action(AttrDict):
         self.name = name
 
     def __hash__(self):
-        return hash(tuple([self.name, *sorted(self)]))
+        return hash(self.to_tuple())
 
     def __lt__(self, other):
         self_tuple = (self.name, *sorted(self.as_dict().items()))
@@ -200,10 +208,33 @@ class Action(AttrDict):
         return self.name == other.name and self._attributes_ == other._attributes_
 
     def __str__(self):
-        return 'Action("{}", {})'.format(
-            self.name,
-            ', '.join('{}={}'.format(k, v) for k, v in sorted(self._attributes_.items())),
-        )
+        return ''.join([
+            'Action(',
+            repr(self.name),
+            *(
+                ', {repr(k)}={repr(v)}' for k, v
+                in sorted(self._attributes_.items())
+            ),
+        ])
+
+    def __repr__(self):
+        return repr(self.to_tuple())
+
+    def to_tuple(self):
+        return tuple([self.name, *sorted(self)])
+
+    @staticmethod
+    def from_tuple(from_tuple):
+        """Create an Action from a tuple.
+
+        Arguments:
+            from_tuple (Tuple[str, Tuple[str, Any]]): The tuple.
+
+        Returns:
+            Action: The Action.
+        """
+        name, *kwargs = from_tuple
+        return Action(name, **dict(kwargs))
 
 
 class State(AttrDict):
