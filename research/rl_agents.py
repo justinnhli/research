@@ -157,6 +157,8 @@ class TabularQLearningAgent(Agent):
         return self.value_function[observation].keys()
 
     def observe_reward(self, observation, reward, actions=None): # noqa: D102
+        if self.prev_observation is None or self.prev_action is None:
+            return
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation)
         new_value = (1 - self.learning_rate) * prev_value + self.learning_rate * next_value
@@ -206,6 +208,8 @@ class LinearQLearner(Agent):
         return self.weights.keys()
 
     def observe_reward(self, observation, reward, actions=None): # noqa: D102
+        if self.prev_observation is None or self.prev_action is None:
+            return
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
