@@ -213,7 +213,7 @@ class LinearQLearner(Agent):
         prev_value = self.get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self.get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
-        features = self.feature_extractor(observation, action=self.prev_action)
+        features = self.feature_extractor(self.prev_observation, action=self.prev_action)
         num_features = len(features)
         for feature in features:
             weight = self.weights[self.prev_action][feature]
