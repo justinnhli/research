@@ -15,4 +15,4 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # go up once to the project root directory
 cd ..
 # run pytest
-"$pytest" --verbose --cov=research/ tests
+"$pytest" --verbose --cov=research/ --cov-config .coveragerc tests
