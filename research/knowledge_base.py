@@ -1,5 +1,7 @@
 """A module to handle local and remote knowledge bases."""
 
+import re
+from ast import literal_eval
 from enum import Enum, unique
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 from time import sleep
@@ -59,7 +61,10 @@ class Value:
         self._value = value
         self.value_type = value_type
         self._lang = lang
-        self._datatype = datatype
+        if datatype is None:
+            self._datatype = None
+        else:
+            self._datatype = Value.from_uri(datatype)
 
     def __str__(self):
         return self.rdf_format
@@ -158,7 +163,7 @@ class Value:
         return self._value[len(prefix):]
 
     @property
-    def value(self):
+    def literal_value(self):
         """Get the value of this literal node.
 
         Returns:
@@ -211,13 +216,17 @@ class Value:
         """
         if self.is_uri:
             return f'<{self._value}>'
-        elif self.is_literal:
+        elif isinstance(self._value, bool):
+            return str(self._value).lower()
+        elif isinstance(self._value, (int, float)):
+            return str(self._value)
+        else:
             escaped_value = self._value.replace('"', r'\"')
             result = f'"{escaped_value}"'
             if self._lang:
                 result += f'@{self._lang}'
             if self._datatype:
-                result += f'^^<{self._datatype}>'
+                result += f'^^{self._datatype}'
             return result
         raise ValueError(repr(self._value))
 
@@ -248,6 +257,76 @@ class Value:
             raise ValueError(f'sparql_value is neither a URI nor a literal: {sparql_value}')
 
     @staticmethod
+    def from_python_literal(literal):
+        """Create a Value from a literal.
+
+        Arguments:
+            literal (Union[bool,int,float,str]):
+                An RDF representation of a literal.
+
+        Returns:
+            Value: The resulting value.
+
+        Raises:
+            ValueError: If the literal is not of an appropriate type.
+        """
+        if isinstance(literal, str):
+            return Value(literal, Value.ValueType.LITERAL, None, None)
+        elif isinstance(literal, bool):
+            datatype = 'http://www.w3.org/2001/XMLSchema#boolean'
+        elif isinstance(literal, int):
+            datatype = 'http://www.w3.org/2001/XMLSchema#integer'
+        elif isinstance(literal, float):
+            datatype = 'http://www.w3.org/2001/XMLSchema#double'
+        return Value(literal, Value.ValueType.LITERAL, None, datatype)
+
+    @staticmethod
+    def from_literal(literal):
+        """Create a Value from a literal.
+
+        Arguments:
+            literal (str): An RDF representation of a literal.
+
+        Returns:
+            Value: The resulting value.
+
+        Raises:
+            ValueError: If the literal fails to parse.
+        """
+        try:
+            if literal in ('true', 'false'):
+                evaled = literal_eval(literal.title())
+            else:
+                evaled = literal_eval(literal)
+            return Value.from_python_literal(evaled)
+        except SyntaxError:
+            pass
+        match = re.fullmatch(
+            (
+                '(?P<value>(?P<quote>["\']).*(?P=quote))'
+                '(?P<lang>(@[a-z]+)?)'
+                r'(?P<datatype>(\^\^<.*>)?)'
+            ),
+            literal,
+        )
+        if not match:
+            raise ValueError('failed to parse literal: {literal}')
+        if match.group('lang'):
+            lang = match.group('lang')[1:]
+        else:
+            lang = None
+        if match.group('datatype'):
+            datatype = match.group('datatype')[2:]
+        else:
+            datatype = None
+        return Value(
+            literal_eval(match.group('value')),
+            Value.ValueType.LITERAL,
+            lang,
+            datatype,
+        )
+
+    @staticmethod
     def from_uri(uri):
         """Create a Value from a URI.
 
@@ -257,6 +336,8 @@ class Value:
         Returns:
             Value: The resulting value.
         """
+        if uri[0] == '<' and uri[-1] == '>':
+            uri = uri[1:-1]
         return Value(uri, Value.ValueType.URI)
 
     @staticmethod
