@@ -449,12 +449,16 @@ class SparqlKB(KnowledgeStore):
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
             augments (Sequence[Augment]): Additional values to add to results.
         """
+        # parameters
         self.source = knowledge_source
         if augments is None:
             augments = []
         self.augments = defaultdict(set)
         for augment in augments:
             self.augments[augment.old_attr].add(augment)
+        # variables
+        self.prev_query = None
+        self.query_offset = 0
         # cache
         self.retrieve_cache = {}
         self.query_cache = {}
@@ -481,6 +485,8 @@ class SparqlKB(KnowledgeStore):
         else:
             result = self._true_retrieve(mem_id)
             self.retrieve_cache[mem_id] = result
+        self.prev_query = None
+        self.query_offset = 0
         return AttrDict.from_dict(result)
 
     def _true_retrieve(self, mem_id):
@@ -513,11 +519,15 @@ class SparqlKB(KnowledgeStore):
             return self.retrieve(self.query_cache[query_terms])
         mem_id = self._true_query(attr_vals)
         if mem_id is None:
+            self.prev_query = None
+            self.query_offset = 0
             return AttrDict()
         self.query_cache[query_terms] = mem_id
+        self.prev_query = attr_vals
+        self.query_offset = 0
         return self.retrieve(mem_id)
 
-    def _true_query(self, attr_vals):
+    def _true_query(self, attr_vals, offset=0):
         condition = ' ; '.join(
             f'{attr} {val}' for attr, val in attr_vals.items()
         )
@@ -525,7 +535,7 @@ class SparqlKB(KnowledgeStore):
         SELECT DISTINCT ?concept WHERE {{
             ?concept {condition} ;
                      <http://xmlns.com/foaf/0.1/name> ?__name__ .
-        }} ORDER BY ?__name__ LIMIT 1
+        }} ORDER BY ?__name__ LIMIT 1 OFFSET {offset}
         '''
         results = self.source.query_sparql(query)
         if not results:
@@ -534,17 +544,23 @@ class SparqlKB(KnowledgeStore):
 
     @property
     def has_prev_result(self): # noqa: D102
-        return False
+        return self.prev_query is not None and self.query_offset > 0
 
     def prev_result(self): # noqa: D102
-        raise NotImplementedError()
+        if not self.has_prev_result:
+            return None
+        self.query_offset -= 1
+        return self._true_query(self.prev_query, offset=self.query_offset)
 
     @property
     def has_next_result(self): # noqa: D102
-        return False
+        return self.prev_query is not None
 
     def next_result(self): # noqa: D102
-        raise NotImplementedError()
+        if not self.has_next_result:
+            return None
+        self.query_offset += 1
+        return self._true_query(self.prev_query, offset=self.query_offset)
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
