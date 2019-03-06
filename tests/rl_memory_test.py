@@ -117,7 +117,7 @@ def test_memory_architecture():
         retrieval_col=0,
     ), env.get_observation()
     # next result test
-    env.react(Action('next-retrieval'))
+    env.react(Action('next-result'))
     assert env.get_observation() == State(
         perceptual_index=0,
         query_row=1,
@@ -126,7 +126,7 @@ def test_memory_architecture():
         retrieval_col=1,
     ), env.get_observation()
     # delete test
-    env.react(Action('prev-retrieval'))
+    env.react(Action('prev-result'))
     assert env.get_observation() == State(
         perceptual_index=0,
         query_row=1,

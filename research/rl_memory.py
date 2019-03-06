@@ -199,9 +199,9 @@ def memory_architecture(cls):
             actions = []
             if self.buffers['retrieval']:
                 if self.knowledge_store.has_prev_result:
-                    actions.append(Action('prev-retrieval'))
+                    actions.append(Action('prev-result'))
                 if self.knowledge_store.has_next_result:
-                    actions.append(Action('next-retrieval'))
+                    actions.append(Action('next-result'))
             return actions
 
         def react(self, action): # noqa: D102
@@ -243,9 +243,9 @@ def memory_architecture(cls):
                     self.buffers['retrieval'] = {}
                 else:
                     self.buffers['retrieval'] = result.as_dict()
-            elif action.name == 'prev-retrieval':
+            elif action.name == 'prev-result':
                 self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
-            elif action.name == 'next-retrieval':
+            elif action.name == 'next-result':
                 self.buffers['retrieval'] = self.knowledge_store.next_result().as_dict()
             else:
                 return True
