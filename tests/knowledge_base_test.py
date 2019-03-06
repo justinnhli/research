@@ -2,13 +2,64 @@
 """Tests for knowledge_base.py."""
 
 import sys
+from ast import literal_eval
 from os.path import dirname, realpath
+
+import pytest
 
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from research.knowledge_base import Value, SparqlEndpoint
+
+
+def test_value():
+    uri = 'http://dbpedia.org/resource/California'
+    values = [
+        Value.from_uri(uri),
+        Value.from_namespace_fragment('dbr', 'California'),
+    ]
+    for val in values:
+        assert val.is_uri
+        assert not val.is_literal
+        assert val.uri == uri
+        assert val.namespace == 'dbr'
+        assert val.prefix == 'http://dbpedia.org/resource/'
+        assert val.fragment == 'California'
+        assert str(val) == val.rdf_format == f'<{uri}>'
+        with pytest.raises(ValueError):
+            val.literal_value
+        with pytest.raises(ValueError):
+            val.lang
+        with pytest.raises(ValueError):
+            val.datatype
+    literal = '"xyz"@en^^<http://example.org/ns/userDatatype>'
+    val = Value.from_literal(literal)
+    assert val.literal_value == 'xyz'
+    assert val.lang == 'en'
+    assert val.datatype.rdf_format == '<http://example.org/ns/userDatatype>'
+    assert val.rdf_format == literal
+    literals = [
+        ('false', 'boolean'),
+        ('1', 'integer'),
+        ('3.14', 'double'),
+        ('"hello"', None),
+    ]
+    for literal, literal_type in literals:
+        if literal in ('true', 'false'):
+            python_literal = literal_eval(literal.title())
+        else:
+            python_literal = literal_eval(literal)
+        print(literal, literal.title(), python_literal)
+        for val in [Value.from_literal(literal), Value.from_python_literal(python_literal)]:
+            assert val.literal_value == python_literal
+            assert val.lang is None
+            if literal_type is None:
+                assert val.datatype is None
+            else:
+                assert val.datatype.rdf_format == f'<http://www.w3.org/2001/XMLSchema#{literal_type}>'
+            assert val.rdf_format == literal
 
 
 def test_sparql_endpoint():
