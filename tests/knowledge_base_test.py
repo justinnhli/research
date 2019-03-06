@@ -8,25 +8,25 @@ DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
-from research.knowledge_base import URI, SparqlEndpoint
+from research.knowledge_base import Value, SparqlEndpoint
 
 
 def test_sparql_endpoint():
     """Test URIs and SPARQL endpoints with dbpedia."""
-    dbo_country = URI(URI.NAMESPACES['dbo'] + 'country')
-    dbr_us = URI(URI.NAMESPACES['dbr'] + 'United_States')
-    dct_subject = URI('http://purl.org/dc/terms/subject')
-    dbc_us = URI('http://dbpedia.org/resource/Category:States_of_the_United_States')
+    dbo_country = Value.from_uri(Value.NAMESPACES['dbo'] + 'country')
+    dbr_us = Value.from_uri(Value.NAMESPACES['dbr'] + 'United_States')
+    dct_subject = Value.from_uri('http://purl.org/dc/terms/subject')
+    dbc_us = Value.from_uri('http://dbpedia.org/resource/Category:States_of_the_United_States')
     query = '''
         SELECT DISTINCT ?state WHERE {{
             ?state {dbo_country} {dbr_us} .
             ?state {dct_subject} {dbc_us} .
         }} LIMIT 100
     '''.format(
-        dbo_country=('<' + str(dbo_country) + '>'),
-        dbr_us=dbr_us.short_str,
-        dct_subject=('<' + str(dct_subject) + '>'),
-        dbc_us=dbc_us.short_str,
+        dbo_country=str(dbo_country),
+        dbr_us=dbr_us.namespace_fragment,
+        dct_subject=str(dct_subject),
+        dbc_us=dbc_us.namespace_fragment,
     ).strip()
     assert query == '''
         SELECT DISTINCT ?state WHERE {

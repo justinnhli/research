@@ -8,7 +8,7 @@ from os.path import exists as file_exists, realpath, expanduser, dirname, join a
 from hashlib import sha1
 from textwrap import dedent
 
-from .knowledge_base import URI
+from .knowledge_base import Value
 
 TRANSACTION_SQL_HEADER = '''
 PRAGMA foreign_keys=OFF;
@@ -121,10 +121,10 @@ def standardize_uri(uri):
         str: The URI in long form.
     """
     if uri.startswith('<') and uri.endswith('>'):
-        uri = URI(uri[1:-1])
+        uri = Value.from_uri(uri[1:-1])
     elif ':' in uri:
-        prefix, identifier = uri.split(':', maxsplit=1)
-        uri = URI(identifier, prefix)
+        namespace, fragment = uri.split(':', maxsplit=1)
+        uri = Value.from_namespace_fragment(namespace, fragment)
     return uri.uri
 
 
@@ -198,15 +198,15 @@ class RDFSQLizer:
         """
         sql_template = dedent('''
             INSERT INTO {interned_id}_namespace_binds
-            VALUES({prefix},{uri});
+            VALUES({namespace},{prefix});
         ''').strip().replace('\n', ' ')
-        for prefix, uri in URI.NAMESPACES.items():
-            if not uri.startswith('http'):
+        for namespace, prefix in Value.NAMESPACES.items():
+            if not prefix.startswith('http'):
                 continue
             yield sql_template.format(
                 interned_id=self.interned_id,
+                namespace=repr(namespace),
                 prefix=repr(prefix),
-                uri=repr(uri),
             )
 
     def _dispatch_nt_line(self, line):

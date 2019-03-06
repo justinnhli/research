@@ -1,5 +1,6 @@
 """A module to handle local and remote knowledge bases."""
 
+from enum import Enum, unique
 from os.path import exists as file_exists, splitext as split_ext, expanduser, realpath
 from time import sleep
 from  urllib.error import URLError
@@ -15,8 +16,8 @@ from rdflib_sqlalchemy import registerplugins
 registerplugins()
 
 
-class URI:
-    """A class to represent URIs and their namespaces."""
+class Value:
+    """Wrapper around SPARQLWrapper.SmartWrapper.Value."""
 
     NAMESPACES = {
         '_': '_',
@@ -37,58 +38,239 @@ class URI:
         'umbel-rc': 'http://umbel.org/umbel/rc/',
         'umbel': 'http://umbel.org/umbel#',
     }
-    PREFIXES = sorted(
-        ([namespace, prefix] for prefix, namespace in NAMESPACES.items()),
-        key=(lambda kv: -len(kv[0])),
-    )
+    PREFIXES = {value: key for key, value in NAMESPACES.items()}
 
-    def __init__(self, uri, namespace=None):
-        """Initialize the URI.
+    @unique
+    class ValueType(Enum):
+        """An enum for the possible value types."""
+
+        URI = 'uri'
+        LITERAL = 'literal'
+
+    def __init__(self, value, value_type, lang=None, datatype=None):
+        """Initialize a Value.
 
         Arguments:
-            uri (str): The full URI, or the after-prefix fragment.
-            namespace (str): The namespace. Defaults to None.
+            value (str): The value.
+            value_type (ValueType): The type of value.
+            lang (str): The language of a literal. Optional.
+            datatype (str): The datatype of a literal. Optional.
         """
-        if namespace:
-            self.namespace = namespace
-            self.prefix = URI.NAMESPACES[namespace]
-            self.fragment = uri
-            self.uri = self.prefix + self.fragment
-        else:
-            self.namespace = None
-            self.prefix = None
-            self.fragment = None
-            self.uri = uri
-            prefix_order = sorted(
-                URI.NAMESPACES.items(),
-                key=(lambda kv: len(kv[1])),
-                reverse=True,
-            )
-            # pylint: disable = redefined-argument-from-local
-            for namespace, prefix in prefix_order:
-                if uri.startswith(prefix):
-                    self.namespace = namespace
-                    self.prefix = prefix
-                    self.fragment = uri[len(prefix):]
-                    break
+        self._value = value
+        self.value_type = value_type
+        self._lang = lang
+        self._datatype = datatype
 
     def __str__(self):
-        return self.uri
+        return self.rdf_format
 
     @property
-    def short_str(self):
-        """Get the namespace:fragment representation of this URI.
+    def is_uri(self):
+        """Whether this is a URI node.
 
         Returns:
-            str: The prefixed string.
+            bool: True if this is a URI node.
+        """
+        return self.value_type == self.ValueType.URI
+
+    @property
+    def is_literal(self):
+        """Whether this is a literal node.
+
+        Returns:
+            bool: True if this is a literal node.
+        """
+        return self.value_type == self.ValueType.LITERAL
+
+    @property
+    def uri(self):
+        """Get the URI of this URI node.
+
+        Returns:
+            str: The URI of this URI node.
 
         Raises:
-            ValueError: If no namespace was specified or found.
+            ValueError: If this is not a URI node.
         """
-        if self.namespace:
-            return self.namespace + ':' + self.fragment
+        if not self.is_uri:
+            raise ValueError('Value is not a URI')
+        return self._value
+
+    @property
+    def namespace_fragment(self):
+        """Get the URI of this URI node in namespace:fragment format.
+
+        Returns:
+            str: The URI of this URI node.
+
+        Raises:
+            ValueError: If this is not a URI node.
+        """
+        if not self.is_uri:
+            raise ValueError('Value is not a URI')
+        namespace = self.namespace
+        if not namespace:
+            return self.uri
+        return namespace + ':' + self.fragment
+
+    @property
+    def prefix(self):
+        """Get the prefix of this URI node.
+
+        Returns:
+            str: The prefix of this URI node.
+
+        Raises:
+            ValueError: If this is not a URI node.
+        """
+        if not self.is_uri:
+            raise ValueError('Value is not a URI')
+        candidates = [
+            prefix for prefix in self.PREFIXES
+            if self._value.startswith(prefix)
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=len)
+
+    @property
+    def namespace(self):
+        """Get the namespace of this URI node.
+
+        Returns:
+            str: The namespace of this URI node.
+        """
+        prefix = self.prefix
+        if not prefix:
+            return None
+        return self.PREFIXES[prefix]
+
+    @property
+    def fragment(self):
+        """Get the namespace of this URI node.
+
+        Returns:
+            str: The namespace of this URI node.
+        """
+        prefix = self.prefix
+        if not prefix:
+            return None
+        return self._value[len(prefix):]
+
+    @property
+    def value(self):
+        """Get the value of this literal node.
+
+        Returns:
+            Union[bool,int,float,str]: The value of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self._value
+
+    @property
+    def datatype(self):
+        """Get the datatype of this literal node.
+
+        Returns:
+            str: The datatype of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self._datatype
+
+    @property
+    def lang(self):
+        """Get the language of this literal node.
+
+        Returns:
+            str: The language of this literal node.
+
+        Raises:
+            ValueError: If this is not a literal node.
+        """
+        if not self.is_literal:
+            raise ValueError('Value is not a literal')
+        return self._lang
+
+    @property
+    def rdf_format(self):
+        """Convert this node into RDF format.
+
+        Returns:
+            str: This node as an RDF/SPARQL string.
+
+        Raises:
+            ValueError: If this is a blank node.
+        """
+        if self.is_uri:
+            return f'<{self._value}>'
+        elif self.is_literal:
+            escaped_value = self._value.replace('"', r'\"')
+            result = f'"{escaped_value}"'
+            if self._lang:
+                result += f'@{self._lang}'
+            if self._datatype:
+                result += f'^^<{self._datatype}>'
+            return result
+        raise ValueError(repr(self._value))
+
+    @staticmethod
+    def from_sparqlwrapper(sparql_value):
+        """Create a Value from a SPARQLWrapper value.
+
+        Arguments:
+            sparql_value (SPARQLWrapper.SmartWrapper.Value):
+                The SPARQLWrapper value.
+
+        Returns:
+            Value: The resulting value.
+
+        Raises:
+            ValueError: If the SPARQLWrapper value is not a URI or a literal.
+        """
+        if sparql_value.type == SparqlValue.URI:
+            return Value(sparql_value.value, Value.ValueType.URI)
+        elif sparql_value.type in (SparqlValue.Literal, SparqlValue.TypedLiteral):
+            return Value(
+                sparql_value.value,
+                Value.ValueType.LITERAL,
+                sparql_value.lang,
+                sparql_value.datatype,
+            )
         else:
-            raise ValueError('No namespace found for URI: ' + self.uri)
+            raise ValueError(f'sparql_value is neither a URI nor a literal: {sparql_value}')
+
+    @staticmethod
+    def from_uri(uri):
+        """Create a Value from a URI.
+
+        Arguments:
+            uri (str): The value.
+
+        Returns:
+            Value: The resulting value.
+        """
+        return Value(uri, Value.ValueType.URI)
+
+    @staticmethod
+    def from_namespace_fragment(namespace, fragment):
+        """Create a Value from a URI in namespace:fragment format.
+
+        Arguments:
+            namespace (str): The URI namespace.
+            fragment (str): The URI fragment.
+
+        Returns:
+            Value: The resulting value.
+        """
+        return Value.from_uri(Value.NAMESPACES[namespace] + fragment)
 
 
 class KnowledgeSource:
@@ -161,124 +343,6 @@ class KnowledgeFile(KnowledgeSource):
         return results
 
 
-class Value:
-    """Wrapper around SPARQLWrapper.SmartWrapper.Value."""
-
-    def __init__(self, sparql_value):
-        """Initialize a Value.
-
-        Arguments:
-            sparql_value (SPARQLWrapper.SmartWrapper.Value):
-                The original value.
-        """
-        self.sparql_value = sparql_value
-
-    @property
-    def is_uri(self):
-        """Whether this is a URI node.
-
-        Returns:
-            bool: True if this is a URI node.
-        """
-        return self.sparql_value.type == SparqlValue.URI
-
-    @property
-    def is_literal(self):
-        """Whether this is a literal node.
-
-        Returns:
-            bool: True if this is a literal node.
-        """
-        return self.sparql_value.type in (SparqlValue.Literal, SparqlValue.TypedLiteral)
-
-    @property
-    def is_blank(self):
-        """Whether this is a blank node.
-
-        Returns:
-            bool: True if this is a blank node.
-        """
-        return self.sparql_value.type == SparqlValue.BNODE
-
-    @property
-    def uri(self):
-        """Get the URI of this URI node.
-
-        Returns:
-            str: The URI of this URI node.
-
-        Raises:
-            ValueError: If this is not a URI node.
-        """
-        if not self.is_uri:
-            raise ValueError('Value is not a URI')
-        return self.sparql_value.value
-
-    @property
-    def value(self):
-        """Get the value of this literal node.
-
-        Returns:
-            Union[int,float,str]: The value of this literal node.
-
-        Raises:
-            ValueError: If this is not a literal node.
-        """
-        if not self.is_literal:
-            raise ValueError('Value is not a literal')
-        return self.sparql_value.value
-
-    @property
-    def datatype(self):
-        """Get the datatype of this literal node.
-
-        Returns:
-            str: The datatype of this literal node.
-
-        Raises:
-            ValueError: If this is not a literal node.
-        """
-        if not self.is_literal:
-            raise ValueError('Value is not a literal')
-        return self.sparql_value.datatype
-
-    @property
-    def lang(self):
-        """Get the language of this literal node.
-
-        Returns:
-            str: The language of this literal node.
-
-        Raises:
-            ValueError: If this is not a literal node.
-        """
-        if not self.is_literal:
-            raise ValueError('Value is not a literal')
-        return self.sparql_value.lang
-
-    @property
-    def rdf_format(self):
-        """Convert this node into RDF format.
-
-        Returns:
-            str: This node as an RDF/SPARQL string.
-
-        Raises:
-            ValueError: If this is a blank node.
-        """
-        if self.is_uri:
-            return f'<{self.sparql_value.value}>'
-        elif self.is_literal:
-            escaped_value = self.sparql_value.value.replace('"', r'\"')
-            result = f'"{escaped_value}"'
-            if self.lang:
-                result += f'@{self.lang}'
-            if self.datatype:
-                result += f'^^<{self.datatype}>'
-            return result
-        raise ValueError(repr(self.sparql_value))
-
-
 class SparqlEndpoint(KnowledgeSource):
     """A knowledge base from a remote SPARQL endpoint."""
 
@@ -307,5 +371,10 @@ class SparqlEndpoint(KnowledgeSource):
             )
         results = []
         for bindings in query_bindings:
-            results.append({key: Value(value) for key, value in bindings.items()})
+            if any(value.type == SparqlValue.BNODE for value in bindings.values()):
+                continue
+            results.append({
+                key: Value.from_sparqlwrapper(value)
+                for key, value in bindings.items()
+            })
         return results

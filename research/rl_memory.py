@@ -494,11 +494,10 @@ class SparqlKB(KnowledgeStore):
         # we only return the "largest" value for each attribute
         result = defaultdict(set)
         for binding in results:
-            if not binding['value'].is_blank:
-                val = binding['value'].rdf_format
-                if val in self.BAD_VALUES:
-                    continue
-                result[binding['attr'].rdf_format].add(val)
+            val = binding['value'].rdf_format
+            if val in self.BAD_VALUES:
+                continue
+            result[binding['attr'].rdf_format].add(val)
         result = {attr: max(vals) for attr, vals in result.items()}
         for old_attr, augments in self.augments.items():
             if old_attr in result:
