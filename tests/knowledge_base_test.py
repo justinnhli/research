@@ -15,6 +15,7 @@ from research.knowledge_base import Value, SparqlEndpoint
 
 
 def test_value():
+    """Test the Value class."""
     uri = 'http://dbpedia.org/resource/California'
     values = [
         Value.from_uri(uri),
@@ -29,11 +30,11 @@ def test_value():
         assert val.fragment == 'California'
         assert str(val) == val.rdf_format == f'<{uri}>'
         with pytest.raises(ValueError):
-            val.literal_value
+            print(val.literal_value)
         with pytest.raises(ValueError):
-            val.lang
+            print(val.lang)
         with pytest.raises(ValueError):
-            val.datatype
+            print(val.datatype)
     literal = '"xyz"@en^^<http://example.org/ns/userDatatype>'
     val = Value.from_literal(literal)
     assert val.literal_value == 'xyz'
