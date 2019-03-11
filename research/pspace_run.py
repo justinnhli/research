@@ -6,7 +6,7 @@ from datetime import datetime
 from importlib import import_module
 from itertools import islice
 from os import environ
-from os.path import dirname
+from pathlib import Path
 
 from clusterun import run_cli
 
@@ -64,13 +64,13 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
     """Interactively submit jobs.
 
     Arguments:
-        filepath (str): The path to the file to run.
+        filepath (Path): The path to the file to run.
         pspace_name (str): The space of parameters.
         experiment_fn_name (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
     """
     pspace = import_variable(pspace_name)
-    job_name = 'pbs_' + filepath
+    job_name = 'pbs_' + filepath.stem
     print(40 * '-')
     print('PARAMETERS')
     print()
@@ -86,7 +86,7 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
         ('core', list(range(min(len(pspace), num_cores)))),
     ]
     commands = [
-        f'cd {dirname(filepath)}',
+        f'cd {filepath.parent}',
         f'export PYTHONPATH={environ["PYTHONPATH"]}',
         ' '.join([
             f'/home/justinnhli/.venv/research/bin/python3',
@@ -105,7 +105,7 @@ def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
     """Entry point to module.
 
     Arguments:
-        filepath (str): The path to the file to run.
+        filepath (Path): The path to the file to run.
         pspace (str): The space of parameters.
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
@@ -123,7 +123,7 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
     """Create the ArgumentParser.
 
     Arguments:
-        filepath (str): The path to the file to run.
+        filepath (Path): The path to the file to run.
         pspace (str): The space of parameters.
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
@@ -135,6 +135,7 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
     arg_parser.set_defaults(filepath=filepath, pspace=pspace, experiment_fn=experiment_fn)
     arg_parser.add_argument(
         'filepath',
+        type=Path,
         default=filepath,
         nargs='?',
         help='The path to the file to run.',
@@ -193,6 +194,7 @@ def set_arguments(args):
     Returns:
         argparse.Namespace: The parsed arguments with new values.
     """
+    args.filepath = args.filepath.expanduser().resolve()
     if args.num_cores is None:
         args.num_cores = 1
         args.core = 0
@@ -204,7 +206,7 @@ def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, nu
 
     Arguments:
         cli_args (Sequence[str]): The CLI arguments.
-        filepath (str): The path to the file to run.
+        filepath (Path): The path to the file to run.
         pspace (str): The space of parameters.
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
@@ -222,10 +224,11 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     """Command line interface to module.
 
     Arguments:
-        filepath (str): The path to the file to run.
+        filepath (Path): The path to the file to run.
         pspace (str): The space of parameters.
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
     """
+    filepath = filepath.expanduser().resolve()
     args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
     cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
