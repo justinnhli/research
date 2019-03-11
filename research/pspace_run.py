@@ -28,21 +28,22 @@ def import_variable(full_name):
         return import_module(full_name)
 
 
-def get_parameters(pspace, num_cores, core):
+def get_parameters(pspace, num_cores=1, core=0, skip=0):
     """Split a parameter space into a size appropriate for one core.
 
     Arguments:
         pspace (PermutationSpace): The space of parameters.
         num_cores (int): The number of cores to split jobs for.
         core (int): The core whose job to start.
+        skip (int): The number of initial parameters to skip.
 
     Returns:
         Sequence[Namespace]: The relevant section of the parameter space.
     """
-    return list(islice(pspace, core, None, num_cores))
+    return list(islice(pspace, core, None, num_cores))[skip:]
 
 
-def dry_run(pspace_name, experiment_fn_name, num_cores, core):
+def dry_run(pspace_name, experiment_fn_name, num_cores, core, skip=0):
     """Print the parameter space.
 
     Arguments:
@@ -50,17 +51,18 @@ def dry_run(pspace_name, experiment_fn_name, num_cores, core):
         experiment_fn_name (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
         core (int): The core whose job to start.
+        skip (int): The number of initial parameters to skip.
     """
     import_variable(experiment_fn_name)
     pspace = import_variable(pspace_name)
-    psubspace = get_parameters(pspace, num_cores, core)
+    psubspace = get_parameters(pspace, num_cores, core, skip)
     size = len(psubspace)
     for params in psubspace:
         print(params)
     print(f'total: {size}')
 
 
-def run_serial(pspace_name, experiment_fn_name, num_cores, core):
+def run_serial(pspace_name, experiment_fn_name, num_cores, core, skip=0):
     """Run an experiment serially in the current thread.
 
     Arguments:
@@ -68,10 +70,11 @@ def run_serial(pspace_name, experiment_fn_name, num_cores, core):
         experiment_fn_name (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
         core (int): The core whose job to start.
+        skip (int): The number of initial parameters to skip.
     """
     pspace = import_variable(pspace_name)
     experiment_fn = import_variable(experiment_fn_name)
-    psubspace = get_parameters(pspace, num_cores, core)
+    psubspace = get_parameters(pspace, num_cores, core, skip)
     size = len(psubspace)
     for i, params in enumerate(psubspace):
         print(f'{datetime.now().isoformat()} {i}/{size} running: {params}')
@@ -153,6 +156,10 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
         help='The import path of the experiment function.',
     )
     arg_parser.add_argument(
+        '--skip', type=int, default=0,
+        help='Skip some initial parameters. Ignored if not running serially.',
+    )
+    arg_parser.add_argument(
         '--num-cores', type=int, default=num_cores,
         help='Number of cores to run the job on.',
     )
@@ -194,6 +201,8 @@ def check_arguments(arg_parser, args):
             arg_parser.error(
                 f'Argument --core must be between 0 and {args.num_cores - 1} inclusive, but got {args.core}'
             )
+    if args.skip < 0:
+        arg_parser.error('Argument --skip must be a non-negative integer')
 
 
 def set_arguments(args):
@@ -211,6 +220,8 @@ def set_arguments(args):
     if args.num_cores is None:
         args.num_cores = 1
         args.core = 0
+    if args.dispatch:
+        args.skip = 0
     return args
 
 
@@ -245,8 +256,8 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     filepath = filepath.expanduser().resolve()
     args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
     if args.dry_run:
-        dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run)
+        dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run, args.skip)
     elif args.dispatch:
         generate_jobs(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
     else:
-        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
+        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core, args.skip)
