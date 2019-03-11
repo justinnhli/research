@@ -164,6 +164,13 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
         '--dry-run', action='store_true',
         help='If set, print out the parameter space and exit.',
     )
+    arg_parser.add_argument(
+        '--dispatch', type=bool, default=None,
+        help=' '.join([
+            'Force job to be dispatched if true, or to run serially if not.',
+            'By default, will dispatch if --num-cores is set but --core is not set.',
+        ]),
+    )
     return arg_parser
 
 
@@ -199,6 +206,8 @@ def set_arguments(args):
         argparse.Namespace: The parsed arguments with new values.
     """
     args.filepath = args.filepath.expanduser().resolve()
+    if args.dispatch is None:
+        args.dispatch = args.num_cores is not None and args.core is None
     if args.num_cores is None:
         args.num_cores = 1
         args.core = 0
@@ -237,9 +246,7 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
     if args.dry_run:
         dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run)
-    elif args.num_cores is None or args.num_cores <= 0:
-        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
-    elif args.core is None:
+    elif args.dispatch:
         generate_jobs(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
     else:
         run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
