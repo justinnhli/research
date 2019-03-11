@@ -74,8 +74,8 @@ def run_serial(pspace_name, experiment_fn_name, num_cores, core, skip=0):
     experiment_fn = import_variable(experiment_fn_name)
     psubspace = get_parameters(pspace, num_cores, core, skip)
     size = len(psubspace)
-    for i, params in enumerate(psubspace):
-        print(f'{datetime.now().isoformat()} {i}/{size} running: {params}')
+    for i, params in enumerate(psubspace, start=1):
+        print(f'{datetime.now().isoformat()} running {i}/{size}: {params}')
         experiment_fn(params)
 
 
