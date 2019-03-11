@@ -243,7 +243,7 @@ def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, nu
 
 
 def main(cli_args, filepath=None, pspace=None, experiment_fn=None, num_cores=None):
-    """Main entry point to the module.
+    """Entry point to the module.
 
     Arguments:
         cli_args (Sequence[str]): The CLI arguments.
