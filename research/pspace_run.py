@@ -42,18 +42,21 @@ def get_parameters(pspace, num_cores, core):
     return list(islice(pspace, core, None, num_cores))
 
 
-def run_serial(pspace_name, experiment_fn_name):
-    """Run the experiment serially in the current thread.
+def run_serial(pspace_name, experiment_fn_name, num_cores, core):
+    """Run an experiment serially in the current thread.
 
     Arguments:
         pspace_name (str): The space of parameters.
         experiment_fn_name (str): Function that runs the experiment.
+        num_cores (int): The number of cores to split jobs for.
+        core (int): The core whose job to start.
     """
     pspace = import_variable(pspace_name)
     experiment_fn = import_variable(experiment_fn_name)
-    size = len(pspace)
-    for i, params in enumerate(pspace, start=1):
-        print(f'{datetime.now().isoformat()} {i}/{size} running {params}')
+    psubspace = get_parameters(pspace, num_cores, core)
+    size = len(psubspace)
+    for i, params in enumerate(psubspace):
+        print(f'{datetime.now().isoformat()} {i}/{size} running: {params}')
         experiment_fn(params)
 
 
@@ -98,23 +101,6 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
     run_cli(job_name, variables, commands, venv='research')
 
 
-def run_job(pspace_name, experiment_fn_name, num_cores, core):
-    """Run a single job.
-
-    Arguments:
-        pspace_name (str): The space of parameters.
-        experiment_fn_name (str): Function that runs the experiment.
-        num_cores (int): The number of cores to split jobs for.
-        core (int): The core whose job to start.
-    """
-    pspace = import_variable(pspace_name)
-    experiment_fn = import_variable(experiment_fn_name)
-    parameter_sets = get_parameters(pspace, num_cores, core)
-    for i, params in enumerate(parameter_sets):
-        print(f'parameters {i} of {len(parameter_sets)}')
-        experiment_fn(params)
-
-
 def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
     """Entry point to module.
 
@@ -126,11 +112,11 @@ def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
         core (int): The core whose job to start. Defaults to None to generate jobs.
     """
     if num_cores is None or num_cores <= 0:
-        run_serial(pspace, experiment_fn)
+        run_serial(pspace, experiment_fn, num_cores, core)
     elif core is None:
         generate_jobs(filepath, pspace, experiment_fn, num_cores)
     else:
-        run_job(pspace, experiment_fn, num_cores, core)
+        run_serial(pspace, experiment_fn, num_cores, core)
 
 
 def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
