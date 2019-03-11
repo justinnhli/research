@@ -1,5 +1,6 @@
 """Adaptor to run Permutation Spaces on a cluster."""
 
+import sys
 from argparse import ArgumentParser
 from datetime import datetime
 from importlib import import_module
@@ -135,14 +136,17 @@ def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
         run_job(pspace, experiment_fn, num_cores, core)
 
 
-def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
-    """Command line interface to module.
+def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
+    """Create the ArgumentParser.
 
     Arguments:
         filepath (str): The path to the file to run.
         pspace (str): The space of parameters.
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
+
+    Returns:
+        ArgumentParser: The argument parser.
     """
     arg_parser = ArgumentParser()
     arg_parser.set_defaults(filepath=filepath, pspace=pspace, experiment_fn=experiment_fn)
@@ -166,8 +170,48 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     )
     arg_parser.add_argument('--num-cores', type=int, default=num_cores)
     arg_parser.add_argument('--core', type=int)
-    args = arg_parser.parse_args()
+    return arg_parser
+
+
+def check_arguments(arg_parser, args):
+    """Check arguments for errors.
+
+    Arguments:
+        arg_parser (ArgumentParser): The ArgumentParser.
+        args (argparse.Namespace): The parsed arguments
+    """
     for arg in ['filepath', 'pspace', 'experiment_fn']:
         if getattr(args, arg) is None:
             arg_parser.error('A {} must be provided as an call/function argument'.format(arg))
+
+
+def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, num_cores=None):
+    """Parse arguments.
+
+    Arguments:
+        cli_args (Sequence[str]): The CLI arguments.
+        filepath (str): The path to the file to run.
+        pspace (str): The space of parameters.
+        experiment_fn (str): Function that runs the experiment.
+        num_cores (int): The number of cores to split jobs for.
+
+    Returns:
+        argparse.Namespace: The parsed arguments.
+    """
+    arg_parser = create_arg_parser(filepath, pspace, experiment_fn, num_cores)
+    args = arg_parser.parse_args(cli_args)
+    check_arguments(arg_parser, args)
+    return args
+
+
+def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
+    """Command line interface to module.
+
+    Arguments:
+        filepath (str): The path to the file to run.
+        pspace (str): The space of parameters.
+        experiment_fn (str): Function that runs the experiment.
+        num_cores (int): The number of cores to split jobs for.
+    """
+    args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
     cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
