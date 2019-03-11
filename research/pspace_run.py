@@ -43,17 +43,15 @@ def get_parameters(pspace, num_cores=1, core=0, skip=0):
     return list(islice(pspace, core, None, num_cores))[skip:]
 
 
-def dry_run(pspace_name, experiment_fn_name, num_cores, core, skip=0):
+def dry_run(pspace_name, num_cores, core, skip=0):
     """Print the parameter space.
 
     Arguments:
         pspace_name (str): The space of parameters.
-        experiment_fn_name (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
         core (int): The core whose job to start.
         skip (int): The number of initial parameters to skip.
     """
-    import_variable(experiment_fn_name)
     pspace = import_variable(pspace_name)
     psubspace = get_parameters(pspace, num_cores, core, skip)
     size = len(psubspace)
