@@ -106,7 +106,7 @@ def dispatch(filepath, pspace_name, experiment_fn_name, num_cores):
     ]
     commands = [
         f'cd {filepath.parent}',
-        f'export PYTHONPATH={environ["PYTHONPATH"]}',
+        f'export PYTHONPATH={environ.get("PYTHONPATH", "")}',
         ' '.join([
             f'/home/justinnhli/.venv/research/bin/python3',
             f"'{filepath}'",
