@@ -129,9 +129,6 @@ def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
         run_serial(pspace, experiment_fn)
     elif core is None:
         generate_jobs(filepath, pspace, experiment_fn, num_cores)
-    elif not 0 <= core <= num_cores:
-        print(f'core must be between 0 and {num_cores - 1} inclusive, but got {core}')
-        exit(1)
     else:
         run_job(pspace, experiment_fn, num_cores, core)
 
@@ -168,8 +165,14 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
         nargs='?',
         help='The import path of the experiment function.',
     )
-    arg_parser.add_argument('--num-cores', type=int, default=num_cores)
-    arg_parser.add_argument('--core', type=int)
+    arg_parser.add_argument(
+        '--num-cores', type=int, default=num_cores,
+        help='Number of cores to run the job on.',
+    )
+    arg_parser.add_argument(
+        '--core', type=int,
+        help='The core to run the current job. Must be used with --num-cores.',
+    )
     return arg_parser
 
 
@@ -182,11 +185,36 @@ def check_arguments(arg_parser, args):
     """
     for arg in ['filepath', 'pspace', 'experiment_fn']:
         if getattr(args, arg) is None:
-            arg_parser.error('A {} must be provided as an call/function argument'.format(arg))
+            arg_parser.error(f'Argument --{arg} must be provided either by call or by command line')
+    if args.num_cores is None:
+        if args.core is not None:
+            arg_parser.error('Argument --core must be used with --num-cores')
+    else:
+        if args.num_cores < 1:
+            arg_parser.error('Argument --num-cores must be a positive integer')
+        if args.core is not None and not 0 <= args.core <= args.num_cores:
+            arg_parser.error(
+                f'Argument --core must be between 0 and {args.num_cores - 1} inclusive, but got {args.core}'
+            )
+
+
+def set_arguments(args):
+    """Set unset arguments intelligently.
+
+    Arguments:
+        args (argparse.Namespace): The parsed arguments.
+
+    Returns:
+        argparse.Namespace: The parsed arguments with new values.
+    """
+    if args.num_cores is None:
+        args.num_cores = 1
+        args.core = 0
+    return args
 
 
 def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, num_cores=None):
-    """Parse arguments.
+    """Parse arguments and fill in defaults.
 
     Arguments:
         cli_args (Sequence[str]): The CLI arguments.
@@ -201,7 +229,7 @@ def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, nu
     arg_parser = create_arg_parser(filepath, pspace, experiment_fn, num_cores)
     args = arg_parser.parse_args(cli_args)
     check_arguments(arg_parser, args)
-    return args
+    return set_arguments(args)
 
 
 def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
