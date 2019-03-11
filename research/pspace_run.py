@@ -101,24 +101,6 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
     run_cli(job_name, variables, commands, venv='research')
 
 
-def cluster_run(filepath, pspace, experiment_fn, num_cores=None, core=None):
-    """Entry point to module.
-
-    Arguments:
-        filepath (Path): The path to the file to run.
-        pspace (str): The space of parameters.
-        experiment_fn (str): Function that runs the experiment.
-        num_cores (int): The number of cores to split jobs for.
-        core (int): The core whose job to start. Defaults to None to generate jobs.
-    """
-    if num_cores is None or num_cores <= 0:
-        run_serial(pspace, experiment_fn, num_cores, core)
-    elif core is None:
-        generate_jobs(filepath, pspace, experiment_fn, num_cores)
-    else:
-        run_serial(pspace, experiment_fn, num_cores, core)
-
-
 def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
     """Create the ArgumentParser.
 
@@ -231,4 +213,9 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     """
     filepath = filepath.expanduser().resolve()
     args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
-    cluster_run(args.filepath, args.pspace, args.experiment_fn, args.num_cores, args.core)
+    if args.num_cores is None or args.num_cores <= 0:
+        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
+    elif args.core is None:
+        generate_jobs(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
+    else:
+        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
