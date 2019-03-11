@@ -8,7 +8,7 @@ from itertools import islice
 from os import environ
 from pathlib import Path
 
-from clusterun import run_cli
+from clusterun import run_cli as cluster_run_cli
 
 
 def import_variable(full_name):
@@ -81,7 +81,7 @@ def run_serial(pspace_name, experiment_fn_name, num_cores, core, skip=0):
         experiment_fn(params)
 
 
-def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
+def dispatch(filepath, pspace_name, experiment_fn_name, num_cores):
     """Interactively submit jobs.
 
     Arguments:
@@ -119,7 +119,7 @@ def generate_jobs(filepath, pspace_name, experiment_fn_name, num_cores):
             f'--core "$core"',
         ]),
     ]
-    run_cli(job_name, variables, commands, venv='research')
+    cluster_run_cli(job_name, variables, commands, venv='research')
 
 
 def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
@@ -244,7 +244,7 @@ def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, nu
     return set_arguments(args)
 
 
-def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
+def pspace_run_cli(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
     """Command line interface to module.
 
     Arguments:
@@ -258,6 +258,6 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     if args.dry_run:
         dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run, args.skip)
     elif args.dispatch:
-        generate_jobs(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
+        dispatch(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
     else:
         run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core, args.skip)
