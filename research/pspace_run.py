@@ -242,8 +242,29 @@ def parse_arguments(cli_args, filepath=None, pspace=None, experiment_fn=None, nu
     return set_arguments(args)
 
 
+def main(cli_args, filepath=None, pspace=None, experiment_fn=None, num_cores=None):
+    """Main entry point to the module.
+
+    Arguments:
+        cli_args (Sequence[str]): The CLI arguments.
+        filepath (Path): The path to the file to run.
+        pspace (str): The space of parameters.
+        experiment_fn (str): Function that runs the experiment.
+        num_cores (int): The number of cores to split jobs for.
+    """
+    if filepath is not None:
+        filepath = filepath.expanduser().resolve()
+    args = parse_arguments(cli_args, filepath, pspace, experiment_fn, num_cores)
+    if args.dry_run:
+        dry_run(args.pspace, args.num_cores, args.core, args.skip)
+    elif args.dispatch:
+        dispatch(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
+    else:
+        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core, args.skip)
+
+
 def pspace_run_cli(filepath=None, pspace=None, experiment_fn=None, num_cores=None):
-    """Command line interface to module.
+    """Command line interface to the module.
 
     Arguments:
         filepath (Path): The path to the file to run.
@@ -251,11 +272,4 @@ def pspace_run_cli(filepath=None, pspace=None, experiment_fn=None, num_cores=Non
         experiment_fn (str): Function that runs the experiment.
         num_cores (int): The number of cores to split jobs for.
     """
-    filepath = filepath.expanduser().resolve()
-    args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
-    if args.dry_run:
-        dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run, args.skip)
-    elif args.dispatch:
-        dispatch(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
-    else:
-        run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core, args.skip)
+    main(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
