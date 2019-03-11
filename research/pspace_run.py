@@ -42,6 +42,24 @@ def get_parameters(pspace, num_cores, core):
     return list(islice(pspace, core, None, num_cores))
 
 
+def dry_run(pspace_name, experiment_fn_name, num_cores, core):
+    """Print the parameter space.
+
+    Arguments:
+        pspace_name (str): The space of parameters.
+        experiment_fn_name (str): Function that runs the experiment.
+        num_cores (int): The number of cores to split jobs for.
+        core (int): The core whose job to start.
+    """
+    import_variable(experiment_fn_name)
+    pspace = import_variable(pspace_name)
+    psubspace = get_parameters(pspace, num_cores, core)
+    size = len(psubspace)
+    for params in psubspace:
+        print(params)
+    print(f'total: {size}')
+
+
 def run_serial(pspace_name, experiment_fn_name, num_cores, core):
     """Run an experiment serially in the current thread.
 
@@ -142,6 +160,10 @@ def create_arg_parser(filepath=None, pspace=None, experiment_fn=None, num_cores=
         '--core', type=int,
         help='The core to run the current job. Must be used with --num-cores.',
     )
+    arg_parser.add_argument(
+        '--dry-run', action='store_true',
+        help='If set, print out the parameter space and exit.',
+    )
     return arg_parser
 
 
@@ -213,7 +235,9 @@ def parallel_main(filepath=None, pspace=None, experiment_fn=None, num_cores=None
     """
     filepath = filepath.expanduser().resolve()
     args = parse_arguments(sys.argv[1:], filepath, pspace, experiment_fn, num_cores)
-    if args.num_cores is None or args.num_cores <= 0:
+    if args.dry_run:
+        dry_run(args.pspace, args.experiment_fn, args.num_cores, args.dry_run)
+    elif args.num_cores is None or args.num_cores <= 0:
         run_serial(args.pspace, args.experiment_fn, args.num_cores, args.core)
     elif args.core is None:
         generate_jobs(args.filepath, args.pspace, args.experiment_fn, args.num_cores)
