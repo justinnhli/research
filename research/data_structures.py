@@ -84,12 +84,12 @@ class TreeMultiMap:
 
     class Node:
 
-        def __init__(self, key, value, parent=None, left=None, right=None):
+        def __init__(self, key, value):
             self.key = key
             self.value = value
-            self.parent = parent
-            self.left = left
-            self.right = right
+            self.parent = None
+            self.left = None
+            self.right = None
             self.height = 1
             self.balance = 0
 
