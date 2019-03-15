@@ -3,6 +3,8 @@
 import sys
 from os.path import dirname, realpath
 
+import pytest
+
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
@@ -57,5 +59,7 @@ def test_treemultimap():
         assert list(tmm[key]) == list(range(key))
     tmm = TreeMultiMap.from_dict({i: i for i in range(100)})
     assert list(tmm.items()) == [(i, i) for i in range(100)]
-
-
+    with pytest.raises(ValueError):
+        tmm = TreeMultiMap()
+        tmm.add(42, 42)
+        tmm.add(42, 42)
