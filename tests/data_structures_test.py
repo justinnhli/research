@@ -41,7 +41,7 @@ def test_treemultimap():
     ]
     for order in orders:
         tmm = TreeMultiMap()
-        assert len(tmm) == 0
+        assert not tmm
         for size, number in enumerate(order, start=1):
             assert number not in tmm
             tmm.add(number, number)

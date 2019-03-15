@@ -109,10 +109,10 @@ class TreeMultiMap:
 
         def __iter__(self):
             if self.left:
-                yield from self.left
+                yield from self.left # pylint: disable = not-an-iterable
             yield self.key
             if self.right:
-                yield from self.right
+                yield from self.right # pylint: disable = not-an-iterable
 
         def __str__(self):
             return f'Node({self.key}, {self.value})'
