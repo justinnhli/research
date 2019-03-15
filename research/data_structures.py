@@ -154,11 +154,7 @@ class TreeMultiMap:
                     yield from self.right.yield_all(key)
 
         def keys(self):
-            if self.left:
-                yield from self.left.keys()
-            yield self.key
-            if self.right:
-                yield from self.right.keys()
+            yield from self.__iter__()
 
         def values(self):
             if self.left:
