@@ -81,10 +81,18 @@ class UnionFind:
 
 
 class TreeMultiMap:
+    """A tree-based multi-map."""
 
     class Node:
+        """A tree node."""
 
         def __init__(self, key, value):
+            """Initialize the Node.
+
+            Arguments:
+                key (Any): The key.
+                value (Any): The value.
+            """
             self.key = key
             self.value = value
             self.parent = None
@@ -110,6 +118,14 @@ class TreeMultiMap:
             return f'Node({self.key}, {self.value})'
 
         def get_first(self, key):
+            """Find the first node in the subtree with a given key.
+
+            Arguments:
+                key (Any): The key to find.
+
+            Returns:
+                Node: The first node with the given key, or None.
+            """
             if self.left and key < self.key:
                 return self.left.get_first(key)
             elif self.right and self.key < key:
@@ -126,6 +142,14 @@ class TreeMultiMap:
             return None
 
         def get_last(self, key):
+            """Find the last node in the subtree with a given key.
+
+            Arguments:
+                key (Any): The key to find.
+
+            Returns:
+                Node: The last node with the given key, or None.
+            """
             if self.left and key < self.key:
                 return self.left.get_last(key)
             if self.right and self.key < key:
@@ -142,6 +166,14 @@ class TreeMultiMap:
             return None
 
         def yield_all(self, key):
+            """Iterate through all nodes with a given key.
+
+            Arguments:
+                key (Any): The key to find.
+
+            Yields:
+                Node: The nodes with the given key.
+            """
             if self.left and key < self.key:
                 yield from self.left.yield_all(key)
             elif self.right and self.key < key:
@@ -154,9 +186,19 @@ class TreeMultiMap:
                     yield from self.right.yield_all(key)
 
         def keys(self):
+            """Iterate through all keys in the subtree.
+
+            Yields:
+                Any: The keys.
+            """
             yield from self.__iter__()
 
         def values(self):
+            """Iterate through all values in the subtree.
+
+            Yields:
+                Any: The values.
+            """
             if self.left:
                 yield from self.left.values()
             yield self.value
@@ -164,6 +206,11 @@ class TreeMultiMap:
                 yield from self.right.values()
 
         def items(self):
+            """Iterate through all key-value pairs in the subtree.
+
+            Yields:
+                Tuple[Any, Any]: The keys and values.
+            """
             if self.left:
                 yield from self.left.items()
             yield (self.key, self.value)
@@ -171,6 +218,7 @@ class TreeMultiMap:
                 yield from self.right.items()
 
         def update_height_balance(self):
+            """Update the height and balance of this node."""
             if self.left:
                 left_height = self.left.height
             else:
@@ -183,6 +231,7 @@ class TreeMultiMap:
             self.height = max(left_height, right_height) + 1
 
     def __init__(self):
+        """Initialize the TreeMultiMap."""
         self.root = None
         self.size = 0
 
@@ -190,6 +239,12 @@ class TreeMultiMap:
         return self.size
 
     def add(self, key, value):
+        """Associate the value with the key.
+
+        Arguments:
+            key (Any): The key.
+            value (Any): The value.
+        """
         new_node = TreeMultiMap.Node(key, value)
         if self.root is None:
             self.root = new_node
@@ -344,6 +399,14 @@ class TreeMultiMap:
         yield from self.root.yield_all(key)
 
     def get_first(self, key):
+        """Find the first value with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Returns:
+            Node: The first value with the given key, or None.
+        """
         if self.root is None:
             return None
         node = self.root.get_first(key)
@@ -353,6 +416,14 @@ class TreeMultiMap:
             return node.value
 
     def get_last(self, key):
+        """Find the last value with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Returns:
+            Node: The last value with the given key, or None.
+        """
         if self.root is None:
             return None
         node = self.root.get_last(key)
@@ -362,22 +433,45 @@ class TreeMultiMap:
             return node.value
 
     def keys(self):
+        """Iterate through all keys.
+
+        Yields:
+            Any: The keys.
+        """
         if self.root is None:
             return
         yield from self.root.keys()
 
     def values(self):
+        """Iterate through all values.
+
+        Yields:
+            Any: The values.
+        """
         if self.root is None:
             return
         yield from self.root.values()
 
     def items(self):
+        """Iterate through all key-value pairs.
+
+        Yields:
+            Tuple[Any, Any]: The keys and values.
+        """
         if self.root is None:
             return
         yield from self.root.items()
 
     @staticmethod
     def from_dict(src_dict):
+        """Create a TreeMultiMap from a dictionary.
+
+        Arguments:
+            src_dict (Mapping[Any, Any]): The dictionary.
+
+        Returns:
+            TreeMultiMap: The TreeMultiMap.
+        """
         tmm = TreeMultiMap()
         for key, value in src_dict.items():
             tmm.add(key, value)
