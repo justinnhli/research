@@ -96,6 +96,9 @@ class TreeMultiMap:
         def __lt__(self, other):
             return (self.key, self.value) < (other.key, other.value)
 
+        def __contains__(self, key):
+            return self.get_first(key) is not None
+
         def __iter__(self):
             if self.left:
                 yield from self.left
@@ -137,9 +140,6 @@ class TreeMultiMap:
                 else:
                     return self
             return None
-
-        def contains(self, key):
-            return self.find_first(key) is not None
 
         def yield_all(self, key):
             if self.left and key < self.key:
@@ -335,7 +335,7 @@ class TreeMultiMap:
     def __contains__(self, key):
         if self.root is None:
             return False
-        return self.root.contains(key)
+        return key in self.root
 
     def __iter__(self):
         if self.root is None:
