@@ -109,14 +109,14 @@ class TreeMultiMap:
         def __str__(self):
             return f'Node({self.key}, {self.value})'
 
-        def find_first(self, key):
+        def get_first(self, key):
             if self.left and key < self.key:
-                return self.left.find_first(key)
+                return self.left.get_first(key)
             elif self.right and self.key < key:
-                return self.right.find_first(key)
+                return self.right.get_first(key)
             elif self.key == key:
                 if self.left:
-                    result = self.left.find_first(key)
+                    result = self.left.get_first(key)
                     if result:
                         return result
                     else:
@@ -125,14 +125,14 @@ class TreeMultiMap:
                     return self
             return None
 
-        def find_last(self, key):
+        def get_last(self, key):
             if self.left and key < self.key:
-                return self.left.find_last(key)
+                return self.left.get_last(key)
             if self.right and self.key < key:
-                return self.right.find_last(key)
+                return self.right.get_last(key)
             if self.key == key:
                 if self.right:
-                    result = self.right.find_last(key)
+                    result = self.right.get_last(key)
                     if result:
                         return result
                     else:
@@ -174,7 +174,7 @@ class TreeMultiMap:
             if self.right:
                 yield from self.right.items()
 
-        def update_metadata(self):
+        def update_height_balance(self):
             if self.left:
                 left_height = self.left.height
             else:
@@ -197,7 +197,7 @@ class TreeMultiMap:
         new_node = TreeMultiMap.Node(key, value)
         if self.root is None:
             self.root = new_node
-            self.root.update_metadata()
+            self.root.update_height_balance()
         else:
             self._add(self.root, new_node)
         self.size += 1
@@ -218,7 +218,7 @@ class TreeMultiMap:
         return self._balance(node)
 
     def _balance(self, node):
-        node.update_metadata()
+        node.update_height_balance()
         if node.balance < -1:
             if node.left.balance == -1:
                 return self._rotate_right(node)
@@ -279,10 +279,10 @@ class TreeMultiMap:
         else:
             self.root = node_e
         # update metadata
-        node_c.update_metadata()
-        node_e.update_metadata()
+        node_c.update_height_balance()
+        node_e.update_height_balance()
         if node_a:
-            node_a.update_metadata()
+            node_a.update_height_balance()
         return node_e
 
     def _rotate_right(self, node):
@@ -326,10 +326,10 @@ class TreeMultiMap:
         else:
             self.root = node_c
         # update metadata
-        node_e.update_metadata()
-        node_c.update_metadata()
+        node_e.update_height_balance()
+        node_c.update_height_balance()
         if node_a:
-            node_a.update_metadata()
+            node_a.update_height_balance()
         return node_c
 
     def __contains__(self, key):
@@ -350,7 +350,7 @@ class TreeMultiMap:
     def get_first(self, key):
         if self.root is None:
             return None
-        node = self.root.find_first(key)
+        node = self.root.get_first(key)
         if node is None:
             return None
         else:
@@ -359,7 +359,7 @@ class TreeMultiMap:
     def get_last(self, key):
         if self.root is None:
             return None
-        node = self.root.find_last(key)
+        node = self.root.get_last(key)
         if node is None:
             return None
         else:
