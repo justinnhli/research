@@ -376,19 +376,6 @@ class TreeMultiMap:
             return
         yield from self.root.items()
 
-    def visualize(self, node=None, depth=0):
-        if node is None:
-            node = self.root
-        if node is None:
-            return
-        print(depth * '  ' + f'{node.key}: {node.value}')
-        if node.left:
-            print((depth + 1) * '  ' + 'left:')
-            self.visualize(node.left, depth + 1)
-        if node.right:
-            print((depth + 1) * '  ' + 'right:')
-            self.visualize(node.right, depth + 1)
-
     @staticmethod
     def from_dict(src_dict):
         tmm = TreeMultiMap()
