@@ -150,6 +150,21 @@ class AttrDict:
     def __repr__(self):
         return str(self)
 
+    def get(self, key, default=None):
+        """Get a key or return a default value.
+
+        Arguments:
+            key (Any): The key to get.
+            default (Any): The value if the key does not exist. Defaults out None.
+        
+        Returns:
+            Any: The value associated with the key.
+        """
+        if key in self._attributes_:
+            return self._attributes_[key]
+        else:
+            return default
+
     def as_dict(self):
         """Convert to dict.
 
