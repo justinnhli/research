@@ -60,6 +60,7 @@ disable=no-else-return,
         too-many-instance-attributes,
         too-many-locals,
         too-many-return-statements,
+        logging-fstring-interpolation,
         fixme
 
 # Enable the message, report, category or checker with the given id(s). You can
