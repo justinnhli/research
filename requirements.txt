@@ -21,6 +21,7 @@ numpy==1.16.1
 # utility packages
 SQLAlchemy==1.2.17
 requests==2.21.0
+networkx==2.2
 
 # experiment packages
 git+https://github.com/justinnhli/permspace.git
