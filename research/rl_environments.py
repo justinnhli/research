@@ -156,7 +156,7 @@ class AttrDict:
         Arguments:
             key (Any): The key to get.
             default (Any): The value if the key does not exist. Defaults out None.
-        
+
         Returns:
             Any: The value associated with the key.
         """
