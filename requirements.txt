@@ -27,7 +27,7 @@ git+https://github.com/justinnhli/permspace.git
 git+https://github.com/justinnhli/clusterun.git
 
 # code quality packages
-pylint
+pylint==2.2.3
 pydocstyle
 pytest-cov
 coverage
