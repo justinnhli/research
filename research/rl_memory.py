@@ -538,9 +538,10 @@ class SparqlKB(KnowledgeStore):
         }} ORDER BY ?__name__ LIMIT 1 OFFSET {offset}
         '''
         results = self.source.query_sparql(query)
-        if not results:
+        try:
+            return next(iter(results))['concept'].rdf_format
+        except StopIteration:
             return None
-        return results[0]['concept'].rdf_format
 
     @property
     def has_prev_result(self): # noqa: D102

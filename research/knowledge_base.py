@@ -363,8 +363,8 @@ class KnowledgeSource:
         Arguments:
             sparql (str): The SPARQL query.
 
-        Returns:
-            List[Dict[str, Value]]: A list of variable bindings.
+        Yields:
+            Dict[str, Value]: A dictionary of variable bindings.
         """
         raise NotImplementedError()
 
@@ -418,10 +418,8 @@ class KnowledgeFile(KnowledgeSource):
         self.graph.close()
 
     def query_sparql(self, sparql): # noqa: D102
-        results = []
         for result in self.graph.query(sparql).bindings:
-            results.append({str(variable): str(uri) for variable, uri in result.items()})
-        return results
+            yield {str(variable): str(uri) for variable, uri in result.items()}
 
 
 class SparqlEndpoint(KnowledgeSource):
@@ -450,12 +448,10 @@ class SparqlEndpoint(KnowledgeSource):
             raise EndPointNotFound(
                 f'Tried to connect {self.NUM_CONNECTION_ATTEMPTS} times and failed'
             )
-        results = []
         for bindings in query_bindings:
             if any(value.type == SparqlValue.BNODE for value in bindings.values()):
                 continue
-            results.append({
+            yield {
                 key: Value.from_sparqlwrapper(value)
                 for key, value in bindings.items()
-            })
-        return results
+            }
