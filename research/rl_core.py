@@ -1,8 +1,11 @@
 """Reinforcement learning experiment code."""
 
+import logging
 from statistics import mean
 
 from .rl_agents import Agent
+
+LOGGER = logging.getLogger(__name__)
 
 
 def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, new_episode_hook=None):
@@ -41,7 +44,7 @@ def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, n
     return mean(returns)
 
 
-def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=None, record_path=None):
+def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=None):
     """Evaluate an agent.
 
     Arguments:
@@ -76,45 +79,34 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             super().start_new_episode()
             self.episode_count += 1
             self.step = 0
-            if record_path is not None:
-                with record_path.open('a') as fd:
-                    fd.write('\n')
-                    fd.write(50 * '=')
-                    fd.write('\n')
-                    fd.write(str(self.episode_count))
-                    fd.write('\n')
+            LOGGER.info(50 * '=')
+            LOGGER.info(str(self.episode_count))
 
         def act(self, observation, actions): # noqa: D102
             action = self.agent.get_best_stored_action(observation, actions=actions)
             if action is None:
                 action = self.rng.choice(actions)
             self.step += 1
-            if record_path is not None:
-                with record_path.open('a') as fd:
-                    fd.write(str(self.step))
-                    fd.write('\n')
-                    fd.write(str(observation))
-                    fd.write('\n')
-                    all_features = self.agent.feature_extractor(observation)
-                    for poss_action in actions:
-                        fd.write(f'    {poss_action}: {self.agent.get_value(observation, poss_action)}\n')
-                        if poss_action not in self.agent.weights:
-                            continue
-                        features = [
-                            feature for feature in all_features
-                            if feature in self.agent.weights[poss_action]
-                        ]
-                        sorted_features = sorted(
-                            features,
-                            key=(lambda feature: self.agent.weights[poss_action][feature]),
-                            reverse=True,
-                        )
-                        for feature in sorted_features:
-                            weight = self.agent.weights[poss_action][feature]
-                            fd.write(f'        {feature} {weight}\n')
-                    fd.write(str(action))
-                    fd.write('\n')
-                    fd.write('\n')
+            LOGGER.info(str(self.step))
+            LOGGER.info(str(observation))
+            all_features = self.agent.feature_extractor(observation)
+            for poss_action in actions:
+                LOGGER.info(f'    {poss_action}: {self.agent.get_value(observation, poss_action)}')
+                if poss_action not in self.agent.weights:
+                    continue
+                features = [
+                    feature for feature in all_features
+                    if feature in self.agent.weights[poss_action]
+                ]
+                sorted_features = sorted(
+                    features,
+                    key=(lambda feature: self.agent.weights[poss_action][feature]),
+                    reverse=True,
+                )
+                for feature in sorted_features:
+                    weight = self.agent.weights[poss_action][feature]
+                    LOGGER.info(f'        {feature} {weight}')
+            LOGGER.info(str(action))
             return action
 
     return run_episodes(
