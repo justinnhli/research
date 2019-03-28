@@ -22,12 +22,19 @@ kbs/wordnet-3.1.n3: kbs
 	sort wn31.nt | uniq > $@
 	rm -f wn31.nt.gz wn31.nt
 
+kbs/mapping-based-dbpedia.ttl: kbs/mappingbased_objects_en.ttl kbs/mappingbased_literals_en.ttl kbs/instance_types_en.ttl
+	cat $^ > $@
+
 kbs/mappingbased_objects_en.ttl: kbs
 	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_en.ttl.bz2'
 	bunzip2 $@.bz2
 
 kbs/mappingbased_literals_en.ttl: kbs
 	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_literals_en.ttl.bz2'
+	bunzip2 $@.bz2
+
+kbs/instance_types_en.ttl: kbs
+	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/instance_types_en.ttl.bz2'
 	bunzip2 $@.bz2
 
 models:
