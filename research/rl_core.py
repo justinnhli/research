@@ -89,23 +89,8 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             self.step += 1
             LOGGER.info(str(self.step))
             LOGGER.info(str(observation))
-            all_features = self.agent.feature_extractor(observation)
             for poss_action in actions:
                 LOGGER.info(f'    {poss_action}: {self.agent.get_value(observation, poss_action)}')
-                if poss_action not in self.agent.weights:
-                    continue
-                features = [
-                    feature for feature in all_features
-                    if feature in self.agent.weights[poss_action]
-                ]
-                sorted_features = sorted(
-                    features,
-                    key=(lambda feature: self.agent.weights[poss_action][feature]),
-                    reverse=True,
-                )
-                for feature in sorted_features:
-                    weight = self.agent.weights[poss_action][feature]
-                    LOGGER.info(f'        {feature} {weight}')
             LOGGER.info(str(action))
             return action
 
