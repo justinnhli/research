@@ -23,11 +23,11 @@ kbs/wordnet-3.1.n3: kbs
 	rm -f wn31.nt.gz wn31.nt
 
 kbs/mappingbased_objects_en.ttl: kbs
-	wget --output-docoument $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_en.ttl.bz2'
+	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_en.ttl.bz2'
 	bunzip2 $@.bz2
 
 kbs/mappingbased_literals_en.ttl: kbs
-	wget --output-docoument $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_literals_en.ttl.bz2'
+	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_literals_en.ttl.bz2'
 	bunzip2 $@.bz2
 
 models:
