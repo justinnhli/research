@@ -436,7 +436,7 @@ class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
 
     # FIXME arguably this should be abstracted and moved to KnowledgeStore
-    Augment = namedtuple('Augment', 'old_attr, new_attr, transform')
+    Augment = namedtuple('Augment', 'old_attrs, transform')
 
     BAD_VALUES = set([
         '"NAN"^^<http://www.w3.org/2001/XMLSchema#double>',
@@ -453,9 +453,7 @@ class SparqlKB(KnowledgeStore):
         self.source = knowledge_source
         if augments is None:
             augments = []
-        self.augments = defaultdict(set)
-        for augment in augments:
-            self.augments[augment.old_attr].add(augment)
+        self.augments = list(augments)
         # variables
         self.prev_query = None
         self.query_offset = 0
@@ -484,10 +482,16 @@ class SparqlKB(KnowledgeStore):
             result = self.retrieve_cache[mem_id]
         else:
             result = self._true_retrieve(mem_id)
-            self.retrieve_cache[mem_id] = result
+            for augment in self.augments:
+                if all(attr in result for attr in augment.old_attrs):
+                    new_prop_val = augment.transform(result)
+                    if new_prop_val is not None:
+                        new_prop, new_val = new_prop_val
+                        result[new_prop] = new_val
+            self.retrieve_cache[mem_id] = AttrDict.from_dict(result)
         self.prev_query = None
         self.query_offset = 0
-        return AttrDict.from_dict(result)
+        return result
 
     def _true_retrieve(self, mem_id):
         query = f'''
@@ -504,14 +508,7 @@ class SparqlKB(KnowledgeStore):
             if val in self.BAD_VALUES:
                 continue
             result[binding['attr'].rdf_format].add(val)
-        result = {attr: max(vals) for attr, vals in result.items()}
-        for old_attr, augments in self.augments.items():
-            if old_attr in result:
-                for augment in augments:
-                    new_val = augment.transform(result[old_attr])
-                    if new_val is not None:
-                        result[augment.new_attr] = new_val
-        return result
+        return {attr: max(vals) for attr, vals in result.items()}
 
     def query(self, attr_vals): # noqa: D102
         query_terms = tuple((k, v) for k, v in sorted(attr_vals.items()))
