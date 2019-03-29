@@ -23,7 +23,7 @@ kbs/wordnet-3.1.n3: kbs
 	rm -f wn31.nt.gz wn31.nt
 
 kbs/mapping-based-dbpedia.ttl: kbs/mappingbased_objects_en.ttl kbs/mappingbased_literals_en.ttl kbs/instance_types_en.ttl
-	cat $^ > $@
+	grep -hv '^#' $^ > $@
 
 kbs/mappingbased_objects_en.ttl: kbs
 	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_en.ttl.bz2'
