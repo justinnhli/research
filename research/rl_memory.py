@@ -478,9 +478,7 @@ class SparqlKB(KnowledgeStore):
                 f'mem_id should be a str of the form "<http:.*>", '
                 f'but got: {mem_id}'
             )
-        if mem_id in self.retrieve_cache:
-            result = self.retrieve_cache[mem_id]
-        else:
+        if mem_id not in self.retrieve_cache:
             result = self._true_retrieve(mem_id)
             for augment in self.augments:
                 if all(attr in result for attr in augment.old_attrs):
@@ -489,6 +487,7 @@ class SparqlKB(KnowledgeStore):
                         new_prop, new_val = new_prop_val
                         result[new_prop] = new_val
             self.retrieve_cache[mem_id] = AttrDict.from_dict(result)
+        result = self.retrieve_cache[mem_id]
         self.prev_query = None
         self.query_offset = 0
         return result
@@ -512,17 +511,17 @@ class SparqlKB(KnowledgeStore):
 
     def query(self, attr_vals): # noqa: D102
         query_terms = tuple((k, v) for k, v in sorted(attr_vals.items()))
-        if query_terms in self.query_cache:
-            return self.retrieve(self.query_cache[query_terms])
-        mem_id = self._true_query(attr_vals)
+        if query_terms not in self.query_cache:
+            mem_id = self._true_query(attr_vals)
+            self.query_cache[query_terms] = mem_id
+        mem_id = self.query_cache[query_terms]
+        self.query_offset = 0
         if mem_id is None:
             self.prev_query = None
-            self.query_offset = 0
             return AttrDict()
-        self.query_cache[query_terms] = mem_id
-        self.prev_query = attr_vals
-        self.query_offset = 0
-        return self.retrieve(mem_id)
+        else:
+            self.prev_query = attr_vals
+            return self.retrieve(mem_id)
 
     def _true_query(self, attr_vals, offset=0):
         condition = ' ; '.join(
