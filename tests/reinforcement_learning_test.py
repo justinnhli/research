@@ -3,6 +3,7 @@
 
 import sys
 from collections import namedtuple
+from math import copysign
 from os.path import dirname, realpath
 
 DIRECTORY = dirname(realpath(__file__))
@@ -10,10 +11,10 @@ sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from research.rl_core import train_and_evaluate
-from research.rl_environments import State, Action
+from research.rl_environments import State, Action, Environment, RandomMixin
 from research.rl_environments import GridWorld, SimpleTMaze
 from research.rl_environments import gating_memory, fixed_long_term_memory
-from research.rl_agents import TabularQLearningAgent
+from research.rl_agents import TabularQLearningAgent, LinearQLearner
 from research.rl_agents import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
@@ -260,3 +261,105 @@ def test_agent():
     # the optimal policy takes 8 steps for a 5x5 grid
     # -6 comes from 7 steps of -1 reward and 1 step of +1 reward
     assert returns[-1] == -6
+
+
+def test_linear_agent():
+    """Test the linear approximation Q-learning agent."""
+
+    class InfiniteGridWorld(Environment, RandomMixin):
+        """An infinite gridworld. Goal is (0, 0)."""
+
+        def __init__(self, max_size, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.max_size = max_size
+            self.row = 0
+            self.col = 0
+
+        def get_state(self): # noqa: D102
+            return State(row=self.row, col=self.col)
+
+        def get_observation(self): # noqa: D102
+            return self.get_state()
+
+        def get_actions(self): # noqa: D102
+            if self.row == self.col == 0:
+                return []
+            else:
+                return [
+                    Action('up'),
+                    Action('down'),
+                    Action('left'),
+                    Action('right'),
+                    Action('upleft'),
+                    Action('upright'),
+                    Action('downleft'),
+                    Action('downright'),
+                ]
+
+        def reset(self): # noqa: D102
+            self.start_new_episode()
+
+        def start_new_episode(self): # noqa: D102
+            while self.row == self.col == 0:
+                self.row = self.rng.randrange(-self.max_size, self.max_size + 1)
+                self.col = self.rng.randrange(-self.max_size, self.max_size + 1)
+
+        def react(self, action=None): # noqa: D102
+            assert action in self.get_actions()
+            if 'up' in action.name:
+                self.row -= 1
+            if 'down' in action.name:
+                self.row += 1
+            if 'left' in action.name:
+                self.col -= 1
+            if 'right' in action.name:
+                self.col += 1
+            if self.row == self.col == 0:
+                return 1
+            else:
+                return 0
+
+        def visualize(self): # noqa: D102
+            raise NotImplementedError
+
+    def feature_extractor(state, action=None): # pylint: disable = unused-argument
+        return {
+            'row': (0 if state['row'] == 0 else copysign(1, state['row'])),
+            'col': (0 if state['col'] == 0 else copysign(1, state['col'])),
+        }
+
+    size = 1000
+    env = InfiniteGridWorld(max_size=size)
+    agent = LinearQLearner(
+        learning_rate=0.1,
+        discount_rate=0.9,
+        feature_extractor=feature_extractor,
+    )
+    # train the agent
+    for _ in range(50):
+        env.start_new_episode()
+        while not env.end_of_episode():
+            observation = env.get_observation()
+            name = ''
+            if observation['row'] < 0:
+                name += 'down'
+            elif observation['row'] > 0:
+                name += 'up'
+            if observation['col'] < 0:
+                name += 'right'
+            elif observation['col'] > 0:
+                name += 'left'
+            action = Action(name)
+            action = agent.force_act(observation, action)
+            reward = env.react(action)
+            agent.observe_reward(env.get_observation(), reward)
+    # test that the agent can finish within `2 * size` steps
+    for _ in range(50):
+        env.start_new_episode()
+        step = 2 * size
+        while step > 0 and not env.end_of_episode():
+            observation = env.get_observation()
+            action = agent.act(observation, env.get_actions())
+            reward = env.react(action)
+            step -= 1
+        assert env.end_of_episode()
