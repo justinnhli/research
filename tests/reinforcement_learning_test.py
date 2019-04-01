@@ -278,9 +278,6 @@ def test_linear_agent():
         def get_state(self): # noqa: D102
             return State(row=self.row, col=self.col)
 
-        def get_observation(self): # noqa: D102
-            return self.get_state()
-
         def get_actions(self): # noqa: D102
             if self.row == self.col == 0:
                 return []
