@@ -83,6 +83,10 @@ class UnionFind:
 class TreeMultiMap:
     """A tree-based multi-map."""
 
+    UNIQUE_KEY = 0
+    UNIQUE_VALUE = 1
+    MULTI_VALUE = 2
+
     class Node:
         """A tree node."""
 
@@ -207,16 +211,34 @@ class TreeMultiMap:
             self.balance = right_height - left_height
             self.height = max(left_height, right_height) + 1
 
-    def __init__(self, **kwargs):
+    def __init__(self, multi_level=None, **kwargs):
         """Initialize the TreeMultiMap.
 
         Arguments:
+            multi_level (int): The degree of multi-mapping.
+                Must be one of the UNIQUE_KEY, UNIQUE_VALUE, or MULTI_VALUE
+                constants of the TreeMultiMap class.
             **kwargs: Arbitrary keyword arguments.
         """
         self.root = None
         self.size = 0
+        if multi_level is None:
+            self._multi_level = TreeMultiMap.UNIQUE_KEY
+        else:
+            self._multi_level = multi_level
         for key, value in kwargs.items():
             self.add(key, value)
+
+    @property
+    def multi_level(self):
+        """Return the degree of multi-mapping of this tree.
+
+        Returns:
+            int: One of the UNIQUE_KEY, UNIQUE_VALUE, or MULTI_VALUE constants
+                of the TreeMultiMap class.
+
+        """
+        return self._multi_level
 
     def __len__(self):
         return self.size
@@ -233,6 +255,20 @@ class TreeMultiMap:
         if self.root is None:
             return None
         return next(self.root.yield_all(key)).value
+
+    def _compare(self, key, value, node):
+        if self._multi_level == TreeMultiMap.UNIQUE_KEY:
+            comp_key = key
+            node_key = node.key
+        elif self._multi_level > TreeMultiMap.UNIQUE_KEY:
+            comp_key = (key, value)
+            node_key = (node.key, node.value)
+        if comp_key < node_key:
+            return -1
+        elif comp_key > node_key:
+            return 1
+        else:
+            return 0
 
     def _balance(self, node):
         node.update_height_balance()
@@ -284,12 +320,17 @@ class TreeMultiMap:
     def _add(self, key, value, node):
         if node is None:
             return TreeMultiMap.Node(key, value)
-        elif (key, value) < (node.key, node.value):
+        comparison = self._compare(key, value, node)
+        if comparison == -1:
             node.left = self._add(key, value, node.left)
-        elif (key, value) > (node.key, node.value):
+        elif comparison == 1:
             node.right = self._add(key, value, node.right)
-        else:
+        elif self.multi_level == TreeMultiMap.UNIQUE_KEY:
+            raise ValueError('key already exists in map')
+        elif self.multi_level == TreeMultiMap.UNIQUE_VALUE:
             raise ValueError('key-value already exists in map')
+        else:
+            node.left = self._add(key, value, node.left)
         return self._balance(node)
 
     def get(self, key, default=None):
