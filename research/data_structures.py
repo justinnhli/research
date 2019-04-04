@@ -311,6 +311,21 @@ class TreeMultiMap:
         # balance
         return self._balance(node)
 
+    def get(self, key, default=None):
+        """Get a key or return a default value.
+
+        Arguments:
+            key (Any): The key to get.
+            default (Any): The value if the key does not exist. Defaults out None.
+
+        Returns:
+            Any: The value associated with the key.
+        """
+        if key in self:
+            return self.get_first(key)
+        else:
+            return default
+
     def get_first(self, key):
         """Find the first value with a given key.
 
