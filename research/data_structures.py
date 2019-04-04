@@ -116,6 +116,16 @@ class TreeMultiMap:
         def __str__(self):
             return f'Node({self.key}, {self.value})'
 
+        @property
+        def childless(self):
+            """Whether a node has children.
+
+            Returns:
+                bool: True if the node has no children, False otherwise.
+
+            """
+            return self.left is None and self.right is None
+
         def get_first(self, key):
             """Find the first node in the subtree with a given key.
 
