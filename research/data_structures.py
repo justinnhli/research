@@ -278,25 +278,18 @@ class TreeMultiMap:
             key (Any): The key.
             value (Any): The value.
         """
-        new_node = TreeMultiMap.Node(key, value)
-        if self.root is None:
-            self.root = new_node
-            self.root.update_height_balance()
-        else:
-            self._add(self.root, new_node)
+        self.root = self._add(key, value, self.root)
         self.size += 1
 
-    def _add(self, node, new_node):
-        # insert
+    def _add(self, key, value, node):
         if node is None:
-            return new_node
-        elif new_node < node:
-            node.left = self._add(node.left, new_node)
-        elif node < new_node:
-            node.right = self._add(node.right, new_node)
+            return TreeMultiMap.Node(key, value)
+        elif (key, value) < (node.key, node.value):
+            node.left = self._add(key, value, node.left)
+        elif (key, value) > (node.key, node.value):
+            node.right = self._add(key, value, node.right)
         else:
             raise ValueError('key-value already exists in map')
-        # balance
         return self._balance(node)
 
     def get(self, key, default=None):
