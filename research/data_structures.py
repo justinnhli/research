@@ -433,6 +433,18 @@ class TreeMultiMap:
         else:
             return node.value
 
+    def yield_all(self, key):
+        """Iterate through all nodes with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Yields:
+            Any: The values with the given key.
+        """
+        for node in self.root.yield_all(key):
+            yield node.value
+
     def remove(self, key, value):
         """Remove the key-value pair from the map.
 
