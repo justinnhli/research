@@ -243,6 +243,42 @@ class TreeMultiMap:
     def __len__(self):
         return self.size
 
+    def __eq__(self, other):
+        if not isinstance(other, TreeMultiMap):
+            return False
+        if self.size != other.size:
+            return False
+        if self.root is None and other.root is None:
+            return True
+        if self.root is None or other.root is None:
+            return False
+        for my_node, other_node in zip(self.root, other.root):
+            if my_node.key != other_node.key or my_node.value != other_node.value:
+                return False
+        return True
+
+    def __hash__(self):
+        return hash(tuple([*self]))
+
+    def __lt__(self, other):
+        assert isinstance(other, TreeMultiMap)
+        if self.root is None and other.root is None:
+            return False
+        if self.root is None:
+            return True
+        if other.root is None:
+            return False
+        for my_node, other_node in zip(self.root, other.root):
+            if my_node.key < other_node.key:
+                return True
+            elif my_node.key > other_node.key:
+                return False
+            elif my_node.value < other_node.value:
+                return True
+            elif my_node.value > other_node.value:
+                return False
+        return self.size < other.size
+
     def __contains__(self, key):
         if self.root is None:
             return False
@@ -251,10 +287,25 @@ class TreeMultiMap:
     def __iter__(self):
         yield from self.keys()
 
+    def __getattr__(self, name):
+        try:
+            result = self.get_first(name)
+            if result is None:
+                raise ValueError()
+            return result
+        except ValueError:
+            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
+
     def __getitem__(self, key):
         if self.root is None:
             return None
         return next(self.root.yield_all(key)).value
+
+    def __setitem__(self, key, value):
+        self.add(key, value)
+
+    def __delitem__(self, key):
+        self.remove(key, self.get_first(key))
 
     def _compare(self, key, value, node):
         if self._multi_level == TreeMultiMap.UNIQUE_KEY:
