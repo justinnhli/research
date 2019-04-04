@@ -247,6 +247,42 @@ class TreeMultiMap:
     def __len__(self):
         return self.size
 
+    def __contains__(self, key):
+        if self.root is None:
+            return False
+        return key in self.root
+
+    def __iter__(self):
+        if self.root is None:
+            return
+        yield from self.root
+
+    def __getitem__(self, key):
+        if self.root is None:
+            return
+        yield from self.root.yield_all(key)
+
+    def _balance(self, node):
+        node.update_height_balance()
+        if node.balance < -1:
+            if node.left.balance == -1:
+                return self._rotate_right(node)
+            elif node.left.balance == 1:
+                self._rotate_left(node.left)
+                return self._rotate_right(node)
+            assert False, 'This should never happen'
+            return None
+        elif node.balance > 1:
+            if node.right.balance == 1:
+                return self._rotate_left(node)
+            elif node.right.balance == -1:
+                self._rotate_right(node.right)
+                return self._rotate_left(node)
+            assert False, 'This should never happen'
+            return None
+        else:
+            return node
+
     def add(self, key, value):
         """Associate the value with the key.
 
@@ -275,26 +311,69 @@ class TreeMultiMap:
         # balance
         return self._balance(node)
 
-    def _balance(self, node):
-        node.update_height_balance()
-        if node.balance < -1:
-            if node.left.balance == -1:
-                return self._rotate_right(node)
-            elif node.left.balance == 1:
-                self._rotate_left(node.left)
-                return self._rotate_right(node)
-            assert False, 'This should never happen'
+    def get_first(self, key):
+        """Find the first value with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Returns:
+            Node: The first value with the given key, or None.
+        """
+        if self.root is None:
             return None
-        elif node.balance > 1:
-            if node.right.balance == 1:
-                return self._rotate_left(node)
-            elif node.right.balance == -1:
-                self._rotate_right(node.right)
-                return self._rotate_left(node)
-            assert False, 'This should never happen'
+        node = self.root.get_first(key)
+        if node is None:
             return None
         else:
-            return node
+            return node.value
+
+    def get_last(self, key):
+        """Find the last value with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Returns:
+            Node: The last value with the given key, or None.
+        """
+        if self.root is None:
+            return None
+        node = self.root.get_last(key)
+        if node is None:
+            return None
+        else:
+            return node.value
+
+    def keys(self):
+        """Iterate through all keys.
+
+        Yields:
+            Any: The keys.
+        """
+        if self.root is None:
+            return
+        yield from self.root.keys()
+
+    def values(self):
+        """Iterate through all values.
+
+        Yields:
+            Any: The values.
+        """
+        if self.root is None:
+            return
+        yield from self.root.values()
+
+    def items(self):
+        """Iterate through all key-value pairs.
+
+        Yields:
+            Tuple[Any, Any]: The keys and values.
+        """
+        if self.root is None:
+            return
+        yield from self.root.items()
 
     def _rotate_left(self, node):
         r"""Perform a left rotation.
@@ -367,85 +446,6 @@ class TreeMultiMap:
         if node_a:
             node_a.update_height_balance()
         return node_c
-
-    def __contains__(self, key):
-        if self.root is None:
-            return False
-        return key in self.root
-
-    def __iter__(self):
-        if self.root is None:
-            return
-        yield from self.root
-
-    def __getitem__(self, key):
-        if self.root is None:
-            return
-        yield from self.root.yield_all(key)
-
-    def get_first(self, key):
-        """Find the first value with a given key.
-
-        Arguments:
-            key (Any): The key to find.
-
-        Returns:
-            Node: The first value with the given key, or None.
-        """
-        if self.root is None:
-            return None
-        node = self.root.get_first(key)
-        if node is None:
-            return None
-        else:
-            return node.value
-
-    def get_last(self, key):
-        """Find the last value with a given key.
-
-        Arguments:
-            key (Any): The key to find.
-
-        Returns:
-            Node: The last value with the given key, or None.
-        """
-        if self.root is None:
-            return None
-        node = self.root.get_last(key)
-        if node is None:
-            return None
-        else:
-            return node.value
-
-    def keys(self):
-        """Iterate through all keys.
-
-        Yields:
-            Any: The keys.
-        """
-        if self.root is None:
-            return
-        yield from self.root.keys()
-
-    def values(self):
-        """Iterate through all values.
-
-        Yields:
-            Any: The values.
-        """
-        if self.root is None:
-            return
-        yield from self.root.values()
-
-    def items(self):
-        """Iterate through all key-value pairs.
-
-        Yields:
-            Tuple[Any, Any]: The keys and values.
-        """
-        if self.root is None:
-            return
-        yield from self.root.items()
 
     @staticmethod
     def from_dict(src_dict):
