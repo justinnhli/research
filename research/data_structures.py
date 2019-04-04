@@ -95,7 +95,6 @@ class TreeMultiMap:
             """
             self.key = key
             self.value = value
-            self.parent = None
             self.left = None
             self.right = None
             self.height = 1
@@ -259,10 +258,8 @@ class TreeMultiMap:
             return new_node
         elif new_node < node:
             node.left = self._add(node.left, new_node)
-            node.left.parent = node
         elif node < new_node:
             node.right = self._add(node.right, new_node)
-            node.right.parent = node
         else:
             raise ValueError('key-value already exists in map')
         # balance
@@ -312,23 +309,12 @@ class TreeMultiMap:
         """
         # definitions
         node_c = node
-        node_a = node_c.parent
         node_e = node_c.right
         node_d = node_e.left
         # rotate
         node_c.right = node_d
-        if node_d:
-            node_d.parent = node_c
         node_e.left = node_c
-        node_c.parent = node_e
-        node_e.parent = node_a
-        if node_a:
-            if node_a.left == node_c:
-                node_a.left = node_e
-            else:
-                node_a.right = node_e
-        else:
-            self.root = node_e
+        self.root = node_e
         # update metadata
         node_c.update_height_balance()
         node_e.update_height_balance()
@@ -359,23 +345,12 @@ class TreeMultiMap:
         """
         # definitions
         node_e = node
-        node_a = node_e.parent
         node_c = node_e.left
         node_d = node_c.right
         # rotate
         node_e.left = node_d
-        if node_d:
-            node_d.parent = node_e
         node_c.right = node_e
-        node_e.parent = node_c
-        node_c.parent = node_a
-        if node_a:
-            if node_a.left == node_e:
-                node_a.left = node_c
-            else:
-                node_a.right = node_c
-        else:
-            self.root = node_c
+        self.root = node_c
         # update metadata
         node_e.update_height_balance()
         node_c.update_height_balance()
