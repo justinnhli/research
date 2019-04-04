@@ -109,7 +109,7 @@ class TreeMultiMap:
         def __iter__(self):
             if self.left:
                 yield from self.left # pylint: disable = not-an-iterable
-            yield self.key
+            yield self
             if self.right:
                 yield from self.right # pylint: disable = not-an-iterable
 
@@ -190,41 +190,9 @@ class TreeMultiMap:
             elif self.key == key:
                 if self.left:
                     yield from self.left.yield_all(key)
-                yield self.value
+                yield self
                 if self.right:
                     yield from self.right.yield_all(key)
-
-        def keys(self):
-            """Iterate through all keys in the subtree.
-
-            Yields:
-                Any: The keys.
-            """
-            yield from self.__iter__()
-
-        def values(self):
-            """Iterate through all values in the subtree.
-
-            Yields:
-                Any: The values.
-            """
-            if self.left:
-                yield from self.left.values()
-            yield self.value
-            if self.right:
-                yield from self.right.values()
-
-        def items(self):
-            """Iterate through all key-value pairs in the subtree.
-
-            Yields:
-                Tuple[Any, Any]: The keys and values.
-            """
-            if self.left:
-                yield from self.left.items()
-            yield (self.key, self.value)
-            if self.right:
-                yield from self.right.items()
 
         def update_height_balance(self):
             """Update the height and balance of this node."""
@@ -253,14 +221,12 @@ class TreeMultiMap:
         return key in self.root
 
     def __iter__(self):
-        if self.root is None:
-            return
-        yield from self.root
+        yield from self.keys()
 
     def __getitem__(self, key):
         if self.root is None:
-            return
-        yield from self.root.yield_all(key)
+            return None
+        return next(self.root.yield_all(key)).value
 
     def _balance(self, node):
         node.update_height_balance()
@@ -368,7 +334,8 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.keys()
+        for node in self.root:
+            yield node.key
 
     def values(self):
         """Iterate through all values.
@@ -378,7 +345,8 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.values()
+        for node in self.root:
+            yield node.value
 
     def items(self):
         """Iterate through all key-value pairs.
@@ -388,7 +356,8 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.items()
+        for node in self.root:
+            yield (node.key, node.value)
 
     def _rotate_left(self, node):
         r"""Perform a left rotation.
