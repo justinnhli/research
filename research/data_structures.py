@@ -382,6 +382,66 @@ class TreeMultiMap:
         else:
             return node.value
 
+    def remove(self, key, value):
+        """Remove the key-value pair from the map.
+
+        Arguments:
+            key (Any): The key.
+            value (Any): The value.
+
+        Raises:
+            ValueError: If the key-value pair is not in the map.
+        """
+        self.root = self._remove(key, value, self.root)
+        self.size -= 1
+
+    def _remove(self, key, value, node):
+        if node is None:
+            raise ValueError('key-value does not exist in map')
+        comparison = self._compare(key, value, node)
+        if comparison == -1:
+            node.left = self._remove(key, value, node.left)
+        elif comparison == 1:
+            node.right = self._remove(key, value, node.right)
+        elif value != node.value:
+            raise ValueError('key-value does not exist in map')
+        elif node.childless:
+            return None
+        elif node.left:
+            node = self._remove_left(node)
+        else:
+            node = self._remove_right(node)
+        node.update_height_balance()
+        return self._balance(node)
+
+    def _remove_left(self, node):
+        replace_node = node.left
+        if replace_node.right:
+            while replace_node.right:
+                replace_node = replace_node.right
+            node.left.right = self._remove(replace_node.key, replace_node.value, node.left.right)
+            node.left.update_height_balance()
+            node.key = replace_node.key
+            node.value = replace_node.value
+        else:
+            replace_node.right = node.right
+            node = replace_node
+        return node
+
+    def _remove_right(self, node):
+        replace_node = node.right
+        if replace_node.left:
+            while replace_node.left:
+                replace_node = replace_node.left
+            node.right.left = self._remove(replace_node.key, replace_node.value, node.right.left)
+            node.right.update_height_balance()
+            node.key = replace_node.key
+            node.value = replace_node.value
+        else:
+            replace_node.left = node.left
+            node = replace_node
+        return node
+
     def keys(self):
         """Iterate through all keys.
 
