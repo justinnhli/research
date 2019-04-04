@@ -207,10 +207,16 @@ class TreeMultiMap:
             self.balance = right_height - left_height
             self.height = max(left_height, right_height) + 1
 
-    def __init__(self):
-        """Initialize the TreeMultiMap."""
+    def __init__(self, **kwargs):
+        """Initialize the TreeMultiMap.
+
+        Arguments:
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.root = None
         self.size = 0
+        for key, value in kwargs.items():
+            self.add(key, value)
 
     def __len__(self):
         return self.size
