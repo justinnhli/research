@@ -154,6 +154,6 @@ def test_sparqlkb():
     result = store.query({
         '<http://dbpedia.org/ontology/releaseDate>': '"1979-11-30"^^xsd:date',
         '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>': '<http://dbpedia.org/ontology/Album>',
-    }).as_dict()
+    })
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]

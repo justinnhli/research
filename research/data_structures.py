@@ -83,6 +83,10 @@ class UnionFind:
 class TreeMultiMap:
     """A tree-based multi-map."""
 
+    UNIQUE_KEY = 0
+    UNIQUE_VALUE = 1
+    MULTI_VALUE = 2
+
     class Node:
         """A tree node."""
 
@@ -95,14 +99,10 @@ class TreeMultiMap:
             """
             self.key = key
             self.value = value
-            self.parent = None
             self.left = None
             self.right = None
             self.height = 1
             self.balance = 0
-
-        def __lt__(self, other):
-            return (self.key, self.value) < (other.key, other.value)
 
         def __contains__(self, key):
             return self.get_first(key) is not None
@@ -110,12 +110,22 @@ class TreeMultiMap:
         def __iter__(self):
             if self.left:
                 yield from self.left # pylint: disable = not-an-iterable
-            yield self.key
+            yield self
             if self.right:
                 yield from self.right # pylint: disable = not-an-iterable
 
         def __str__(self):
             return f'Node({self.key}, {self.value})'
+
+        @property
+        def childless(self):
+            """Whether a node has children.
+
+            Returns:
+                bool: True if the node has no children, False otherwise.
+
+            """
+            return self.left is None and self.right is None
 
         def get_first(self, key):
             """Find the first node in the subtree with a given key.
@@ -181,41 +191,9 @@ class TreeMultiMap:
             elif self.key == key:
                 if self.left:
                     yield from self.left.yield_all(key)
-                yield self.value
+                yield self
                 if self.right:
                     yield from self.right.yield_all(key)
-
-        def keys(self):
-            """Iterate through all keys in the subtree.
-
-            Yields:
-                Any: The keys.
-            """
-            yield from self.__iter__()
-
-        def values(self):
-            """Iterate through all values in the subtree.
-
-            Yields:
-                Any: The values.
-            """
-            if self.left:
-                yield from self.left.values()
-            yield self.value
-            if self.right:
-                yield from self.right.values()
-
-        def items(self):
-            """Iterate through all key-value pairs in the subtree.
-
-            Yields:
-                Tuple[Any, Any]: The keys and values.
-            """
-            if self.left:
-                yield from self.left.items()
-            yield (self.key, self.value)
-            if self.right:
-                yield from self.right.items()
 
         def update_height_balance(self):
             """Update the height and balance of this node."""
@@ -230,13 +208,163 @@ class TreeMultiMap:
             self.balance = right_height - left_height
             self.height = max(left_height, right_height) + 1
 
-    def __init__(self):
-        """Initialize the TreeMultiMap."""
+    def __init__(self, multi_level=None, **kwargs):
+        """Initialize the TreeMultiMap.
+
+        Arguments:
+            multi_level (int): The degree of multi-mapping.
+                Must be one of the UNIQUE_KEY, UNIQUE_VALUE, or MULTI_VALUE
+                constants of the TreeMultiMap class.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.root = None
         self.size = 0
+        if multi_level is None:
+            self._multi_level = TreeMultiMap.UNIQUE_KEY
+        else:
+            self._multi_level = multi_level
+        for key, value in kwargs.items():
+            self.add(key, value)
+
+    @property
+    def multi_level(self):
+        """Return the degree of multi-mapping of this tree.
+
+        Returns:
+            int: One of the UNIQUE_KEY, UNIQUE_VALUE, or MULTI_VALUE constants
+                of the TreeMultiMap class.
+
+        """
+        return self._multi_level
 
     def __len__(self):
         return self.size
+
+    def __eq__(self, other):
+        if not isinstance(other, TreeMultiMap):
+            return False
+        if self.size != other.size:
+            return False
+        if self.root is None and other.root is None:
+            return True
+        if self.root is None or other.root is None:
+            return False
+        for my_node, other_node in zip(self.root, other.root):
+            if my_node.key != other_node.key or my_node.value != other_node.value:
+                return False
+        return True
+
+    def __hash__(self):
+        return hash(tuple([*self]))
+
+    def __lt__(self, other):
+        assert isinstance(other, TreeMultiMap)
+        if self.root is None and other.root is None:
+            return False
+        if self.root is None:
+            return True
+        if other.root is None:
+            return False
+        for my_node, other_node in zip(self.root, other.root):
+            if my_node.key < other_node.key:
+                return True
+            elif my_node.key > other_node.key:
+                return False
+            elif my_node.value < other_node.value:
+                return True
+            elif my_node.value > other_node.value:
+                return False
+        return self.size < other.size
+
+    def __contains__(self, key):
+        if self.root is None:
+            return False
+        return key in self.root
+
+    def __iter__(self):
+        yield from self.keys()
+
+    def __getattr__(self, name):
+        try:
+            result = self.get_first(name)
+            if result is None:
+                raise ValueError()
+            return result
+        except ValueError:
+            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
+
+    def __getitem__(self, key):
+        if self.root is None:
+            return None
+        return next(self.root.yield_all(key)).value
+
+    def __setitem__(self, key, value):
+        if self.multi_level != TreeMultiMap.UNIQUE_KEY:
+            raise NotImplementedError()
+        if self.root is not None:
+            node = self.root.get_first(key)
+            if node is not None:
+                self.remove(key, node.value)
+        self.add(key, value)
+
+    def __delitem__(self, key):
+        self.remove(key, self.get_first(key))
+
+    def _compare(self, key, value, node):
+        if self._multi_level == TreeMultiMap.UNIQUE_KEY:
+            comp_key = key
+            node_key = node.key
+        elif self._multi_level > TreeMultiMap.UNIQUE_KEY:
+            comp_key = (key, value)
+            node_key = (node.key, node.value)
+        if comp_key < node_key:
+            return -1
+        elif comp_key > node_key:
+            return 1
+        else:
+            return 0
+
+    def clear(self):
+        """Remove all key and values."""
+        self.root = None
+        self.size = 0
+
+    def _balance(self, node):
+        node.update_height_balance()
+        if node.balance < -1:
+            return self._balance_left(node)
+        elif node.balance > 1:
+            return self._balance_right(node)
+        else:
+            return node
+
+    def _balance_left(self, node):
+        if node.left.balance == -1:
+            return self._rotate_right(node)
+        elif node.left.balance == 0:
+            if node.left.childless:
+                return node
+            else:
+                return self._rotate_right(node)
+        elif node.left.balance == 1:
+            node.left = self._rotate_left(node.left)
+            return self._rotate_right(node)
+        assert False, 'This should never happen'
+        return None
+
+    def _balance_right(self, node):
+        if node.right.balance == 1:
+            return self._rotate_left(node)
+        elif node.right.balance == 0:
+            if node.right.childless:
+                return node
+            else:
+                return self._rotate_left(node)
+        elif node.right.balance == -1:
+            node.right = self._rotate_right(node.right)
+            return self._rotate_left(node)
+        assert False, 'This should never happen'
+        return None
 
     def add(self, key, value):
         """Associate the value with the key.
@@ -245,158 +373,39 @@ class TreeMultiMap:
             key (Any): The key.
             value (Any): The value.
         """
-        new_node = TreeMultiMap.Node(key, value)
-        if self.root is None:
-            self.root = new_node
-            self.root.update_height_balance()
-        else:
-            self._add(self.root, new_node)
+        self.root = self._add(key, value, self.root)
         self.size += 1
 
-    def _add(self, node, new_node):
-        # insert
+    def _add(self, key, value, node):
         if node is None:
-            return new_node
-        elif new_node < node:
-            node.left = self._add(node.left, new_node)
-            node.left.parent = node
-        elif node < new_node:
-            node.right = self._add(node.right, new_node)
-            node.right.parent = node
-        else:
+            return TreeMultiMap.Node(key, value)
+        comparison = self._compare(key, value, node)
+        if comparison == -1:
+            node.left = self._add(key, value, node.left)
+        elif comparison == 1:
+            node.right = self._add(key, value, node.right)
+        elif self.multi_level == TreeMultiMap.UNIQUE_KEY and key == node.key:
+            raise ValueError('key already exists in map')
+        elif self.multi_level == TreeMultiMap.UNIQUE_VALUE and value == node.value:
             raise ValueError('key-value already exists in map')
-        # balance
+        else:
+            node.left = self._add(key, value, node.left)
         return self._balance(node)
 
-    def _balance(self, node):
-        node.update_height_balance()
-        if node.balance < -1:
-            if node.left.balance == -1:
-                return self._rotate_right(node)
-            elif node.left.balance == 1:
-                self._rotate_left(node.left)
-                return self._rotate_right(node)
-            assert False, 'This should never happen'
-            return None
-        elif node.balance > 1:
-            if node.right.balance == 1:
-                return self._rotate_left(node)
-            elif node.right.balance == -1:
-                self._rotate_right(node.right)
-                return self._rotate_left(node)
-            assert False, 'This should never happen'
-            return None
-        else:
-            return node
+    def get(self, key, default=None):
+        """Get a key or return a default value.
 
-    def _rotate_left(self, node):
-        r"""Perform a left rotation.
+        Arguments:
+            key (Any): The key to get.
+            default (Any): The value if the key does not exist. Defaults out None.
 
-        If the node is C (left/right child of A), go from:
-              A
-              |
-              C
-             / \
-            B   E
-               / \
-              D   F
-        to:
-              A
-              |
-              E
-             / \
-            C   F
-           / \
-          B   D
-        and return E.
+        Returns:
+            Any: The value associated with the key.
         """
-        # definitions
-        node_c = node
-        node_a = node_c.parent
-        node_e = node_c.right
-        node_d = node_e.left
-        # rotate
-        node_c.right = node_d
-        if node_d:
-            node_d.parent = node_c
-        node_e.left = node_c
-        node_c.parent = node_e
-        node_e.parent = node_a
-        if node_a:
-            if node_a.left == node_c:
-                node_a.left = node_e
-            else:
-                node_a.right = node_e
+        if key in self:
+            return self.get_first(key)
         else:
-            self.root = node_e
-        # update metadata
-        node_c.update_height_balance()
-        node_e.update_height_balance()
-        if node_a:
-            node_a.update_height_balance()
-        return node_e
-
-    def _rotate_right(self, node):
-        r"""Perform a  rotation.
-
-        If the node is E (left/right child of A), go from:
-              A
-              |
-              E
-             / \
-            C   F
-           / \
-          B   D
-        to:
-              A
-              |
-              C
-             / \
-            B   E
-               / \
-              D   F
-        and return C.
-        """
-        # definitions
-        node_e = node
-        node_a = node_e.parent
-        node_c = node_e.left
-        node_d = node_c.right
-        # rotate
-        node_e.left = node_d
-        if node_d:
-            node_d.parent = node_e
-        node_c.right = node_e
-        node_e.parent = node_c
-        node_c.parent = node_a
-        if node_a:
-            if node_a.left == node_e:
-                node_a.left = node_c
-            else:
-                node_a.right = node_c
-        else:
-            self.root = node_c
-        # update metadata
-        node_e.update_height_balance()
-        node_c.update_height_balance()
-        if node_a:
-            node_a.update_height_balance()
-        return node_c
-
-    def __contains__(self, key):
-        if self.root is None:
-            return False
-        return key in self.root
-
-    def __iter__(self):
-        if self.root is None:
-            return
-        yield from self.root
-
-    def __getitem__(self, key):
-        if self.root is None:
-            return
-        yield from self.root.yield_all(key)
+            return default
 
     def get_first(self, key):
         """Find the first value with a given key.
@@ -432,6 +441,78 @@ class TreeMultiMap:
         else:
             return node.value
 
+    def yield_all(self, key):
+        """Iterate through all nodes with a given key.
+
+        Arguments:
+            key (Any): The key to find.
+
+        Yields:
+            Any: The values with the given key.
+        """
+        for node in self.root.yield_all(key):
+            yield node.value
+
+    def remove(self, key, value):
+        """Remove the key-value pair from the map.
+
+        Arguments:
+            key (Any): The key.
+            value (Any): The value.
+
+        Raises:
+            ValueError: If the key-value pair is not in the map.
+        """
+        self.root = self._remove(key, value, self.root)
+        self.size -= 1
+
+    def _remove(self, key, value, node):
+        if node is None:
+            raise ValueError('key-value does not exist in map')
+        comparison = self._compare(key, value, node)
+        if comparison == -1:
+            node.left = self._remove(key, value, node.left)
+        elif comparison == 1:
+            node.right = self._remove(key, value, node.right)
+        elif value != node.value:
+            raise ValueError('key-value does not exist in map')
+        elif node.childless:
+            return None
+        elif node.left:
+            node = self._remove_left(node)
+        else:
+            node = self._remove_right(node)
+        node.update_height_balance()
+        return self._balance(node)
+
+    def _remove_left(self, node):
+        replace_node = node.left
+        if replace_node.right:
+            while replace_node.right:
+                replace_node = replace_node.right
+            node.left.right = self._remove(replace_node.key, replace_node.value, node.left.right)
+            node.left.update_height_balance()
+            node.key = replace_node.key
+            node.value = replace_node.value
+        else:
+            replace_node.right = node.right
+            node = replace_node
+        return node
+
+    def _remove_right(self, node):
+        replace_node = node.right
+        if replace_node.left:
+            while replace_node.left:
+                replace_node = replace_node.left
+            node.right.left = self._remove(replace_node.key, replace_node.value, node.right.left)
+            node.right.update_height_balance()
+            node.key = replace_node.key
+            node.value = replace_node.value
+        else:
+            replace_node.left = node.left
+            node = replace_node
+        return node
+
     def keys(self):
         """Iterate through all keys.
 
@@ -440,7 +521,8 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.keys()
+        for node in self.root:
+            yield node.key
 
     def values(self):
         """Iterate through all values.
@@ -450,7 +532,8 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.values()
+        for node in self.root:
+            yield node.value
 
     def items(self):
         """Iterate through all key-value pairs.
@@ -460,7 +543,66 @@ class TreeMultiMap:
         """
         if self.root is None:
             return
-        yield from self.root.items()
+        for node in self.root:
+            yield (node.key, node.value)
+
+    @staticmethod
+    def _rotate_left(node):
+        r"""Perform a left rotation.
+
+        If the node is B, go from:
+              B
+             / \
+            A   D
+               /
+              C
+        to:
+                D
+               /
+              B
+             / \
+            A   C
+        and return D.
+        """
+        # definitions
+        node_b = node
+        node_d = node_b.right
+        node_c = node_d.left
+        # rotate
+        node_b.right = node_c
+        node_d.left = node_b
+        node_b.update_height_balance()
+        node_d.update_height_balance()
+        return node_d
+
+    @staticmethod
+    def _rotate_right(node):
+        r"""Perform a right rotation.
+
+        If the node is C, go from:
+              C
+             / \
+            A   D
+             \
+              B
+        to:
+            A
+             \
+              C
+             / \
+            B   D
+        and return A.
+        """
+        # definitions
+        node_c = node
+        node_a = node_c.left
+        node_b = node_a.right
+        # rotate
+        node_c.left = node_b
+        node_a.right = node_c
+        node_c.update_height_balance()
+        node_a.update_height_balance()
+        return node_a
 
     @staticmethod
     def from_dict(src_dict):

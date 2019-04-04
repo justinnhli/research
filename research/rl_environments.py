@@ -1,8 +1,7 @@
 """Reinforcement learning environments."""
 
-from copy import deepcopy
-
 from .randommixin import RandomMixin
+from .data_structures import TreeMultiMap
 
 
 class Environment:
@@ -86,110 +85,7 @@ class Environment:
         raise NotImplementedError()
 
 
-class AttrDict:
-    """A read-only dictionary that provides named-member access.
-
-    This class acts as a read-only dictionary, but that also provides named-
-    member access. Once initialized, the contents of the dictionary cannot
-    be changed. In practice, could be used to create one-off objects that do
-    not conform to any template (unlike collections.namedtuple).
-
-    Examples:
-        >>> ad = AttrDict(name="test", num=2)
-        >>> ad['name']
-        'test'
-        >>> ad.name
-        'test'
-        >>> ad['num']
-        2
-        >>> ad.num
-        2
-    """
-
-    def __init__(self, **kwargs):
-        """Initialize an AttrDict object.
-
-        Arguments:
-            **kwargs: Arbitrary keyword arguments.
-        """
-        self._attributes_ = kwargs
-
-    def __iter__(self):
-        return iter(self._attributes_)
-
-    def __getattr__(self, name):
-        if name in self._attributes_:
-            return self._attributes_[name]
-        else:
-            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
-
-    def __getitem__(self, key):
-        return self._attributes_[key]
-
-    def __hash__(self):
-        return hash(tuple(sorted(self._attributes_.items())))
-
-    def __eq__(self, other):
-        # pylint: disable = protected-access
-        return type(self) is type(other) and self._attributes_ == other._attributes_
-
-    def __lt__(self, other):
-        if type(self) is not type(self):
-            raise TypeError(''.join([
-                "'<' not supported between instances of ",
-                f"'{type(self).__name__}' and '{type(other).__name__}'",
-            ]))
-        return sorted(self.as_dict().items()) < sorted(other.as_dict().items())
-
-    def __str__(self):
-        return '{}({})'.format(
-            type(self).__name__,
-            ', '.join('{}={}'.format(k, v) for k, v in sorted(self._attributes_.items())),
-        )
-
-    def __repr__(self):
-        return str(self)
-
-    def get(self, key, default=None):
-        """Get a key or return a default value.
-
-        Arguments:
-            key (Any): The key to get.
-            default (Any): The value if the key does not exist. Defaults out None.
-
-        Returns:
-            Any: The value associated with the key.
-        """
-        if key in self._attributes_:
-            return self._attributes_[key]
-        else:
-            return default
-
-    def as_dict(self):
-        """Convert to dict.
-
-        Returns:
-            Dict[str, Any]: The internal dictionary.
-        """
-        return deepcopy(self._attributes_)
-
-    @staticmethod
-    def from_dict(attributes):
-        """Create an AttrDict from a dictionary.
-
-        Arguments:
-            attributes (Mapping[str, str]): A dictionary of strings.
-
-        Returns:
-            AttrDict: The resulting AttrDict.
-        """
-        # pylint: disable = protected-access
-        result = AttrDict()
-        result._attributes_ = deepcopy(attributes)
-        return result
-
-
-class Action(AttrDict):
+class Action(TreeMultiMap):
     """An action in a reinforcement learning environment."""
 
     def __init__(self, name, **kwargs):
@@ -199,30 +95,43 @@ class Action(AttrDict):
             name (str): The name of the Action
             **kwargs: Arbitrary key-value pairs
         """
-        super().__init__(**kwargs)
+        super().__init__(multi_level=TreeMultiMap.UNIQUE_KEY, **kwargs)
         self.name = name
 
     def __hash__(self):
-        return hash(tuple([self.name, *sorted(self)]))
+        return hash(tuple([self.name, *self]))
 
     def __lt__(self, other):
-        self_tuple = (self.name, *sorted(self.as_dict().items()))
-        other_tuple = (other.name, *sorted(other.as_dict().items()))
-        return self_tuple < other_tuple
+        if self.name < other.name:
+            return True
+        elif self.name > other.name:
+            return False
+        else:
+            return super().__lt__(other)
 
     def __eq__(self, other):
         # pylint: disable = protected-access
-        return self.name == other.name and self._attributes_ == other._attributes_
+        if not isinstance(other, Action):
+            return False
+        return self.name == other.name and super().__eq__(other)
 
     def __str__(self):
         return 'Action("{}", {})'.format(
             self.name,
-            ', '.join('{}={}'.format(k, v) for k, v in sorted(self._attributes_.items())),
+            ', '.join('{}={}'.format(k, v) for k, v in self.items()),
         )
 
 
-class State(AttrDict):
+class State(TreeMultiMap):
     """A state or observation in a reinforcement learning environment."""
+
+    def __init__(self, **kwargs):
+        """Initialize a State object.
+
+        Arguments:
+            **kwargs: Arbitrary key-value pairs
+        """
+        super().__init__(multi_level=TreeMultiMap.UNIQUE_KEY, **kwargs)
 
 
 class GridWorld(Environment):
@@ -304,7 +213,6 @@ def augment_state(state, memories, prefix):
     Returns:
         State: The state with memory items.
     """
-    state = state.as_dict()
     for key in list(state.keys()):
         if key.startswith(prefix):
             del state[key]
@@ -512,7 +420,7 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def get_state(self): # noqa: D102
         observation = self.get_observation()
-        return State(goal_x=self.goal_x, **observation.as_dict())
+        return State(goal_x=self.goal_x, **observation)
 
     def get_observation(self): # noqa: D102
         if self.y == self.hint_pos:

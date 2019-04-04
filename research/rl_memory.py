@@ -2,7 +2,7 @@
 
 from collections import namedtuple, defaultdict
 
-from .rl_environments import AttrDict, State, Action, Environment
+from .rl_environments import TreeMultiMap, State, Action, Environment
 
 
 def memory_architecture(cls):
@@ -105,23 +105,15 @@ def memory_architecture(cls):
             self._clear_buffers()
 
         def _clear_buffers(self):
-            if 'scratch' not in self.buf_ignore:
-                if 'scratch' in self.buffers:
-                    scratch = self.buffers['scratch']
-                else:
-                    scratch = {}
             self.buffers = {}
-            if 'scratch' not in self.buf_ignore:
-                self.buffers['scratch'] = scratch
             for buf, _ in self.BUFFERS.items():
                 if buf in self.buf_ignore:
                     continue
-                self.buffers[buf] = {}
-            self._clear_ltm_buffers()
+                self.buffers[buf] = TreeMultiMap()
 
         def _clear_ltm_buffers(self):
-            self.buffers['query'] = {}
-            self.buffers['retrieval'] = {}
+            self.buffers['query'].clear()
+            self.buffers['retrieval'].clear()
 
         def start_new_episode(self): # noqa: D102
             # pylint: disable = missing-docstring
@@ -238,32 +230,32 @@ def memory_architecture(cls):
                     self._query_ltm()
             elif action.name == 'retrieve':
                 result = self.knowledge_store.retrieve(self.buffers[action.buf][action.attr])
-                self.buffers['query'] = {}
+                self.buffers['query'].clear()
                 if result is None:
-                    self.buffers['retrieval'] = {}
+                    self.buffers['retrieval'].clear()
                 else:
-                    self.buffers['retrieval'] = result.as_dict()
+                    self.buffers['retrieval'] = result
             elif action.name == 'prev-result':
-                self.buffers['retrieval'] = self.knowledge_store.prev_result().as_dict()
+                self.buffers['retrieval'] = self.knowledge_store.prev_result()
             elif action.name == 'next-result':
-                self.buffers['retrieval'] = self.knowledge_store.next_result().as_dict()
+                self.buffers['retrieval'] = self.knowledge_store.next_result()
             else:
                 return True
             return False
 
         def _query_ltm(self):
             if not self.buffers['query']:
-                self.buffers['retrieval'] = {}
+                self.buffers['retrieval'].clear()
                 return
             result = self.knowledge_store.query(self.buffers['query'])
             if result is None:
-                self.buffers['retrieval'] = {}
+                self.buffers['retrieval'].clear()
             else:
-                self.buffers['retrieval'] = result.as_dict()
+                self.buffers['retrieval'] = result
 
         def _sync_input_buffers(self):
             # update input buffers
-            self.buffers['perceptual'] = {**super().get_observation().as_dict()}
+            self.buffers['perceptual'] = super().get_observation()
 
         def add_to_ltm(self, **kwargs):
             """Add a memory element to long-term memory.
@@ -301,7 +293,7 @@ class KnowledgeStore:
             mem_id (any): The ID of the desired element.
 
         Returns:
-            AttrDict: The desired element, or None.
+            TreeMultiMap: The desired element, or None.
         """
         raise NotImplementedError()
 
@@ -312,7 +304,7 @@ class KnowledgeStore:
             attr_vals (Mapping[str, Any]): Attributes and values of the desired element.
 
         Returns:
-            AttrDict: A search result, or None.
+            TreeMultiMap: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -329,7 +321,7 @@ class KnowledgeStore:
         """Get the prev element that matches the most recent search.
 
         Returns:
-            AttrDict: A search result, or None.
+            TreeMultiMap: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -346,7 +338,7 @@ class KnowledgeStore:
         """Get the next element that matches the most recent search.
 
         Returns:
-            AttrDict: A search result, or None.
+            TreeMultiMap: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -378,7 +370,7 @@ class NaiveDictKB(KnowledgeStore):
         self.query_matches = []
 
     def store(self, **kwargs): # noqa: D102
-        self.knowledge.append(AttrDict(**kwargs))
+        self.knowledge.append(TreeMultiMap(**kwargs))
         return True
 
     def retrieve(self, mem_id): # noqa: D102
@@ -486,7 +478,7 @@ class SparqlKB(KnowledgeStore):
                     if new_prop_val is not None:
                         new_prop, new_val = new_prop_val
                         result[new_prop] = new_val
-            self.retrieve_cache[mem_id] = AttrDict.from_dict(result)
+            self.retrieve_cache[mem_id] = TreeMultiMap.from_dict(result)
         result = self.retrieve_cache[mem_id]
         self.prev_query = None
         self.query_offset = 0
@@ -518,7 +510,7 @@ class SparqlKB(KnowledgeStore):
         self.query_offset = 0
         if mem_id is None:
             self.prev_query = None
-            return AttrDict()
+            return TreeMultiMap()
         else:
             self.prev_query = attr_vals
             return self.retrieve(mem_id)
