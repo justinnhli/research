@@ -231,23 +231,39 @@ class TreeMultiMap:
     def _balance(self, node):
         node.update_height_balance()
         if node.balance < -1:
-            if node.left.balance == -1:
-                return self._rotate_right(node)
-            elif node.left.balance == 1:
-                self._rotate_left(node.left)
-                return self._rotate_right(node)
-            assert False, 'This should never happen'
-            return None
+            return self._balance_left(node)
         elif node.balance > 1:
-            if node.right.balance == 1:
-                return self._rotate_left(node)
-            elif node.right.balance == -1:
-                self._rotate_right(node.right)
-                return self._rotate_left(node)
-            assert False, 'This should never happen'
-            return None
+            return self._balance_right(node)
         else:
             return node
+
+    def _balance_left(self, node):
+        if node.left.balance == -1:
+            return self._rotate_right(node)
+        elif node.left.balance == 0:
+            if node.left.childless:
+                return node
+            else:
+                return self._rotate_right(node)
+        elif node.left.balance == 1:
+            node.left = self._rotate_left(node.left)
+            return self._rotate_right(node)
+        assert False, 'This should never happen'
+        return None
+
+    def _balance_right(self, node):
+        if node.right.balance == 1:
+            return self._rotate_left(node)
+        elif node.right.balance == 0:
+            if node.right.childless:
+                return node
+            else:
+                return self._rotate_left(node)
+        elif node.right.balance == -1:
+            node.right = self._rotate_right(node.right)
+            return self._rotate_left(node)
+        assert False, 'This should never happen'
+        return None
 
     def add(self, key, value):
         """Associate the value with the key.
@@ -359,77 +375,63 @@ class TreeMultiMap:
         for node in self.root:
             yield (node.key, node.value)
 
-    def _rotate_left(self, node):
+    @staticmethod
+    def _rotate_left(node):
         r"""Perform a left rotation.
 
-        If the node is C (left/right child of A), go from:
-              A
-              |
+        If the node is B, go from:
+              B
+             / \
+            A   D
+               /
+              C
+        to:
+                D
+               /
+              B
+             / \
+            A   C
+        and return D.
+        """
+        # definitions
+        node_b = node
+        node_d = node_b.right
+        node_c = node_d.left
+        # rotate
+        node_b.right = node_c
+        node_d.left = node_b
+        node_b.update_height_balance()
+        node_d.update_height_balance()
+        return node_d
+
+    @staticmethod
+    def _rotate_right(node):
+        r"""Perform a right rotation.
+
+        If the node is C, go from:
               C
              / \
-            B   E
-               / \
-              D   F
+            A   D
+             \
+              B
         to:
-              A
-              |
-              E
+            A
+             \
+              C
              / \
-            C   F
-           / \
-          B   D
-        and return E.
+            B   D
+        and return A.
         """
         # definitions
         node_c = node
-        node_e = node_c.right
-        node_d = node_e.left
+        node_a = node_c.left
+        node_b = node_a.right
         # rotate
-        node_c.right = node_d
-        node_e.left = node_c
-        self.root = node_e
-        # update metadata
+        node_c.left = node_b
+        node_a.right = node_c
         node_c.update_height_balance()
-        node_e.update_height_balance()
-        if node_a:
-            node_a.update_height_balance()
-        return node_e
-
-    def _rotate_right(self, node):
-        r"""Perform a  rotation.
-
-        If the node is E (left/right child of A), go from:
-              A
-              |
-              E
-             / \
-            C   F
-           / \
-          B   D
-        to:
-              A
-              |
-              C
-             / \
-            B   E
-               / \
-              D   F
-        and return C.
-        """
-        # definitions
-        node_e = node
-        node_c = node_e.left
-        node_d = node_c.right
-        # rotate
-        node_e.left = node_d
-        node_c.right = node_e
-        self.root = node_c
-        # update metadata
-        node_e.update_height_balance()
-        node_c.update_height_balance()
-        if node_a:
-            node_a.update_height_balance()
-        return node_c
+        node_a.update_height_balance()
+        return node_a
 
     @staticmethod
     def from_dict(src_dict):
