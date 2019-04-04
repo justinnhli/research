@@ -104,9 +104,6 @@ class TreeMultiMap:
             self.height = 1
             self.balance = 0
 
-        def __lt__(self, other):
-            return (self.key, self.value) < (other.key, other.value)
-
         def __contains__(self, key):
             return self.get_first(key) is not None
 
