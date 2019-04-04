@@ -318,6 +318,11 @@ class TreeMultiMap:
         else:
             return 0
 
+    def clear(self):
+        """Remove all key and values."""
+        self.root = None
+        self.size = 0
+
     def _balance(self, node):
         node.update_height_balance()
         if node.balance < -1:
