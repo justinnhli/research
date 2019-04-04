@@ -299,6 +299,12 @@ class TreeMultiMap:
         return next(self.root.yield_all(key)).value
 
     def __setitem__(self, key, value):
+        if self.multi_level != TreeMultiMap.UNIQUE_KEY:
+            raise NotImplementedError()
+        if self.root is not None:
+            node = self.root.get_first(key)
+            if node is not None:
+                self.remove(key, node.value)
         self.add(key, value)
 
     def __delitem__(self, key):
@@ -378,9 +384,9 @@ class TreeMultiMap:
             node.left = self._add(key, value, node.left)
         elif comparison == 1:
             node.right = self._add(key, value, node.right)
-        elif self.multi_level == TreeMultiMap.UNIQUE_KEY:
+        elif self.multi_level == TreeMultiMap.UNIQUE_KEY and key == node.key:
             raise ValueError('key already exists in map')
-        elif self.multi_level == TreeMultiMap.UNIQUE_VALUE:
+        elif self.multi_level == TreeMultiMap.UNIQUE_VALUE and value == node.value:
             raise ValueError('key-value already exists in map')
         else:
             node.left = self._add(key, value, node.left)

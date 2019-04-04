@@ -213,7 +213,6 @@ def augment_state(state, memories, prefix):
     Returns:
         State: The state with memory items.
     """
-    state = state.as_dict()
     for key in list(state.keys()):
         if key.startswith(prefix):
             del state[key]
@@ -421,7 +420,7 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def get_state(self): # noqa: D102
         observation = self.get_observation()
-        return State(goal_x=self.goal_x, **observation.as_dict())
+        return State(goal_x=self.goal_x, **observation)
 
     def get_observation(self): # noqa: D102
         if self.y == self.hint_pos:
