@@ -221,8 +221,11 @@ class Value:
         elif isinstance(self._value, (int, float)):
             return str(self._value)
         else:
-            escaped_value = self._value.replace('"', r'\"')
-            result = f'"{escaped_value}"'
+            result = self._value.replace('"', r'\"')
+            if '\n' in self._value:
+                result = f'"""{result}"""'
+            else:
+                result = f'"{result}"'
             if self._lang:
                 result += f'@{self._lang}'
             if self._datatype:
