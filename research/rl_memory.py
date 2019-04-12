@@ -432,6 +432,7 @@ class SparqlKB(KnowledgeStore):
 
     BAD_VALUES = set([
         '"NAN"^^<http://www.w3.org/2001/XMLSchema#double>',
+        '"NAN"^^<http://www.w3.org/2001/XMLSchema#float>',
     ])
 
     def __init__(self, knowledge_source, augments=None):
