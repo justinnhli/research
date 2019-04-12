@@ -237,6 +237,9 @@ class TreeMultiMap:
         """
         return self._multi_level
 
+    def __bool__(self):
+        return self.size != 0
+
     def __len__(self):
         return self.size
 
