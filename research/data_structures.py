@@ -258,7 +258,7 @@ class TreeMultiMap:
         return True
 
     def __hash__(self):
-        return hash(tuple([*self]))
+        return hash(tuple(self.items()))
 
     def __lt__(self, other):
         assert isinstance(other, TreeMultiMap)
