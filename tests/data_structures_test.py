@@ -53,6 +53,11 @@ def test_treemultimap():
     perm_size = 5
     for order in permutations(range(perm_size)):
         _test_tmm_order(order)
+    test_cases = [
+        (0, 1, 2, 7, 8, 9, 3, 4, 5, 6),
+    ]
+    for order in test_cases:
+        _test_tmm_order(order)
     tmm = TreeMultiMap(multi_level=TreeMultiMap.UNIQUE_VALUE)
     for key in range(1, 11):
         for value in range(key):
