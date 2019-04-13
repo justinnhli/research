@@ -27,6 +27,22 @@ def test_unionfind():
     assert all(union_find.same(5, i) for i in range(1, 8, 2))
     assert set(union_find[i] for i in range(0, 8, 2)) == set(range(0, 8, 2))
 
+def _test_tmm_order(order):
+    perm_size = len(order)
+    tmm = TreeMultiMap()
+    assert not tmm
+    for size, number in enumerate(order, start=1):
+        assert number not in tmm
+        tmm.add(number, number)
+        assert number in tmm
+        assert len(tmm) == size
+    assert list(tmm) == list(tmm.keys()) == list(tmm.values()) == list(range(perm_size))
+    assert list(tmm.items()) == [(num, num) for num in range(perm_size)]
+    for num_removed, number in enumerate(order, start=1):
+        tmm.remove(number, number)
+        assert tmm.size == perm_size - num_removed
+        assert list(tmm.items()) == sorted((num, num) for num in order[num_removed:])
+
 def test_treemultimap():
     """Test TreeMultiMap."""
     tmm = TreeMultiMap()
@@ -36,19 +52,7 @@ def test_treemultimap():
     assert list(tmm) == list(tmm.keys()) == list(tmm.values()) == list(tmm.items()) == []
     perm_size = 5
     for order in permutations(range(perm_size)):
-        tmm = TreeMultiMap()
-        assert not tmm
-        for size, number in enumerate(order, start=1):
-            assert number not in tmm
-            tmm.add(number, number)
-            assert number in tmm
-            assert len(tmm) == size
-        assert list(tmm) == list(tmm.keys()) == list(tmm.values()) == list(range(perm_size))
-        assert list(tmm.items()) == [(num, num) for num in range(perm_size)]
-        for num_removed, number in enumerate(order, start=1):
-            tmm.remove(number, number)
-            assert tmm.size == perm_size - num_removed
-            assert list(tmm.items()) == sorted((num, num) for num in order[num_removed:])
+        _test_tmm_order(order)
     tmm = TreeMultiMap(multi_level=TreeMultiMap.UNIQUE_VALUE)
     for key in range(1, 11):
         for value in range(key):
