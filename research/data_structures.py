@@ -493,8 +493,7 @@ class TreeMultiMap:
         if replace_node.right:
             while replace_node.right:
                 replace_node = replace_node.right
-            node.left.right = self._remove(replace_node.key, replace_node.value, node.left.right)
-            node.left.update_height_balance()
+            node.left = self._remove(replace_node.key, replace_node.value, node.left)
             node.key = replace_node.key
             node.value = replace_node.value
         else:
@@ -507,8 +506,7 @@ class TreeMultiMap:
         if replace_node.left:
             while replace_node.left:
                 replace_node = replace_node.left
-            node.right.left = self._remove(replace_node.key, replace_node.value, node.right.left)
-            node.right.update_height_balance()
+            node.right = self._remove(replace_node.key, replace_node.value, node.right)
             node.key = replace_node.key
             node.value = replace_node.value
         else:
