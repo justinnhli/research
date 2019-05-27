@@ -7,7 +7,7 @@ SPARQLWrapper==1.8.2
 gensim==3.7.1
 
 # NLP packages
-spacy==2.0.18
+spacy==2.1.4
 nltk==3.4
 # Justin's less chatty fork of pydictionary
 git+https://github.com/justinnhli/PyDictionary.git
