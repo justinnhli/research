@@ -1,7 +1,7 @@
 # knowledge base packages
 rdflib==4.2.2
 rdflib-sqlalchemy==0.3.8
-SPARQLWrapper==1.8.2
+SPARQLWrapper==1.8.4
 
 # word embedding packages
 gensim==3.7.1
