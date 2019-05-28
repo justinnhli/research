@@ -14,7 +14,7 @@ git+https://github.com/justinnhli/PyDictionary.git
 
 # jupyter notebook packages
 jupyter==1.0.0
-bokeh==1.0.4
+bokeh==1.2.0
 pandas==0.24.0
 numpy==1.16.1
 
