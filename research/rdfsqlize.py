@@ -3,6 +3,7 @@
 
 import re
 import sqlite3
+import sys
 from os import remove
 from os.path import exists as file_exists, realpath, expanduser, dirname, join as join_path
 from hashlib import sha1
@@ -381,13 +382,12 @@ def sqlize(rdf_file, kb_name, binary=True):
 
 def main():
     """Provide a CLI command to convert RDF files."""
-    import sys
     if len(sys.argv) not in [3, 4]:
         print('usage: {} [--sql] <rdf_file> <kb_name>')
-        exit(1)
+        sys.exit(1)
     if len(sys.argv) == 4 and sys.argv[1] != '--sql':
         print('usage: {} [--sql] <rdf_file> <kb_name>')
-        exit(1)
+        sys.exit(1)
     rdf_file = sys.argv[-2]
     kb_name = sys.argv[-1]
     sqlize(rdf_file, kb_name, binary=(len(sys.argv) != 4))

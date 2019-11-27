@@ -90,7 +90,8 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             LOGGER.info(str(self.step))
             LOGGER.info(str(observation))
             for poss_action in actions:
-                LOGGER.info(f'    {poss_action}: {self.agent.get_value(observation, poss_action)}')
+                message = f'    {poss_action}: {self.agent.get_value(observation, poss_action)}'
+                LOGGER.info(message)
             LOGGER.info(str(action))
             return action
 
