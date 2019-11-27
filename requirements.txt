@@ -31,5 +31,3 @@ git+https://github.com/justinnhli/clusterun.git
 pylint==2.2.3
 pydocstyle
 pytest-cov
-coverage
-coveralls
