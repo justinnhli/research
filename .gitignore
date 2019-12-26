@@ -1,9 +1,6 @@
-data
-projects
-results
-**/data
-**/results
-
-\.idea/
-\__pycache__/
-\.ipynb_checkpoints/
+data/
+projects/
+!projects/.gitignore
+results/
+**/data/
+**/results/
