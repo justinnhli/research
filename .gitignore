@@ -1,5 +1,5 @@
-data
-projects
-results
-**/data
-**/results
+data/
+projects/
+results/
+**/data/
+**/results/
