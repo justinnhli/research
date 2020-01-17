@@ -468,7 +468,7 @@ class NetworkXKB(KnowledgeStore):
 
     def _node_as_treemultimap(self, mem_id):
         result = TreeMultiMap()
-        for subject, value, data in self.graph.out_edges(mem_id, data=True):
+        for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
         return result
 
@@ -489,7 +489,7 @@ class NetworkXKB(KnowledgeStore):
             candidate for candidate in candidates
             if all((
                 (candidate, value) in self.graph.edges
-                and self.graph.get_edge_data(candidate, value, key=0)['attribute'] == attribute
+                and self.graph.get_edge_data(candidate, value)[0]['attribute'] == attribute
             ) for attribute, value in attr_vals.items())
         )
         # quit early if there are no results
