@@ -437,7 +437,7 @@ class NetworkXKB(KnowledgeStore):
         """Initialize the NetworkXKB."""
         # parameters
         if activation_fn is None:
-            activation_fn = (lambda mem_id: None)
+            activation_fn = (lambda graph, mem_id: None)
         self.activation_fn = activation_fn
         # variables
         self.graph = MultiDiGraph()
@@ -462,7 +462,7 @@ class NetworkXKB(KnowledgeStore):
                 self.graph.add_node(value)
             self.graph.add_edge(mem_id, value, attribute=attribute)
             self.inverted_index[attribute].add(mem_id)
-        self.activation_fn(mem_id)
+        self.activation_fn(self.graph, mem_id)
         return True
 
     def _node_as_treemultimap(self, mem_id):
@@ -475,7 +475,7 @@ class NetworkXKB(KnowledgeStore):
         if mem_id not in self.graph:
             return None
         result = self._node_as_treemultimap(mem_id)
-        self.activation_fn(mem_id)
+        self.activation_fn(self.graph, mem_id)
         return result
 
     def query(self, attr_vals): # noqa: D102
