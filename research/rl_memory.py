@@ -1,6 +1,7 @@
 """Memory architecture for reinforcement learning."""
 
 from collections import namedtuple, defaultdict
+from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
 
@@ -438,7 +439,14 @@ class NetworkXKB(KnowledgeStore):
         self.graph.clear()
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
-        raise NotImplementedError()
+        if mem_id is None:
+            self.graph.add_node(uuid(), activation=0)
+        elif mem_id not in self.graph:
+            self.graph.add_node(mem_id, activation=0)
+        for attribute, value in kwargs.items():
+            if value not in self.graph:
+                self.graph.add_node(value)
+            self.graph.add_edge(mem_id, value, attribute=attr)
 
     def retrieve(self, mem_id): # noqa: D102
         raise NotImplementedError()
