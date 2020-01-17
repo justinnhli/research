@@ -5,7 +5,8 @@ from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
 
-from .rl_environments import TreeMultiMap, State, Action, Environment
+from .rl_environments import State, Action, Environment
+from .data_structures import TreeMultiMap
 
 
 def memory_architecture(cls):
