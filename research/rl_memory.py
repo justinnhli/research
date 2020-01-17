@@ -459,7 +459,7 @@ class NetworkXKB(KnowledgeStore):
             self.graph.add_node(mem_id, activation=0)
         for attribute, value in kwargs.items():
             if value not in self.graph:
-                self.graph.add_node(value)
+                self.graph.add_node(value, activation=0)
             self.graph.add_edge(mem_id, value, attribute=attribute)
             self.inverted_index[attribute].add(mem_id)
         self.activation_fn(self.graph, mem_id)
