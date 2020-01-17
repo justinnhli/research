@@ -139,12 +139,19 @@ def test_memory_architecture():
     assert env.end_of_episode()
     assert reward == 100, reward
 
+
 def test_networkxkb():
     """Test the NetworkX KnowledgeStore."""
     store = NetworkXKB()
     store.store('test', hello='world')
     retrieval = store.retrieve('test')
     assert list(retrieval.items()) == [('hello', 'world')]
+    result = store.query({'hello': 'world', 'foo': 'bar'})
+    assert result is None
+    store.store('test', foo='bar')
+    result = store.query({'hello': 'world', 'foo': 'bar'})
+    assert list(result.items()) == [('foo', 'bar'), ('hello', 'world')]
+
 
 def test_sparqlkb():
     """Test the SPARQL endpoint KnowledgeStore."""

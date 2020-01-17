@@ -1,6 +1,7 @@
 """Memory architecture for reinforcement learning."""
 
 from collections import namedtuple, defaultdict
+from collections.abc import Hashable
 from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
@@ -432,12 +433,24 @@ class NaiveDictKB(KnowledgeStore):
 class NetworkXKB(KnowledgeStore):
     """A NetworkX implementation of a knowledge store."""
 
-    def __init__(self):
+    def __init__(self, activation_fn=None):
         """Initialize the NetworkXKB."""
+        # parameters
+        if activation_fn is None:
+            activation_fn = (lambda mem_id: None)
+        self.activation_fn = activation_fn
+        # variables
         self.graph = MultiDiGraph()
+        self.inverted_index = defaultdict(set)
+        self.query_results = None
+        self.result_index = None
+        self.clear()
 
     def clear(self): # noqa: D102
         self.graph.clear()
+        self.inverted_index.clear()
+        self.query_results = None
+        self.result_index = None
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
         if mem_id is None:
@@ -448,6 +461,8 @@ class NetworkXKB(KnowledgeStore):
             if value not in self.graph:
                 self.graph.add_node(value)
             self.graph.add_edge(mem_id, value, attribute=attribute)
+            self.inverted_index[attribute].add(mem_id)
+        self.activation_fn(mem_id)
         return True
 
     def _node_as_treemultimap(self, mem_id):
@@ -460,28 +475,60 @@ class NetworkXKB(KnowledgeStore):
         if mem_id not in self.graph:
             return None
         result = self._node_as_treemultimap(mem_id)
+        self.activation_fn(mem_id)
         return result
 
     def query(self, attr_vals): # noqa: D102
-        raise NotImplementedError()
+        # first pass: get candidates with all the attributes
+        candidates = set.intersection(*(
+            self.inverted_index[attribute] for attribute in attr_vals.keys()
+        ))
+        # second pass: get candidates with the correct values
+        candidates = set(
+            candidate for candidate in candidates
+            if all((
+                (candidate, value) in self.graph.edges
+                and self.graph.get_edge_data(candidate, value, key=0)['attribute'] == attribute
+            ) for attribute, value in attr_vals.items())
+        )
+        # quit early if there are no results
+        if not candidates:
+            self.query_results = None
+            self.result_index = None
+            return None
+        # final pass: sort results by activation
+        self.query_results = sorted(
+            candidates,
+            key=(lambda mem_id: self.graph.nodes[mem_id]['activation']),
+        )
+        self.result_index = 0
+        return self._node_as_treemultimap(self.query_results[self.result_index])
 
     @property
     def has_prev_result(self): # noqa: D102
-        raise NotImplementedError()
+        return (
+            self.query_results is not None
+            and self.result_index > 0
+        )
 
     def prev_result(self): # noqa: D102
-        raise NotImplementedError()
+        self.result_index -= 1
+        return self._node_as_treemultimap(self.query_results[self.result_index])
 
     @property
     def has_next_result(self): # noqa: D102
-        raise NotImplementedError()
+        return (
+            self.query_results is not None
+            and self.result_index < len(self.query_results) - 1
+        )
 
     def next_result(self): # noqa: D102
-        raise NotImplementedError()
+        self.result_index += 1
+        return self._node_as_treemultimap(self.query_results[self.result_index])
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
-        raise NotImplementedError()
+        return isinstance(mem_id, Hashable)
 
 
 class SparqlKB(KnowledgeStore):
