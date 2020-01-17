@@ -10,7 +10,7 @@ sys.path.insert(0, dirname(DIRECTORY))
 # pylint: disable = wrong-import-position
 from research.knowledge_base import SparqlEndpoint
 from research.rl_environments import State, Action, Environment
-from research.rl_memory import memory_architecture, NaiveDictKB, SparqlKB
+from research.rl_memory import memory_architecture, NaiveDictKB, NetworkXKB, SparqlKB
 
 
 def test_memory_architecture():
@@ -138,6 +138,13 @@ def test_memory_architecture():
     reward = env.react(Action('-1'))
     assert env.end_of_episode()
     assert reward == 100, reward
+
+def test_networkxkb():
+    """Test the NetworkX KnowledgeStore."""
+    store = NetworkXKB()
+    store.store('test', hello='world')
+    retrieval = store.retrieve('test')
+    assert list(retrieval.items()) == [('hello', 'world')]
 
 def test_sparqlkb():
     """Test the SPARQL endpoint KnowledgeStore."""
