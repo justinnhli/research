@@ -500,6 +500,7 @@ class NetworkXKB(KnowledgeStore):
         self.query_results = sorted(
             candidates,
             key=(lambda mem_id: self.graph.nodes[mem_id]['activation']),
+            reverse=True,
         )
         self.result_index = 0
         return self._node_as_treemultimap(self.query_results[self.result_index])
