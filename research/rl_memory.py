@@ -457,12 +457,13 @@ class NetworkXKB(KnowledgeStore):
             mem_id = uuid()
         if mem_id not in self.graph:
             self.graph.add_node(mem_id, activation=0)
+        else:
+            self.activation_fn(self.graph, mem_id)
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=0)
             self.graph.add_edge(mem_id, value, attribute=attribute)
             self.inverted_index[attribute].add(mem_id)
-        self.activation_fn(self.graph, mem_id)
         return True
 
     def _node_as_treemultimap(self, mem_id):
