@@ -1,8 +1,13 @@
 """Memory architecture for reinforcement learning."""
 
 from collections import namedtuple, defaultdict
+from collections.abc import Hashable
+from uuid import uuid4 as uuid
 
-from .rl_environments import TreeMultiMap, State, Action, Environment
+from networkx import MultiDiGraph
+
+from .rl_environments import State, Action, Environment
+from .data_structures import TreeMultiMap
 
 
 def memory_architecture(cls):
@@ -275,10 +280,11 @@ class KnowledgeStore:
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
 
-    def store(self, **kwargs):
+    def store(self, mem_id=None, **kwargs):
         """Add knowledge to the KB.
 
         Arguments:
+            mem_id (any): The ID of the element. Defaults to None.
             **kwargs: Attributes and values of the element to add.
 
         Returns:
@@ -369,7 +375,7 @@ class NaiveDictKB(KnowledgeStore):
         self.query_index = None
         self.query_matches = []
 
-    def store(self, **kwargs): # noqa: D102
+    def store(self, mem_id=None, **kwargs): # noqa: D102
         self.knowledge.append(TreeMultiMap(**kwargs))
         return True
 
@@ -424,6 +430,109 @@ class NaiveDictKB(KnowledgeStore):
         return False
 
 
+class NetworkXKB(KnowledgeStore):
+    """A NetworkX implementation of a knowledge store."""
+
+    def __init__(self, activation_fn=None):
+        """Initialize the NetworkXKB."""
+        # parameters
+        if activation_fn is None:
+            activation_fn = (lambda graph, mem_id: None)
+        self.activation_fn = activation_fn
+        # variables
+        self.graph = MultiDiGraph()
+        self.inverted_index = defaultdict(set)
+        self.query_results = None
+        self.result_index = None
+        self.clear()
+
+    def clear(self): # noqa: D102
+        self.graph.clear()
+        self.inverted_index.clear()
+        self.query_results = None
+        self.result_index = None
+
+    def store(self, mem_id=None, **kwargs): # noqa: D102
+        if mem_id is None:
+            mem_id = uuid()
+        if mem_id not in self.graph:
+            self.graph.add_node(mem_id, activation=0)
+        else:
+            self.activation_fn(self.graph, mem_id)
+        for attribute, value in kwargs.items():
+            if value not in self.graph:
+                self.graph.add_node(value, activation=0)
+            self.graph.add_edge(mem_id, value, attribute=attribute)
+            self.inverted_index[attribute].add(mem_id)
+        return True
+
+    def _node_as_treemultimap(self, mem_id):
+        result = TreeMultiMap()
+        for _, value, data in self.graph.out_edges(mem_id, data=True):
+            result.add(data['attribute'], value)
+        return result
+
+    def retrieve(self, mem_id): # noqa: D102
+        if mem_id not in self.graph:
+            return None
+        result = self._node_as_treemultimap(mem_id)
+        self.activation_fn(self.graph, mem_id)
+        return result
+
+    def query(self, attr_vals): # noqa: D102
+        # first pass: get candidates with all the attributes
+        candidates = set.intersection(*(
+            self.inverted_index[attribute] for attribute in attr_vals.keys()
+        ))
+        # second pass: get candidates with the correct values
+        candidates = set(
+            candidate for candidate in candidates
+            if all((
+                (candidate, value) in self.graph.edges
+                and self.graph.get_edge_data(candidate, value)[0]['attribute'] == attribute
+            ) for attribute, value in attr_vals.items())
+        )
+        # quit early if there are no results
+        if not candidates:
+            self.query_results = None
+            self.result_index = None
+            return None
+        # final pass: sort results by activation
+        self.query_results = sorted(
+            candidates,
+            key=(lambda mem_id: self.graph.nodes[mem_id]['activation']),
+            reverse=True,
+        )
+        self.result_index = 0
+        return self._node_as_treemultimap(self.query_results[self.result_index])
+
+    @property
+    def has_prev_result(self): # noqa: D102
+        return (
+            self.query_results is not None
+            and self.result_index > 0
+        )
+
+    def prev_result(self): # noqa: D102
+        self.result_index -= 1
+        return self._node_as_treemultimap(self.query_results[self.result_index])
+
+    @property
+    def has_next_result(self): # noqa: D102
+        return (
+            self.query_results is not None
+            and self.result_index < len(self.query_results) - 1
+        )
+
+    def next_result(self): # noqa: D102
+        self.result_index += 1
+        return self._node_as_treemultimap(self.query_results[self.result_index])
+
+    @staticmethod
+    def retrievable(mem_id): # noqa: D102
+        return isinstance(mem_id, Hashable)
+
+
 class SparqlKB(KnowledgeStore):
     """An adaptor for RL agents to use KnowledgeSources."""
 
@@ -457,7 +566,7 @@ class SparqlKB(KnowledgeStore):
     def clear(self): # noqa: D102
         raise NotImplementedError()
 
-    def store(self, **kwargs): # noqa: D102
+    def store(self, mem_id=None, **kwargs): # noqa: D102
         raise NotImplementedError()
 
     def retrieve(self, mem_id): # noqa: D102
