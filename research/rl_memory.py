@@ -450,12 +450,16 @@ class NetworkXKB(KnowledgeStore):
             self.graph.add_edge(mem_id, value, attribute=attribute)
         return True
 
-    def retrieve(self, mem_id): # noqa: D102
-        if mem_id not in self.graph:
-            return None
+    def _node_as_treemultimap(self, mem_id):
         result = TreeMultiMap()
         for subject, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
+        return result
+
+    def retrieve(self, mem_id): # noqa: D102
+        if mem_id not in self.graph:
+            return None
+        result = self._node_as_treemultimap(mem_id)
         return result
 
     def query(self, attr_vals): # noqa: D102
