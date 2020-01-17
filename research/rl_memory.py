@@ -275,10 +275,11 @@ class KnowledgeStore:
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
 
-    def store(self, **kwargs):
+    def store(self, mem_id=None, **kwargs):
         """Add knowledge to the KB.
 
         Arguments:
+            mem_id (any): The ID of the element. Defaults to None.
             **kwargs: Attributes and values of the element to add.
 
         Returns:
@@ -369,7 +370,7 @@ class NaiveDictKB(KnowledgeStore):
         self.query_index = None
         self.query_matches = []
 
-    def store(self, **kwargs): # noqa: D102
+    def store(self, mem_id=None, **kwargs): # noqa: D102
         self.knowledge.append(TreeMultiMap(**kwargs))
         return True
 
@@ -457,7 +458,7 @@ class SparqlKB(KnowledgeStore):
     def clear(self): # noqa: D102
         raise NotImplementedError()
 
-    def store(self, **kwargs): # noqa: D102
+    def store(self, mem_id=None, **kwargs): # noqa: D102
         raise NotImplementedError()
 
     def retrieve(self, mem_id): # noqa: D102
