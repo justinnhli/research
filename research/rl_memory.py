@@ -2,6 +2,8 @@
 
 from collections import namedtuple, defaultdict
 
+from networkx import MultiDiGraph
+
 from .rl_environments import TreeMultiMap, State, Action, Environment
 
 
@@ -423,6 +425,44 @@ class NaiveDictKB(KnowledgeStore):
     @staticmethod
     def retrievable(mem_id): # noqa: D102
         return False
+
+
+class NetworkXKB(KnowledgeStore):
+    """A NetworkX implementation of a knowledge store."""
+
+    def __init__(self):
+        """Initialize the NetworkXKB."""
+        self.graph = MultiDiGraph()
+
+    def clear(self): # noqa: D102
+        self.graph.clear()
+
+    def store(self, mem_id=None, **kwargs): # noqa: D102
+        raise NotImplementedError()
+
+    def retrieve(self, mem_id): # noqa: D102
+        raise NotImplementedError()
+
+    def query(self, attr_vals): # noqa: D102
+        raise NotImplementedError()
+
+    @property
+    def has_prev_result(self): # noqa: D102
+        raise NotImplementedError()
+
+    def prev_result(self): # noqa: D102
+        raise NotImplementedError()
+
+    @property
+    def has_next_result(self): # noqa: D102
+        raise NotImplementedError()
+
+    def next_result(self): # noqa: D102
+        raise NotImplementedError()
+
+    @staticmethod
+    def retrievable(mem_id): # noqa: D102
+        raise NotImplementedError()
 
 
 class SparqlKB(KnowledgeStore):
