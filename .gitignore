@@ -4,3 +4,5 @@ projects/
 results/
 **/data/
 **/results/
+
+.DS_Store
