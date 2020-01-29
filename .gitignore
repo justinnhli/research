@@ -1,6 +1,2 @@
-data/
-projects/
-!projects/.gitignore
-results/
 **/data/
 **/results/
