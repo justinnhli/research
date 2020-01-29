@@ -13,8 +13,8 @@ from PyDictionary import PyDictionary
 from research.knowledge_base import KnowledgeFile, URI
 
 # update and load models
-nltk.download('wordnet')
-nltk.download('words')
+nltk.download('wordnet', download_dir=nltk.data.path[0])
+nltk.download('words', download_dir=nltk.data.path[0])
 DICTIONARY = PyDictionary()
 
 # make sure research library code is available
