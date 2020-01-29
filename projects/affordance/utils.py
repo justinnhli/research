@@ -20,7 +20,7 @@ DICTIONARY = PyDictionary()
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
-from research.knowledge_base import KnowledgeFile, URI
+from research.knowledge_base import KnowledgeFile, Value
 
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
@@ -152,20 +152,20 @@ def umbel_is_manipulable_noun(noun):
 
     def get_all_superclasses(kb, concept):
         superclasses = set()
-        queue = [str(URI(concept, 'umbel-rc'))]
+        queue = [str(Value.from_namespace_fragment('umbel-rc', concept))]
         query_template = 'SELECT ?parent WHERE {{ {child} {relation} ?parent . }}'
         while queue:
             child = queue.pop(0)
-            query = query_template.format(child=child, relation=URI('subClassOf', 'rdfs'))
+            query = query_template.format(child=child, relation=Value.from_namespace_fragment('rdfs', 'subClassOf'))
             for bindings in kb.query_sparql(query):
                 parent = str(bindings['parent'])
                 if parent not in superclasses:
                     superclasses.add(parent)
-                    queue.append(str(URI(parent)))
+                    queue.append(str(Value.from_uri(parent)))
         return superclasses
 
     # create superclass to check against
-    solid_tangible_thing = URI('SolidTangibleThing', 'umbel-rc').uri
+    solid_tangible_thing = Value.from_namespace_fragment('umbel-rc', 'SolidTangibleThing').uri
     for synonym in get_synonyms(noun, wn.NOUN):
         # find the corresponding concept
         variations = [synonym, synonym.lower(), synonym.title()]
