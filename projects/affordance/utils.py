@@ -10,7 +10,6 @@ import nltk
 from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
 from PyDictionary import PyDictionary
-from research.knowledge_base import KnowledgeFile, URI
 
 # update and load models
 nltk.download('wordnet', download_dir=nltk.data.path[0])
@@ -20,6 +19,9 @@ DICTIONARY = PyDictionary()
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
+
+from research.knowledge_base import KnowledgeFile, URI
+
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
