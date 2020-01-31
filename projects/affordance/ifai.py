@@ -8,9 +8,9 @@ ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
 from research.word_embedding import load_model
-from students.lijia.utils import get_manipulable_noun, get_sentence_from_file
-from students.lijia.extraction import get_verbs_for_noun as prob_get_verbs_for_noun
-from students.lijia.word2vec import get_verbs_for_noun as w2v_get_verbs_for_noun
+from utils import get_manipulable_noun, get_sentence_from_file
+from extraction import get_verbs_for_noun as prob_get_verbs_for_noun
+from word2vec import get_verbs_for_noun as w2v_get_verbs_for_noun
 
 
 OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output') # todo: change this

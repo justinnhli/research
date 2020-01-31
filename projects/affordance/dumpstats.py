@@ -2,8 +2,8 @@
 
 from os.path import join as join_path, exists as file_exists
 from collections import defaultdict, Counter
-from students.lijia.worddb import CondProbDict  # pylint disable=import-error
-from students.lijia.utils import get_filename_from_folder  # pylint disable=import-error
+from worddb import CondProbDict  # pylint disable=import-error
+from utils import get_filename_from_folder  # pylint disable=import-error
 
 
 class DumpStats:

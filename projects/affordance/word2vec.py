@@ -13,8 +13,8 @@ from nltk.corpus import wordnet as wn, words
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
-from students.lijia.utils import *
-from research.knowledge_base import KnowledgeFile, URI
+from utils import *
+from knowledge_base import KnowledgeFile, URI
 
 
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
@@ -171,7 +171,6 @@ def w2v_get_verbs_for_adjective(model, adjective):
     # get average sigma of the verb_adj canonical pairs
     canons = prepare_list_from_file(get_word_list_path('verb_adj_pair.txt'))
     sigma = get_ave_sigma(model, canons)
-
     # extract verbs from w2v model with the sigma
     model_verbs = model.most_similar([sigma, adjective], [], topn=10)
     return [verb[0] for verb in model_verbs]
@@ -391,7 +390,6 @@ def get_verbs_for_noun(model, noun):
     # get verbs from word2vec and ConceptNet
     w2v_verbs = w2v_get_verbs_for_noun(model, noun)
     cn_verbs = cn_get_verbs_for_noun(noun)
-    verbs = [*w2v_verbs, *cn_verbs]
     # combine the results
     verbs = [*w2v_verbs, *cn_verbs]
     # sort them by decreasing frequency

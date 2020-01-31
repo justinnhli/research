@@ -10,11 +10,24 @@ import nltk
 from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
 from PyDictionary import PyDictionary
-from research.knowledge_base import KnowledgeFile, URI
+from knowledge_base import KnowledgeFile, URI
 
 # update and load models
-nltk.download('wordnet')
-nltk.download('words')
+try:
+    nltk.download('wordnet', download_dir=nltk.data.path[0])
+    nltk.download('words', download_dir=nltk.data.path[0])
+    nltk.corpus.wordnet.ensure_loaded()
+    nltk.corpus.words.ensure_loaded()
+except LookupError:
+    # XXX hack to get around SSL certificate issue
+    # https://stackoverflow.com/questions/38916452/nltk-download-ssl-certificate-verify-failed
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+    nltk.download('wordnet', download_dir=nltk.data.path[0])
+    nltk.download('words', download_dir=nltk.data.path[0])
+    nltk.corpus.wordnet.ensure_loaded()
+    nltk.corpus.words.ensure_loaded()
+
 DICTIONARY = PyDictionary()
 
 # make sure research library code is available
