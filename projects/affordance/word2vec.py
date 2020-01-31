@@ -14,7 +14,7 @@ ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
 from utils import *
-from knowledge_base import KnowledgeFile, URI
+from research.knowledge_base import KnowledgeFile, URI
 
 
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfsqlite')
