@@ -5,8 +5,8 @@ from time import time
 from os import mkdir
 from os.path import exists as file_exists, dirname, realpath
 from collections import namedtuple
-from students.lijia.dumpstats import DumpStats
-from students.lijia.utils import *
+from dumpstats import DumpStats
+from utils import *
 
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
@@ -137,8 +137,8 @@ def get_verbs_for_noun(noun):
                     results[verb] = p1 * p2
         return sorted(results.items(), key=(lambda kv: kv[1]), reverse=True)[:100]
 
-    dump_dir = join_path(ROOT_DIRECTORY, "data/temp_test/dump")  # todo: change this
-    stats_dir = join_path(ROOT_DIRECTORY, "data/temp_test/stats")  # todo: change this
+    dump_dir = join_path(ROOT_DIRECTORY, "data/temp_test/dump")  # todo: change this                                                       
+    stats_dir = join_path(ROOT_DIRECTORY, "data/temp_test/stats")  # todo: change this                                                     
     extract_from_folder(dump_dir, stats_dir)
     dump_stats = DumpStats(dump_dir, stats_dir)
     return get_verbs_from_dump(dump_stats, noun)
