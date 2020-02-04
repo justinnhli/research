@@ -466,7 +466,8 @@ class NetworkXKB(KnowledgeStore):
             self.inverted_index[attribute].add(mem_id)
         return True
 
-    def _node_as_treemultimap(self, mem_id):
+    def _activate_and_return(self, mem_id):
+        self.activation_fn(self.graph, mem_id)
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
@@ -475,9 +476,7 @@ class NetworkXKB(KnowledgeStore):
     def retrieve(self, mem_id): # noqa: D102
         if mem_id not in self.graph:
             return None
-        result = self._node_as_treemultimap(mem_id)
-        self.activation_fn(self.graph, mem_id)
-        return result
+        return self._activate_and_return(mem_id)
 
     def query(self, attr_vals): # noqa: D102
         # first pass: get candidates with all the attributes
@@ -504,7 +503,7 @@ class NetworkXKB(KnowledgeStore):
             reverse=True,
         )
         self.result_index = 0
-        return self._node_as_treemultimap(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index])
 
     @property
     def has_prev_result(self): # noqa: D102
@@ -515,7 +514,7 @@ class NetworkXKB(KnowledgeStore):
 
     def prev_result(self): # noqa: D102
         self.result_index -= 1
-        return self._node_as_treemultimap(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index])
 
     @property
     def has_next_result(self): # noqa: D102
@@ -526,7 +525,7 @@ class NetworkXKB(KnowledgeStore):
 
     def next_result(self): # noqa: D102
         self.result_index += 1
-        return self._node_as_treemultimap(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index])
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
