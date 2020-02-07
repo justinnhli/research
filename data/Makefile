@@ -37,10 +37,10 @@ kbs/instance_types_en.ttl: kbs
 	wget --output-document $@.bz2 'http://downloads.dbpedia.org/2016-10/core-i18n/en/instance_types_en.ttl.bz2'
 	bunzip2 $@.bz2
 
-models:
-	mkdir 'models'
+embeddings:
+	mkdir 'embeddings'
 
-models/GoogleNews-vectors-negative300.bin: models
+embeddings/GoogleNews-vectors-negative300.bin: embeddings
 	# linked from 
 	echo 'Google Drive restrictions prevent this file from being downloaded automatically.'
 	echo 'Instead, go to https://github.com/mmihaltz/word2vec-GoogleNews-vectors/'
