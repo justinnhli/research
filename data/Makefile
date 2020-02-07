@@ -2,7 +2,7 @@
 
 targets:
 	@echo 'available targets:'
-	@grep '^[a-z]' Makefile | sed 's/:.*//' | tail +2 | sed 's/^/    /'
+	@grep '^[a-z]' Makefile | sed 's/:.*//' | tail -n +2 | sed 's/^/    /'
 
 kbs:
 	mkdir 'kbs'
