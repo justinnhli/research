@@ -4,6 +4,13 @@ targets:
 	@echo 'available targets:'
 	@grep '^[a-z]' Makefile | sed 's/:.*//' | tail -n +2 | sed 's/^/    /'
 
+corpora:
+	mkdir 'corpora'
+
+corpora/enwiki-latest-pages-articles1.xml: corpora
+	wget --output-document $@.bz2 'https://dumps.wikimedia.org/enwiki/latest/$(shell curl --silent https://dumps.wikimedia.org/enwiki/latest/ | grep -o '"enwiki-latest-pages-articles1.xml-[^.]*.bz2"' | sed 's/"//g')'
+	bunzip2 $@.bz2
+
 kbs:
 	mkdir 'kbs'
 
