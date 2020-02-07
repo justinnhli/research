@@ -164,7 +164,7 @@ def test_networkxkb():
     assert sorted(result.items()) == [('has', 'vertebra'), ('is_a', 'animal')]
     # query traversal
     store.store('cat')
-    # at this point, whale has been activated twice (from the store and the retreive)
+    # at this point, whale has been activated twice (from the store and the retrieve)
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
     result = store.query({'is_a': 'mammal'})
