@@ -123,6 +123,7 @@ def extract_from_folder(dump_dir, stats_dir):
 
 
 def get_verbs_for_noun(noun):
+
     def get_verbs_from_dump(dump_stats, noun):
         """calculate overall probability of verb given noun"""
 
