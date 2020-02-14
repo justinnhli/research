@@ -404,12 +404,24 @@ class KnowledgeFile(KnowledgeSource):
         filepath, ext = split_ext(source)
         rdf_format = guess_format(source)
         if rdf_format is not None:
+            # FIXME need to add prefix definitions for other formats
+            preamble = ''
+            if rdf_format == 'n3':
+                preamble = '\n'.join(
+                    f'@prefix {prefix}: <{url}>.'
+                    for prefix, url in Value.NAMESPACES.items()
+                    if url != '_'
+                )
+            with open(source) as fd:
+                data = fd.read()
+            if preamble:
+                data = preamble + '\n' + data
             if sqlize:
                 sql_uri = 'sqlite:///' + filepath + '.rdfsqlite'
             else:
                 sql_uri = 'sqlite://'
             self.graph.open(Literal(sql_uri), create=True)
-            self.graph.parse(source, format=rdf_format)
+            self.graph.parse(data=data, format=rdf_format)
         elif ext[1:] in ['db', 'sqlite', 'rdfsqlite']:
             sql_uri = 'sqlite:///' + source
             self.graph.open(Literal(sql_uri))
