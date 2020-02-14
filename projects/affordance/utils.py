@@ -27,13 +27,13 @@ except LookupError:
     nltk.corpus.wordnet.ensure_loaded()
     nltk.corpus.words.ensure_loaded()
 
-DICTIONARY = PyDictionary()
-
 # make sure research library code is available
 ROOT_DIRECTORY = dirname(dirname(dirname(realpath(__file__))))
 sys.path.insert(0, ROOT_DIRECTORY)
 
 from research.knowledge_base import KnowledgeFile, Value
+
+DICTIONARY = PyDictionary()
 
 UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.n3')
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
