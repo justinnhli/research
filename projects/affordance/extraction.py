@@ -2,7 +2,7 @@
 
 import sys
 from time import time
-from os import mkdir
+from os import makedirs
 from os.path import exists as file_exists, dirname, realpath
 from collections import namedtuple
 from dumpstats import DumpStats
@@ -14,6 +14,11 @@ sys.path.insert(0, ROOT_DIRECTORY)
 
 VPO = namedtuple('VPO', ('verb', 'prep', 'object'))
 NP = namedtuple('NP', ['noun', 'adjectives'])
+
+DUMP_DIR = join_path(dirname(__file__), "data/temp_test/dump")  # todo: change this
+STATS_DIR = join_path(dirname(__file__), "data/temp_test/stats")  # todo: change this
+makedirs(DUMP_DIR, exist_ok=True)
+makedirs(STATS_DIR, exist_ok=True)
 
 
 def extract_vpo(doc):
@@ -82,11 +87,8 @@ def extract_np(doc):
 def extract_from_folder(dump_dir, stats_dir):
     extract_adj_noun_dir = join_path(stats_dir, "adj_noun")
     extract_verb_noun_dir = join_path(stats_dir, "verb_noun")
-    try:
-        mkdir(extract_adj_noun_dir)
-        mkdir(extract_verb_noun_dir)
-    except FileExistsError:
-        pass
+    makedirs(extract_adj_noun_dir, exist_ok=True)
+    makedirs(extract_verb_noun_dir, exist_ok=True)
 
     for file in get_filename_from_folder(dump_dir):
         print(file)
@@ -137,8 +139,6 @@ def get_verbs_for_noun(noun):
                     results[verb] = p1 * p2
         return sorted(results.items(), key=(lambda kv: kv[1]), reverse=True)[:100]
 
-    dump_dir = join_path(dirname(__file__), "data/temp_test/dump")  # todo: change this
-    stats_dir = join_path(dirname(__file__), "data/temp_test/stats")  # todo: change this
-    extract_from_folder(dump_dir, stats_dir)
-    dump_stats = DumpStats(dump_dir, stats_dir)
+    extract_from_folder(DUMP_DIR, STATS_DIR)
+    dump_stats = DumpStats(DUMP_DIR, STATS_DIR)
     return get_verbs_from_dump(dump_stats, noun)
