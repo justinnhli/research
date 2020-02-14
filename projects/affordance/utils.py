@@ -39,7 +39,11 @@ UMBEL_KB_PATH = join_path(ROOT_DIRECTORY, 'data/kbs/umbel-concepts-typology.rdfs
 UMBEL = KnowledgeFile(UMBEL_KB_PATH)
 
 spacy_model = 'en_core_web_sm'
-nlp = spacy.load(spacy_model)
+try:
+    nlp = spacy.load(spacy_model)
+except OSError:
+    spacy.cli.download(spacy_model)
+    nlp = spacy.load(spacy_model)
 
 
 # utility functions
