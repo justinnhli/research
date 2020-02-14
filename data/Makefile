@@ -47,10 +47,13 @@ kbs/instance_types_en.ttl: kbs
 embeddings:
 	mkdir 'embeddings'
 
-embeddings/GoogleNews-vectors-negative300.bin: embeddings
-	# linked from 
-	echo 'Google Drive restrictions prevent this file from being downloaded automatically.'
-	echo 'Instead, go to https://github.com/mmihaltz/word2vec-GoogleNews-vectors/'
-	exit 1
+models/GoogleNews-vectors-negative300.bin.gz: models
+	@echo 'Google Drive restrictions prevent this file from being downloaded automatically.'
+	@echo 'Instead, download the file from the link at https://github.com/mmihaltz/word2vec-GoogleNews-vectors/'
+	@echo 'Move the file into models/, then run the command again.'
+	@exit 1
+
+models/GoogleNews-vectors-negative300.bin: models/GoogleNews-vectors-negative300.bin.gz
+	gunzip $^
 
 # opencyc-latest.owl
