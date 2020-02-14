@@ -15,7 +15,9 @@ from word2vec import get_verbs_for_noun as w2v_get_verbs_for_noun
 
 OUTPUT_DIR = join_path(ROOT_DIRECTORY, 'data/output') # todo: change this
 GOOGLE_NEWS_MODEL_PATH = join_path(ROOT_DIRECTORY, 'data/models/GoogleNews-vectors-negative300.bin')
+print('loading Google word2vec model; this make take a while...')
 W2V_MODEL = load_model(GOOGLE_NEWS_MODEL_PATH)
+print('loaded!')
 
 
 def get_action(sentence):
