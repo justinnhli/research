@@ -14,6 +14,8 @@ from knowledge_base import KnowledgeFile, URI
 
 # update and load models
 try:
+    nltk.download('wordnet')
+    nltk.download('words')
     nltk.corpus.wordnet.ensure_loaded()
     nltk.corpus.words.ensure_loaded()
 except LookupError:
@@ -21,6 +23,8 @@ except LookupError:
     # https://stackoverflow.com/questions/38916452/nltk-download-ssl-certificate-verify-failed
     import ssl
     ssl._create_default_https_context = ssl._create_unverified_context
+    nltk.download('wordnet')
+    nltk.download('words')
     nltk.corpus.wordnet.ensure_loaded()
     nltk.corpus.words.ensure_loaded()
 
