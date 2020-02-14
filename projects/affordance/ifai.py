@@ -28,7 +28,8 @@ def get_action(sentence):
     for noun in nouns:
         prob_verbs = prob_get_verbs_for_noun(noun)
         word2vec_verbs = w2v_get_verbs_for_noun(W2V_MODEL, noun)
-        verb_dict[noun] = prob_verbs.extend(word2vec_verbs)
+        prob_verbs.extend(word2vec_verbs)
+        verb_dict[noun] = prob_verbs
         actions.extend(["%s %s" % (verb, noun) for verb in verb_dict[noun]])
     return actions
 
