@@ -63,15 +63,19 @@ class AVLTree:
         self._del(key)
 
     def _check_is_set(self):
-        if self.adt == self.NONE:
+        if self.adt == self.SET:
+            return
+        elif self.adt == self.NONE:
             self.adt = self.SET
-        elif self.adt == self.DICT:
+        else:
             raise RuntimeError('AVLTree is being used as a map, but a set-only function was called')
 
     def _check_is_map(self):
-        if self.adt == self.NONE:
+        if self.adt == self.DICT:
+            return
+        elif self.adt == self.NONE:
             self.adt = self.DICT
-        elif self.adt == self.SET:
+        else:
             raise RuntimeError('AVLTree is being used as a set, but a dict-only function was called')
 
     def _put(self, key, value):
