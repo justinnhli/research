@@ -202,33 +202,35 @@ class AVLTree:
         return _get_node_helper(self.root, key)
 
     def _del(self, key):
-        self.root = self._del_helper(self.root, key)
+        self.root, value = self._del_helper(self.root, key)
+        return value
 
     def _del_helper(self, node, key):
+        value = None
         if node is None:
             raise KeyError(key)
         elif key < node.key:
-            node.left = self._del_helper(node.left, key)
+            node.left, value = self._del_helper(node.left, key)
         elif node.key < key:
-            node.right = self._del_helper(node.right, key)
+            node.right, value = self._del_helper(node.right, key)
         else:
             if node.left is None and node.right is None:
                 self.size -= 1
-                return None
+                return None, node.value
             replacement = node
             if node.left is not None:
                 replacement = node.left
                 while replacement.right is not None:
                     replacement = replacement.right
-                node.left = self._del_helper(node.left, replacement.key)
+                node.left, value = self._del_helper(node.left, replacement.key)
             elif node.right is not None:
                 replacement = node.right
                 while replacement.left is not None:
                     replacement = replacement.left
-                node.right = self._del_helper(node.right, replacement.key)
+                node.right, value = self._del_helper(node.right, replacement.key)
             node.key = replacement.key
             node.value = replacement.value
-        return self._balance(node)
+        return self._balance(node), value
 
     def _nodes(self):
 
@@ -267,6 +269,14 @@ class AVLTree:
             return default
         else:
             return node.value
+
+    def pop(self, key, default=None):
+        self._check_is_map()
+        try:
+            value = self._del(key)
+            return value
+        except KeyError:
+            return default
 
     def keys(self):
         self._check_is_map()
