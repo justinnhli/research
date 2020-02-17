@@ -188,6 +188,13 @@ class AVLTree:
         for node in self._nodes():
             yield node.key, node.value
 
+    def to_set(self):
+        return set(self)
+
+    def to_dict(self):
+        self._check_is_map()
+        return dict(self.items())
+
     @staticmethod
     def _balance(node):
         if node.balance < -1:
@@ -218,3 +225,17 @@ class AVLTree:
         node.update_metadata()
         right.update_metadata()
         return right
+
+    @staticmethod
+    def from_set(src_set):
+        tree = AVLTree(adt=AVLTree.SET)
+        for element in src_set:
+            tree.add(element)
+        return tree
+
+    @staticmethod
+    def from_dict(src_dict):
+        tree = AVLTree(adt=AVLTree.MAP)
+        for key, value in src_dict.items():
+            tree[key] = value
+        return tree
