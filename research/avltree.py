@@ -2,7 +2,7 @@ class AVLTree:
 
     NONE = 0
     SET = 1
-    MAP = 2
+    DICT = 2
 
     class Node:
 
@@ -23,8 +23,8 @@ class AVLTree:
     def __init__(self, adt=None, factory=None):
         if adt is None:
             adt = self.NONE
-        elif adt not in (self.SET, self.MAP):
-            raise ValueError(f'adt must be either AVLTree.SET or AVLTree.MAP')
+        elif adt not in (self.SET, self.DICT):
+            raise ValueError(f'adt must be either AVLTree.SET or AVLTree.DICT')
         self.adt = adt
         self.factory = factory
         if factory is not None:
@@ -65,14 +65,14 @@ class AVLTree:
     def _check_is_set(self):
         if self.adt == self.NONE:
             self.adt = self.SET
-        elif self.adt == self.MAP:
+        elif self.adt == self.DICT:
             raise RuntimeError('AVLTree is being used as a map, but a set-only function was called')
 
     def _check_is_map(self):
         if self.adt == self.NONE:
-            self.adt = self.MAP
+            self.adt = self.DICT
         elif self.adt == self.SET:
-            raise RuntimeError('AVLTree is being used as a set, but a map-only function was called')
+            raise RuntimeError('AVLTree is being used as a set, but a dict-only function was called')
 
     def _put(self, key, value):
 
@@ -189,6 +189,7 @@ class AVLTree:
             yield node.key, node.value
 
     def to_set(self):
+        self._check_is_set()
         return set(self)
 
     def to_dict(self):
@@ -235,7 +236,7 @@ class AVLTree:
 
     @staticmethod
     def from_dict(src_dict):
-        tree = AVLTree(adt=AVLTree.MAP)
+        tree = AVLTree(adt=AVLTree.DICT)
         for key, value in src_dict.items():
             tree[key] = value
         return tree
