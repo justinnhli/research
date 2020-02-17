@@ -185,7 +185,6 @@ class AVLTree:
             node.left = self._put_helper(node.left, key, value)
         else:
             node.right = self._put_helper(node.right, key, value)
-        node.update_metadata()
         return self._balance(node)
 
     def _get_node(self, key):
@@ -229,7 +228,6 @@ class AVLTree:
                 node.right = self._del_helper(node.right, replacement.key)
             node.key = replacement.key
             node.value = replacement.value
-        node.update_metadata()
         return self._balance(node)
 
     def _nodes(self):
@@ -295,6 +293,7 @@ class AVLTree:
 
     @staticmethod
     def _balance(node):
+        node.update_metadata()
         if node.balance < -1:
             if node.left.balance == 1:
                 node.left = AVLTree._rotate_ccw(node.left)
