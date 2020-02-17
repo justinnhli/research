@@ -1,5 +1,9 @@
 class AVLTree:
 
+    NONE = 0
+    SET = 1
+    MAP = 2
+
     class Node:
 
         def __init__(self, key, value):
@@ -16,132 +20,201 @@ class AVLTree:
             self.height = max(left_height, right_height) + 1
             self.balance = right_height - left_height
 
-    def __init__(self, is_set=False):
-        self.is_set = is_set
+    def __init__(self, adt=None, factory=None):
+        if adt is None:
+            adt = self.NONE
+        elif adt not in (self.SET, self.MAP):
+            raise ValueError(f'adt must be either AVLTree.SET or AVLTree.MAP')
+        self.adt = adt
+        self.factory = factory
+        if factory is not None:
+            self._check_is_map()
         self.size = 0
         self.root = None
 
     def __len__(self):
         return self.size
 
-    def __setitem__(self, key, value):
-        self.root = self._put(self.root, key, value)
-
     def __contains__(self, key):
-        return self._get_node(self.root, key) is not None
-
-    def __getitem__(self, key):
-        node = self._get_node(self.root, key)
-        if node is None:
-            return None
-        else:
-            return node.value
+        return self._get_node(key) is not None
 
     def __iter__(self):
-        yield from (node.key for node in self._nodes(self.root))
+        for node in self._nodes():
+            yield node.key
+
+    def __setitem__(self, key, value):
+        self._check_is_map()
+        self._put(key, value)
+
+    def __getitem__(self, key):
+        self._check_is_map()
+        node = self._get_node(key)
+        if node is not None:
+            return node.value
+        elif self.factory is None:
+            return None
+        else:
+            result = self.factory()
+            self[key] = result
+            return result
+
+    def __delitem__(self, key):
+        self._check_is_map()
+        self._del(key)
+
+    def _check_is_set(self):
+        if self.adt == self.NONE:
+            self.adt = self.SET
+        elif self.adt == self.MAP:
+            raise RuntimeError('AVLTree is being used as a map, but a set-only function was called')
+
+    def _check_is_map(self):
+        if self.adt == self.NONE:
+            self.adt = self.MAP
+        elif self.adt == self.SET:
+            raise RuntimeError('AVLTree is being used as a set, but a map-only function was called')
+
+    def _put(self, key, value):
+
+        def _put_helper(node, key, value):
+            if node is None:
+                return AVLTree.Node(key, value)
+            elif key == node.key:
+                node.value = value
+                return node
+            elif key < node.key:
+                node.left = _put_helper(node.left, key, value)
+            else:
+                node.right = _put_helper(node.right, key, value)
+            node.update_metadata()
+            return AVLTree._balance(node)
+
+        self.root = _put_helper(self.root, key, value)
+
+    def _get_node(self, key):
+
+        def _get_node_helper(node, key):
+            if node is None:
+                return None
+            elif key < node.key:
+                return _get_node_helper(node.left, key)
+            elif node.key < key:
+                return _get_node_helper(node.right, key)
+            else:
+                return node
+
+        return _get_node_helper(self.root, key)
+
+    def _del(self, key):
+
+        def _del_helper(node, key):
+            if node is None:
+                raise KeyError(key)
+            elif key < node.key:
+                node.left = _del_helper(node.left, key)
+            elif node.key < key:
+                node.right = _del_helper(node.right, key)
+            else:
+                if node.left is None and node.right is None:
+                    return None
+                replacement = node
+                if node.left is not None:
+                    replacement = node.left
+                    while replacement.right is not None:
+                        replacement = replacement.right
+                    node.left = _del_helper(node.left, replacement.key)
+                elif node.right is not None:
+                    replacement = node.right
+                    while replacement.left is not None:
+                        replacement = replacement.left
+                    node.right = _del_helper(node.right, replacement.key)
+                node.key = replacement.key
+                node.value = replacement.value
+            node.update_metadata()
+            return AVLTree._balance(node)
+
+        self.root = _del_helper(self.root, key)
+
+    def _nodes(self):
+
+        def _nodes_helper(node):
+            if node is None:
+                return
+            yield from _nodes_helper(node.left)
+            yield node
+            yield from _nodes_helper(node.right)
+
+        yield from _nodes_helper(self.root)
 
     def clear(self):
         self.size = 0
         self.root = None
 
-    def _nodes(self, node):
-        if node is None:
-            return
-        yield from self._nodes(node.left)
-        yield node
-        yield from self._nodes(node.right)
+    def add(self, element):
+        self._check_is_set()
+        self._put(element, None)
 
-    def _put(self, node, key, value):
+    def remove(self, element):
+        self._check_is_set()
+        self._del(element)
+
+    def discard(self, element):
+        self._check_is_set()
+        try:
+            self._del(element)
+        except KeyError:
+            pass
+
+    def get(self, key, default=None):
+        self._check_is_map()
+        node = self._get_node(key)
         if node is None:
-            return AVLTree.Node(key, value)
-        elif key == node.key:
-            node.value = value
-            return node
-        elif key < node.key:
-            node.left = self._put(node.left, key, value)
+            return default
         else:
-            node.right = self._put(node.right, key, value)
-        node.update_metadata()
-        return self._balance(node)
+            return node.value
 
-    def _remove(self, node, key):
-        if node is None:
-            raise ValueError(f'key {key} not in AVLTree')
-        elif key == node.key:
-            if node.balance < 0:
-                pass
-            else:
-                pass
-        elif key < node.key:
-            return self._remove(node.left, key)
-        else:
-            return self._remove(node.right, key)
-        node.update_metadata()
-        return self._balance()
+    def keys(self):
+        self._check_is_map()
+        for node in self._nodes():
+            yield node.key
 
-    def _balance(self, node):
+    def values(self):
+        self._check_is_map()
+        for node in self._nodes():
+            yield node.value
+
+    def items(self):
+        self._check_is_map()
+        for node in self._nodes():
+            yield node.key, node.value
+
+    @staticmethod
+    def _balance(node):
         if node.balance < -1:
             if node.left.balance == 1:
-                node.left = self.rotate_left(node.left)
-            return self.rotate_right(node)
-        elif node.balance > 1:
+                node.left = AVLTree._rotate_ccw(node.left)
+            return AVLTree._rotate_cw(node)
+        elif 1 < node.balance:
             if node.right.balance == -1:
-                node.right = self.rotate_right(node.right)
-            return self.rotate_left(node)
+                node.right = AVLTree._rotate_cw(node.right)
+            return AVLTree._rotate_ccw(node)
         else:
             return node
 
-    def _get_node(self, node, key):
-        if node is None:
-            return None
-        elif key == node.key:
-            return node
-        elif key < node.key:
-            return self._get_node(key, node.left)
-        else:
-            return self._get_node(key, node.right)
-
-    def audit(self, node):
-        if node is None:
-            return True
-        has_errors = False
-        has_errors |= (
-            (node.left is None or node.left.key < node.key)
-            and (node.right is None or node.key < node.right.key)
-        )
-        has_errors |= (node.height == max(
-                (node.left.height if node.left else 0),
-                (node.right.height if node.right else 0),
-            ) + 1
-        )
-        has_errors |= (-1 <= node.balance <= 1)
-        return not has_errors
-
     @staticmethod
-    def rotate_left(root):
-        right = root.right
-        root.right = right.left
-        right.left = root
-        root.update_metadata()
-        right.update_metadata()
-        return right
-
-    @staticmethod
-    def rotate_right(root):
-        left = root.left
-        root.left = left.right
-        left.right = root
-        root.update_metadata()
+    def _rotate_cw(node):
+        left = node.left
+        node.left = left.right
+        left.right = node
+        node.update_metadata()
         left.update_metadata()
         return left
 
-
-def main():
-    tree = AVLTree()
-    tree[3] = None
-    tree[1] = None
-    tree[2] = None
-
-
-if __name__ == '__main__':
-    main()
+    @staticmethod
+    def _rotate_ccw(node):
+        right = node.right
+        node.right = right.left
+        right.left = node
+        node.update_metadata()
+        right.update_metadata()
+        return right
