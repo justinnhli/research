@@ -114,6 +114,13 @@ class AVLTree:
         self.size = 0
         self.root = None
 
+    def __getattr__(self, name):
+        node = self._get_node(name)
+        if node is None:
+            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
+        else:
+            return node.value
+
     def __eq__(self, other):
         if type(self) != type(other):
             return False
