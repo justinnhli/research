@@ -239,6 +239,69 @@ class AVLTree:
         except KeyError:
             pass
 
+    def is_disjoint(self, other):
+        return (
+            all((element not in other) for element in self)
+            and all((element not in self) for element in other)
+        )
+
+    def is_subset(self, other):
+        return all((element in other) for element in self)
+
+    def is_superset(self, other):
+        return all((element in self) for element in other)
+
+    def union(self, *others):
+        tree = AVLTree()
+        tree.union_update(self, *others)
+        return tree
+
+    def intersection(self, *others):
+        tree = AVLTree()
+        tree.union_update(min(others, key=len))
+        tree.intersection_update(self)
+        tree.intersection_update(*others)
+        return tree
+
+    def difference(self, *others):
+        tree = AVLTree()
+        tree.union_update(self)
+        tree.difference_update(*others)
+        return tree
+
+    def union_update(self, *others):
+        for other in others:
+            for element in other:
+                self.add(element)
+
+    def intersection_update(self, *others):
+        others = sorted(others, key=len)
+        for element in self:
+            if any((element not in other) for other in others):
+                self.remove(element)
+
+    def difference_update(self, *others):
+        union = AVLTree()
+        union.union_update(*others)
+        for element in self:
+            if element in union:
+                self.remove(element)
+
+    def setdefault(self, key, default=None):
+        node = self._get_node(key)
+        if node is None:
+            self._put(key, default)
+            return default
+        else:
+            return node.value
+
+    def update(self, *mappings):
+        for mapping in mappings:
+            if isinstance(mapping, dict):
+                mapping = mapping.items()
+            for key, value in mapping:
+                self._put(key, value)
+
     def get(self, key, default=None):
         node = self._get_node(key)
         if node is None:
@@ -306,13 +369,11 @@ class AVLTree:
     @staticmethod
     def from_set(src_set):
         tree = AVLTree()
-        for element in src_set:
-            tree.add(element)
+        tree.union_update(src_set)
         return tree
 
     @staticmethod
     def from_dict(src_dict):
         tree = AVLTree()
-        for key, value in src_dict.items():
-            tree[key] = value
+        tree.update(src_dict.items())
         return tree
