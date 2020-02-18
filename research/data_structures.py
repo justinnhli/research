@@ -142,7 +142,7 @@ class AVLTree:
         if node is not None:
             return node.value
         elif self.factory is None:
-            return None
+            raise KeyError(key)
         else:
             result = self.factory()
             self[key] = result
