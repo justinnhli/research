@@ -114,6 +114,16 @@ class AVLTree:
         self.size = 0
         self.root = None
 
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        if len(self) != len(other):
+            return False
+        for (key1, value1), (key2, value2) in zip(self.items(), other.items()):
+            if key1 != key2 or value1 != value2:
+                return False
+        return True
+
     def __len__(self):
         return self.size
 
