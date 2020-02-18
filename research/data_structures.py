@@ -93,10 +93,6 @@ class UnionFind:
 
 class AVLTree:
 
-    NONE = 0
-    SET = 1
-    DICT = 2
-
     class Node:
 
         def __init__(self, key, value):
@@ -113,15 +109,8 @@ class AVLTree:
             self.height = max(left_height, right_height) + 1
             self.balance = right_height - left_height
 
-    def __init__(self, adt=None, factory=None):
-        if adt is None:
-            adt = self.NONE
-        elif adt not in (self.SET, self.DICT):
-            raise ValueError(f'adt must be either AVLTree.SET or AVLTree.DICT')
-        self.adt = adt
+    def __init__(self, factory=None):
         self.factory = factory
-        if factory is not None:
-            self._check_is_map()
         self.size = 0
         self.root = None
 
@@ -136,11 +125,9 @@ class AVLTree:
             yield node.key
 
     def __setitem__(self, key, value):
-        self._check_is_map()
         self._put(key, value)
 
     def __getitem__(self, key):
-        self._check_is_map()
         node = self._get_node(key)
         if node is not None:
             return node.value
@@ -152,24 +139,7 @@ class AVLTree:
             return result
 
     def __delitem__(self, key):
-        self._check_is_map()
         self._del(key)
-
-    def _check_is_set(self):
-        if self.adt == self.SET:
-            return
-        elif self.adt == self.NONE:
-            self.adt = self.SET
-        else:
-            raise RuntimeError('AVLTree is being used as a map, but a set-only function was called')
-
-    def _check_is_map(self):
-        if self.adt == self.DICT:
-            return
-        elif self.adt == self.NONE:
-            self.adt = self.DICT
-        else:
-            raise RuntimeError('AVLTree is being used as a set, but a dict-only function was called')
 
     def _put(self, key, value, node=None):
         self.root = self._put_helper(self.root, key, value)
@@ -248,22 +218,18 @@ class AVLTree:
         self.root = None
 
     def add(self, element):
-        self._check_is_set()
         self._put(element, None)
 
     def remove(self, element):
-        self._check_is_set()
         self._del(element)
 
     def discard(self, element):
-        self._check_is_set()
         try:
             self._del(element)
         except KeyError:
             pass
 
     def get(self, key, default=None):
-        self._check_is_map()
         node = self._get_node(key)
         if node is None:
             return default
@@ -271,7 +237,6 @@ class AVLTree:
             return node.value
 
     def pop(self, key, default=None):
-        self._check_is_map()
         try:
             value = self._del(key)
             return value
@@ -279,26 +244,21 @@ class AVLTree:
             return default
 
     def keys(self):
-        self._check_is_map()
         for node in self._nodes():
             yield node.key
 
     def values(self):
-        self._check_is_map()
         for node in self._nodes():
             yield node.value
 
     def items(self):
-        self._check_is_map()
         for node in self._nodes():
             yield node.key, node.value
 
     def to_set(self):
-        self._check_is_set()
         return set(self)
 
     def to_dict(self):
-        self._check_is_map()
         return dict(self.items())
 
     @staticmethod
@@ -335,14 +295,14 @@ class AVLTree:
 
     @staticmethod
     def from_set(src_set):
-        tree = AVLTree(adt=AVLTree.SET)
+        tree = AVLTree()
         for element in src_set:
             tree.add(element)
         return tree
 
     @staticmethod
     def from_dict(src_dict):
-        tree = AVLTree(adt=AVLTree.DICT)
+        tree = AVLTree()
         for key, value in src_dict.items():
             tree[key] = value
         return tree

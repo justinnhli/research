@@ -66,7 +66,7 @@ def test_avltree():
     src_dict = {n: n * n for n in range(101)}
     assert AVLTree.from_dict(src_dict).to_dict() == src_dict
     # defaultdict check
-    tree = AVLTree(factory=(lambda: AVLTree(adt=AVLTree.SET)))
+    tree = AVLTree(factory=(lambda: AVLTree()))
     for i in range(10):
         for j in range(i, i + 5):
             tree[i].add(j)
