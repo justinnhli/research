@@ -4,8 +4,6 @@ import sys
 from os.path import dirname, realpath
 from itertools import permutations
 
-import pytest
-
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
@@ -40,13 +38,13 @@ def test_avltree():
         for element in permutation:
             tree.add(element)
         assert len(tree) == size
-        assert list(e for e in tree) == list(range(size)), f'{list(e for e in tree)} != {list(range(size))}'
-        for n in range(size):
-            assert n in tree
-        for n in range(size):
-            tree.discard(n)
-            assert len(tree) == size - n - 1
-            assert list(e for e in tree) == list(range(n+1,size)), f'{list(e for e in tree)} != {list(range(size))}'
+        assert list(e for e in tree) == list(range(size))
+        for num in range(size):
+            assert num in tree
+        for num in range(size):
+            tree.discard(num)
+            assert len(tree) == size - num - 1
+            assert list(e for e in tree) == list(range(num + 1, size))
     src_set = set(range(101))
     assert AVLTree.from_set(src_set).to_set() == src_set
     # map check
@@ -55,18 +53,18 @@ def test_avltree():
         for key in permutation:
             tree[key] = key * key
         assert len(tree) == size
-        assert list(e for e in tree) == list(range(size)), f'{list(e for e in tree)} != {list(range(size))}'
-        assert list(tree.items()) == list((n, n * n) for n in range(size))
-        for n in range(size):
-            assert n in tree
-            assert tree[n] == n * n
-        for n in range(size):
-            del tree[n]
-            assert len(tree) == size - n - 1
-    src_dict = {n: n * n for n in range(101)}
+        assert list(e for e in tree) == list(range(size))
+        assert list(tree.items()) == list((num, num * num) for num in range(size))
+        for num in range(size):
+            assert num in tree
+            assert tree[num] == num * num
+        for num in range(size):
+            del tree[num]
+            assert len(tree) == size - num - 1
+    src_dict = {num: num * num for num in range(101)}
     assert AVLTree.from_dict(src_dict).to_dict() == src_dict
     # defaultdict check
-    tree = AVLTree(factory=(lambda: AVLTree()))
+    tree = AVLTree(factory=AVLTree)
     for i in range(10):
         for j in range(i, i + 5):
             tree[i].add(j)

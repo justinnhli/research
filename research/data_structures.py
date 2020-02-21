@@ -92,10 +92,19 @@ class UnionFind:
 
 
 class AVLTree:
+    # pylint: disable = too-many-public-methods
+    """AVLTree as a set and as a dict."""
 
     class Node:
+        """An AVL tree node."""
 
         def __init__(self, key, value):
+            """Initialize the Node.
+
+            Arguments:
+                key (Any): The key.
+                value (Any): The value.
+            """
             self.key = key
             self.value = value
             self.left = None
@@ -104,12 +113,19 @@ class AVLTree:
             self.balance = 0
 
         def update_metadata(self):
+            """Update the height and balance of the node."""
             left_height = (self.left.height if self.left else 0)
             right_height = (self.right.height if self.right else 0)
             self.height = max(left_height, right_height) + 1
             self.balance = right_height - left_height
 
     def __init__(self, factory=None):
+        """Initialize the AVLTree.
+
+        Parameters:
+            factory (Callable[None, Any]): The factory function to create
+                default values. Only used for dicts.
+        """
         self.factory = factory
         self.size = 0
         self.root = None
@@ -118,11 +134,10 @@ class AVLTree:
         node = self._get_node(name)
         if node is None:
             raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
-        else:
-            return node.value
+        return node.value
 
     def __eq__(self, other):
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
         if len(self) != len(other):
             return False
@@ -158,7 +173,7 @@ class AVLTree:
     def __delitem__(self, key):
         self._del(key)
 
-    def _put(self, key, value, node=None):
+    def _put(self, key, value):
         self.root = self._put_helper(self.root, key, value)
 
     def _put_helper(self, node, key, value):
@@ -196,7 +211,7 @@ class AVLTree:
         value = None
         if node is None:
             raise KeyError(key)
-        elif key < node.key:
+        if key < node.key:
             node.left, value = self._del_helper(node.left, key)
         elif node.key < key:
             node.right, value = self._del_helper(node.right, key)
@@ -231,42 +246,101 @@ class AVLTree:
         yield from _nodes_helper(self.root)
 
     def clear(self):
+        """Remove all elements from the AVLTree."""
         self.size = 0
         self.root = None
 
     def add(self, element):
+        """Add an element to the AVLTree (set).
+
+        Parameters:
+            element (Any): The element to add.
+        """
         self._put(element, None)
 
     def remove(self, element):
+        """Remove an element from the set.
+
+        Parameters:
+            element (Any): The element to remove.
+
+        Raises:
+            KeyError: If the element is not in the AVLTree.
+        """
         self._del(element)
 
     def discard(self, element):
+        """Remove an element from the set if it is present.
+
+        Parameters:
+            element (Any): The element to remove.
+        """
         try:
             self._del(element)
         except KeyError:
             pass
 
     def is_disjoint(self, other):
+        """Check if the two sets are disjoint.
+
+        Parameters:
+            other (Set[Any]): The other set.
+
+        Returns:
+            bool: True if the sets are disjoint.
+        """
         return all((element not in other) for element in self)
 
     def is_subset(self, other):
+        """Check if this is a subset of another set.
+
+        Parameters:
+            other (Set[Any]): The other set.
+
+        Returns:
+            bool: True if this is a subset of the other.
+        """
         return (
             len(self) < len(other)
             and all((element in other) for element in self)
         )
 
     def is_superset(self, other):
+        """Check if this is a superset of another set.
+
+        Parameters:
+            other (Set[Any]): The other set.
+
+        Returns:
+            bool: True if this is a superset of the other.
+        """
         return (
             len(self) > len(other)
             and all((element in self) for element in other)
         )
 
     def union(self, *others):
+        """Create the union of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+
+        Returns:
+            AVLTree: The union of all the sets.
+        """
         tree = AVLTree()
         tree.union_update(self, *others)
         return tree
 
     def intersection(self, *others):
+        """Create the intersection of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+
+        Returns:
+            AVLTree: The intersection of all the sets.
+        """
         tree = AVLTree()
         tree.union_update(min(others, key=len))
         tree.intersection_update(self)
@@ -274,23 +348,46 @@ class AVLTree:
         return tree
 
     def difference(self, *others):
+        """Create the difference of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+
+        Returns:
+            AVLTree: The difference of all the sets, in order.
+        """
         tree = AVLTree()
         tree.union_update(self)
         tree.difference_update(*others)
         return tree
 
     def union_update(self, *others):
+        """Update this set to be the union of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+        """
         for other in others:
             for element in other:
                 self.add(element)
 
     def intersection_update(self, *others):
+        """Keep only the intersection of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+        """
         others = sorted(others, key=len)
         for element in self:
             if any((element not in other) for other in others):
                 self.remove(element)
 
     def difference_update(self, *others):
+        """Keep only the difference of this and other sets.
+
+        Parameters:
+            *others (Set[Any]): The other sets.
+        """
         union = AVLTree()
         union.union_update(*others)
         for element in self:
@@ -298,6 +395,15 @@ class AVLTree:
                 self.remove(element)
 
     def setdefault(self, key, default=None):
+        """Get the value of a key, or set it to the default.
+
+        Parameters:
+            key (Any): The key.
+            default (Any): The default value to set and return. Defaults to None.
+
+        Returns:
+            Any: The value or the default.
+        """
         node = self._get_node(key)
         if node is None:
             self._put(key, default)
@@ -306,6 +412,11 @@ class AVLTree:
             return node.value
 
     def update(self, *mappings):
+        """Add the key and values to the map, overwriting existing values.
+
+        Parameters:
+            *mappings (Mapping[Any, Any]): The key-value pairs to be added or updated.
+        """
         for mapping in mappings:
             if isinstance(mapping, dict):
                 mapping = mapping.items()
@@ -313,6 +424,15 @@ class AVLTree:
                 self._put(key, value)
 
     def get(self, key, default=None):
+        """Return the value for the key, or the default if it doesn't exist.
+
+        Parameters:
+            key (Any): The key.
+            default (Any): The default value to return. Defaults to None.
+
+        Returns:
+            Any: The value or the default.
+        """
         node = self._get_node(key)
         if node is None:
             return default
@@ -320,6 +440,15 @@ class AVLTree:
             return node.value
 
     def pop(self, key, default=None):
+        """Remove the key and return the value, or the default if it doesn't exist.
+
+        Parameters:
+            key (Any): The key.
+            default (Any): The default value to return. Defaults to None.
+
+        Returns:
+            Any: THe value or the default.
+        """
         try:
             value = self._del(key)
             return value
@@ -327,21 +456,46 @@ class AVLTree:
             return default
 
     def keys(self):
+        """Create a generator of the keys.
+
+        Yields:
+            Any: The keys.
+        """
         for node in self._nodes():
             yield node.key
 
     def values(self):
+        """Create a generator of the values.
+
+        Yields:
+            Any: The values.
+        """
         for node in self._nodes():
             yield node.value
 
     def items(self):
+        """Create a generator of the key-value pairs.
+
+        Yields:
+            Tuple[Any, Any]: The key-value pairs.
+        """
         for node in self._nodes():
             yield node.key, node.value
 
     def to_set(self):
+        """Return the elements in a normal set.
+
+        Returns:
+            Set[Any]: The resulting set.
+        """
         return set(self)
 
     def to_dict(self):
+        """Return the keyus and values in a normal dict.
+
+        Returns:
+            Dict[Any, Any]: The resulting dict.
+        """
         return dict(self.items())
 
     @staticmethod
@@ -351,7 +505,7 @@ class AVLTree:
             if node.left.balance == 1:
                 node.left = AVLTree._rotate_ccw(node.left)
             return AVLTree._rotate_cw(node)
-        elif 1 < node.balance:
+        elif node.valance < 1:
             if node.right.balance == -1:
                 node.right = AVLTree._rotate_cw(node.right)
             return AVLTree._rotate_ccw(node)
@@ -378,12 +532,28 @@ class AVLTree:
 
     @staticmethod
     def from_set(src_set):
+        """Create an AVLTree (as a set) from a set.
+
+        Arguments:
+            src_set (Set[Any]): The set.
+
+        Returns:
+            AVLTree: The AVLTree.
+        """
         tree = AVLTree()
         tree.union_update(src_set)
         return tree
 
     @staticmethod
     def from_dict(src_dict):
+        """Create an AVLTree (as a dict) from a dictionary.
+
+        Arguments:
+            src_dict (Mapping[Any, Any]): The dictionary.
+
+        Returns:
+            AVLTree: The AVLTree.
+        """
         tree = AVLTree()
         tree.update(src_dict.items())
         return tree
