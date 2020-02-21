@@ -247,16 +247,19 @@ class AVLTree:
             pass
 
     def is_disjoint(self, other):
-        return (
-            all((element not in other) for element in self)
-            and all((element not in self) for element in other)
-        )
+        return all((element not in other) for element in self)
 
     def is_subset(self, other):
-        return all((element in other) for element in self)
+        return (
+            len(self) < len(other)
+            and all((element in other) for element in self)
+        )
 
     def is_superset(self, other):
-        return all((element in self) for element in other)
+        return (
+            len(self) > len(other)
+            and all((element in self) for element in other)
+        )
 
     def union(self, *others):
         tree = AVLTree()
