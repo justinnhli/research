@@ -68,6 +68,7 @@ def match_tree(token, rule):
 
     def _match_tree(token, rule, result):
         paren_count = 0
+        index = 0
         for index, char in enumerate(rule):
             if char == '(':
                 paren_count += 1
