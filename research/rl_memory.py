@@ -273,6 +273,28 @@ def memory_architecture(cls):
     return MemoryArchitectureMetaEnvironment
 
 
+class Activation:
+    """An abstract activation behavior."""
+
+    def init_activation(self):
+        """Initialize the activation of a new node.
+
+        Returns:
+            Mapping[Hashable, Any]: The data to be stored with the node.
+        """
+        raise NotImplementedError()
+
+    def activate(self, graph, mem_id, timestep):
+        """Activate a node.
+
+        Parameters:
+            graph (NetworkX.DiGraph): The knowledge graph.
+            mem_id (Hashable): The ID of the element to activate.
+            timestep (int): The time of activation.
+        """
+        raise NotImplementedError()
+
+
 class KnowledgeStore:
     """Generic interface to a knowledge base."""
 
@@ -442,17 +464,14 @@ class NaiveDictKB(KnowledgeStore):
 class NetworkXKB(KnowledgeStore):
     """A NetworkX implementation of a knowledge store."""
 
-    def __init__(self, activation_fn=None):
+    def __init__(self, activation=None):
         """Initialize the NetworkXKB.
 
         Parameters:
-            activation_fn (Callable[[NetworkX.DiGraph, Hashable], None]):
-                The function called when a node is activated.
+            activation (Activation): The activation behavior.
         """
         # parameters
-        if activation_fn is None:
-            activation_fn = (lambda graph, mem_id: None)
-        self.activation_fn = activation_fn
+        self.activation = activation
         # variables
         self.graph = MultiDiGraph()
         self.inverted_index = defaultdict(set)
@@ -470,9 +489,15 @@ class NetworkXKB(KnowledgeStore):
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph:
-            self.graph.add_node(mem_id, activation=0)
-        else:
-            self.activation_fn(self.graph, mem_id)
+            if self.activation is None:
+                self.graph.add_node(mem_id)
+            else:
+                self.graph.add_node(
+                    mem_id,
+                    **self.activation.init_activation(),
+                )
+        elif self.activation is not None:
+            self.activation.activate(self.graph, mem_id, timestep)
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=0)
@@ -481,7 +506,8 @@ class NetworkXKB(KnowledgeStore):
         return True
 
     def _activate_and_return(self, timestep, mem_id):
-        self.activation_fn(self.graph, mem_id)
+        if self.activation is not None:
+            self.activation.activate(self.graph, timestep, mem_id)
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
