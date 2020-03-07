@@ -89,21 +89,23 @@ def match_tree(token, rule):
                     return len(rule), None
                 index = index + len(word) + 1
             elif word.startswith('[') and word.endswith(']'):
-                result[word[1:-1]] = token
+                result[word[1:-1]] = str(token)
                 index = index + len(word) + 1
             elif word.startswith('('):
                 prev_index = index
                 for child in token.children:
                     if child.dep_ == word[1:]:
-                        span, result = _match_tree(child, rule[index:-1], result)
+                        span = _match_tree(child, rule[index:-1], result)
                         index += span
                 if prev_index == index:
-                    return len(rule), None
+                    result.clear()
+                    return len(rule)
             else:
                 index += len(word) + 1
-        return len(rule), result
+        return len(rule)
 
-    _, result = _match_tree(token, rule, {})
+    result = {}
+    _match_tree(token, rule, result)
     return result
 
 
