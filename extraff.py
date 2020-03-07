@@ -64,6 +64,44 @@ RULES = {
 }
 
 
+class FrozenDict:
+
+    def __init__(self, src_dict):
+        self._src_dict = src_dict
+        self._hash = hash(tuple(
+            (key, value) for key, value in self._src_dict.items()
+        ))
+
+    def __len__(self):
+        return len(self._src_dict)
+
+    def __contains__(self, key):
+        return key in self._src_dict
+
+    def __getitem__(self, key):
+        return self._src_dict[key]
+
+    def __eq__(self, other):
+        if isinstance(other, dict):
+            return self._src_dict == other
+        elif isinstance(other, FrozenDict):
+            return self._src_dict == other._src_dict
+        else:
+            return False
+
+    def __hash__(self):
+        return self._hash
+
+    def keys(self):
+        return self._src_dict.keys()
+
+    def values(self):
+        return self._src_dict.values()
+
+    def items(self):
+        return self._src_dict.items()
+
+
 def match_tree(token, rule):
 
     def _match_tree(token, rule, result):
