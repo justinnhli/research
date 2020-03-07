@@ -443,7 +443,12 @@ class NetworkXKB(KnowledgeStore):
     """A NetworkX implementation of a knowledge store."""
 
     def __init__(self, activation_fn=None):
-        """Initialize the NetworkXKB."""
+        """Initialize the NetworkXKB.
+
+        Parameters:
+            activation_fn (Callable[[NetworkX.DiGraph, Hashable], None]):
+                The function called when a node is activated.
+        """
         # parameters
         if activation_fn is None:
             activation_fn = (lambda graph, mem_id: None)
