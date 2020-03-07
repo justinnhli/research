@@ -10,7 +10,7 @@ sys.path.insert(0, dirname(DIRECTORY))
 # pylint: disable = wrong-import-position
 from research.knowledge_base import SparqlEndpoint
 from research.rl_environments import State, Action, Environment
-from research.rl_memory import memory_architecture, NaiveDictKB, NetworkXKB, SparqlKB
+from research.rl_memory import memory_architecture, Activation, NaiveDictKB, NetworkXKB, SparqlKB
 
 
 def test_memory_architecture():
@@ -140,46 +140,55 @@ def test_memory_architecture():
     assert reward == 100, reward
 
 
+class CountingActivation(Activation):
+    """A naive counting activation."""
+
+    def init_activation(self):
+        # pylint: disable = no-self-use
+        return {'activation': 0}
+
+    def activate(self, graph, mem_id, _):
+        # pylint: disable = no-self-use
+        graph.nodes[mem_id]['activation'] += 1
+
+
 def test_networkxkb():
     """Test the NetworkX KnowledgeStore."""
 
-    def activation_fn(graph, mem_id):
-        graph.nodes[mem_id]['activation'] += 1
-
-    store = NetworkXKB(activation_fn=activation_fn)
-    store.store('cat', is_a='mammal', has='fur', name='cat')
-    store.store('bear', is_a='mammal', has='fur', name='bear')
-    store.store('whale', is_a='mammal', lives_in='water')
-    store.store('whale', name='whale') # this activates whale
-    store.store('fish', is_a='animal', lives_in='water')
-    store.store('mammal', has='vertebra', is_a='animal')
+    store = NetworkXKB(activation=CountingActivation())
+    store.store(1, 'cat', is_a='mammal', has='fur', name='cat')
+    store.store(2, 'bear', is_a='mammal', has='fur', name='bear')
+    store.store(3, 'whale', is_a='mammal', lives_in='water')
+    store.store(4, 'whale', name='whale') # this activates whale
+    store.store(5, 'fish', is_a='animal', lives_in='water')
+    store.store(6, 'mammal', has='vertebra', is_a='animal')
     # retrieval
-    result = store.retrieve('whale')
+    result = store.retrieve(7, 'whale')
     assert sorted(result.items()) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
     # failed query
-    result = store.query({'has': 'vertebra', 'lives_in': 'water'})
+    result = store.query(8, {'has': 'vertebra', 'lives_in': 'water'})
     assert result is None
     # unique query
-    result = store.query({'has': 'vertebra'})
+    result = store.query(9, {'has': 'vertebra'})
     assert sorted(result.items()) == [('has', 'vertebra'), ('is_a', 'animal')]
     # query traversal
     store.store('cat')
     # at this point, whale has been activated twice (from the store and the retrieve)
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
-    result = store.query({'is_a': 'mammal'})
+    result = store.query(10, {'is_a': 'mammal'})
     assert result['name'] == 'whale'
     assert store.has_next_result
-    result = store.next_result()
+    result = store.next_result(11)
     assert result['name'] == 'cat'
     assert store.has_next_result
-    result = store.next_result()
+    result = store.next_result(12)
     assert result['name'] == 'bear'
     assert not store.has_next_result
     assert store.has_prev_result
-    result = store.prev_result()
+    result = store.prev_result(13)
     assert store.has_prev_result
-    result = store.prev_result()
+    result = store.prev_result(14)
     assert result['name'] == 'whale'
     assert not store.has_prev_result
 
@@ -192,13 +201,16 @@ def test_sparqlkb():
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
     # test retrieve
     store = SparqlKB(dbpedia)
-    result = store.retrieve('<http://dbpedia.org/resource/The_Wall>')
+    result = store.retrieve(-1, '<http://dbpedia.org/resource/The_Wall>')
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]
     # test query
-    result = store.query({
-        '<http://dbpedia.org/ontology/releaseDate>': '"1979-11-30"^^xsd:date',
-        '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>': '<http://dbpedia.org/ontology/Album>',
-    })
+    result = store.query(
+        -1,
+        {
+            '<http://dbpedia.org/ontology/releaseDate>': '"1979-11-30"^^xsd:date',
+            '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>': '<http://dbpedia.org/ontology/Album>',
+        },
+    )
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]
