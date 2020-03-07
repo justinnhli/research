@@ -109,11 +109,10 @@ def match_tree(token, rule):
     return result
 
 
-def print_parse_tree(doc):
+def print_parse_tree(doc, prefix=''):
 
     def print_token_tree(token, depth=0):
-        prefix = depth * '  '
-        print(f'{prefix} {token.dep_}: {token} ({token.pos_})')
+        print(f'{prefix}{depth * "  "} {token.dep_}: {token} ({token.pos_})')
         for child in token.children:
             print_token_tree(child, depth + 1)
 
