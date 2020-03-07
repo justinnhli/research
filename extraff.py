@@ -1,3 +1,5 @@
+import re
+from ast import literal_eval
 from collections import namedtuple
 
 import spacy
@@ -144,7 +146,7 @@ def match_tree(token, rule):
 
     result = {}
     _match_tree(token, rule, result)
-    return result
+    return FrozenDict(result)
 
 
 def print_parse_tree(doc, prefix=''):
@@ -175,24 +177,51 @@ def extract_semantics(doc):
                     elif len(match) == max_length:
                         rule_semantics.append(match)
             semantics.extend(rule_semantics)
-    return semantics
+    return set(semantics)
 
 
-def main():
-    sentences = [
-        'The knife cut through the rancid meat like hot butter.',
-        'She used the knife to free herself, and cut herself in the process.',
-        'She used the knife to free herself, and she cut herself in the process.',
-    ]
-    for sentence in sentences:
-        doc = NLP(sentence)
-        semantics = extract_semantics(doc)
-        print(sentence)
-        print_parse_tree(doc)
-        for semantic in semantics:
-            print(semantic)
-        print()
+def benchmark():
+
+    def print_failed(doc, actual, expected):
+        print(f'Failed sentence "{sentence}":')
+        print(f'    expected:')
+        for binding in extractions:
+            print('        {'
+                + ', '.join(f'{key}: {value}' for key, value in binding.items())
+                + '}'
+            )
+        print(f'    actual:')
+        for binding in actual:
+            print('        {'
+                + ', '.join(f'{key}: {value}' for key, value in binding.items())
+                + '}'
+            )
+        print(f'    parse tree:')
+        print_parse_tree(doc, prefix='        ')
+
+    count = 0
+    incorrect = 0
+    with open('benchmark') as fd:
+        sentence = None
+        extractions = set()
+        for line in [*fd.read().splitlines(), '']:
+            if line.startswith(' '):
+                assert "'" not in line
+                extractions.add(FrozenDict(literal_eval(
+                    '{' + re.sub(r'(\w+)', r'"\1"', line) + '}'
+                )))
+            else:
+                if sentence is not None:
+                    doc = NLP(sentence)
+                    actual = extract_semantics(doc)
+                    if actual != extractions:
+                        print_failed(doc, actual, extractions)
+                        incorrect += 1
+                    count += 1
+                sentence = line.strip()
+                extractions = set()
+    print(f'Score: {count - incorrect} / {count}')
 
 
 if __name__ == '__main__':
-    main()
+    benchmark()
