@@ -285,7 +285,7 @@ class KnowledgeStore:
 
         Arguments:
             timestep (int): The time of storage.
-            mem_id (any): The ID of the element. Defaults to None.
+            mem_id (Hashable): The ID of the element. Defaults to None.
             **kwargs: Attributes and values of the element to add.
 
         Returns:
@@ -298,7 +298,7 @@ class KnowledgeStore:
 
         Arguments:
             timestep (int): The time of retrieval.
-            mem_id (any): The ID of the desired element.
+            mem_id (Hashable): The ID of the desired element.
 
         Returns:
             TreeMultiMap: The desired element, or None.
@@ -362,7 +362,7 @@ class KnowledgeStore:
         """Determine if an object is a retrievable memory ID.
 
         Arguments:
-            mem_id (any): The object to check.
+            mem_id (Hashable): The object to check.
 
         Returns:
             bool: True if the object is a retrievable memory ID.
