@@ -280,10 +280,11 @@ class KnowledgeStore:
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
 
-    def store(self, mem_id=None, **kwargs):
+    def store(self, timestep, mem_id=None, **kwargs):
         """Add knowledge to the KB.
 
         Arguments:
+            timestep (int): The time of storage.
             mem_id (any): The ID of the element. Defaults to None.
             **kwargs: Attributes and values of the element to add.
 
@@ -292,10 +293,11 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
-    def retrieve(self, mem_id):
+    def retrieve(self, timestep, mem_id):
         """Retrieve the element with the given ID.
 
         Arguments:
+            timestep (int): The time of retrieval.
             mem_id (any): The ID of the desired element.
 
         Returns:
@@ -303,10 +305,11 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
-    def query(self, attr_vals):
+    def query(self, timestep, attr_vals):
         """Search the KB for elements with the given attributes.
 
         Arguments:
+            timestep (int): The time of query.
             attr_vals (Mapping[str, Any]): Attributes and values of the desired element.
 
         Returns:
@@ -323,8 +326,11 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
-    def prev_result(self):
+    def prev_result(self, timestep):
         """Get the prev element that matches the most recent search.
+
+        Parameters:
+            timestep (int): The time of retrieval.
 
         Returns:
             TreeMultiMap: A search result, or None.
@@ -340,8 +346,11 @@ class KnowledgeStore:
         """
         raise NotImplementedError()
 
-    def next_result(self):
+    def next_result(self, timestep):
         """Get the next element that matches the most recent search.
+
+        Parameters:
+            timestep (int): The time of retrieval.
 
         Returns:
             TreeMultiMap: A search result, or None.
@@ -375,14 +384,14 @@ class NaiveDictKB(KnowledgeStore):
         self.query_index = None
         self.query_matches = []
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, _, mem_id=None, **kwargs): # noqa: D102
         self.knowledge.append(TreeMultiMap(**kwargs))
         return True
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, _, mem_id): # noqa: D102
         raise NotImplementedError()
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, _, attr_vals): # noqa: D102
         candidates = []
         for candidate in self.knowledge:
             match = all(
@@ -413,7 +422,7 @@ class NaiveDictKB(KnowledgeStore):
     def has_prev_result(self): # noqa: D102
         return True
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, _): # noqa: D102
         self.query_index = (self.query_index - 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
 
@@ -421,7 +430,7 @@ class NaiveDictKB(KnowledgeStore):
     def has_next_result(self): # noqa: D102
         return True
 
-    def next_result(self): # noqa: D102
+    def next_result(self, _): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
 
@@ -452,7 +461,7 @@ class NetworkXKB(KnowledgeStore):
         self.query_results = None
         self.result_index = None
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, timestep, mem_id=None, **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph:
@@ -466,19 +475,19 @@ class NetworkXKB(KnowledgeStore):
             self.inverted_index[attribute].add(mem_id)
         return True
 
-    def _activate_and_return(self, mem_id):
+    def _activate_and_return(self, timestep, mem_id):
         self.activation_fn(self.graph, mem_id)
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
         return result
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, timestep, mem_id): # noqa: D102
         if mem_id not in self.graph:
             return None
-        return self._activate_and_return(mem_id)
+        return self._activate_and_return(timestep, mem_id)
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, timestep, attr_vals): # noqa: D102
         # first pass: get candidates with all the attributes
         candidates = set.intersection(*(
             self.inverted_index[attribute] for attribute in attr_vals.keys()
@@ -503,7 +512,7 @@ class NetworkXKB(KnowledgeStore):
             reverse=True,
         )
         self.result_index = 0
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(timestep, self.query_results[self.result_index])
 
     @property
     def has_prev_result(self): # noqa: D102
@@ -512,9 +521,9 @@ class NetworkXKB(KnowledgeStore):
             and self.result_index > 0
         )
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, timestep): # noqa: D102
         self.result_index -= 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(timestep, self.query_results[self.result_index])
 
     @property
     def has_next_result(self): # noqa: D102
@@ -523,9 +532,9 @@ class NetworkXKB(KnowledgeStore):
             and self.result_index < len(self.query_results) - 1
         )
 
-    def next_result(self): # noqa: D102
+    def next_result(self, timestep): # noqa: D102
         self.result_index += 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(timestep, self.query_results[self.result_index])
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
@@ -565,10 +574,10 @@ class SparqlKB(KnowledgeStore):
     def clear(self): # noqa: D102
         raise NotImplementedError()
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, _, mem_id=None, **kwargs): # noqa: D102
         raise NotImplementedError()
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, _, mem_id): # noqa: D102
         valid_mem_id = (
             isinstance(mem_id, str)
             and mem_id.startswith('<http')
@@ -610,7 +619,7 @@ class SparqlKB(KnowledgeStore):
             result[binding['attr'].rdf_format].add(val)
         return {attr: max(vals) for attr, vals in result.items()}
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, timestep, attr_vals): # noqa: D102
         query_terms = tuple((k, v) for k, v in sorted(attr_vals.items()))
         if query_terms not in self.query_cache:
             mem_id = self._true_query(attr_vals)
@@ -622,7 +631,7 @@ class SparqlKB(KnowledgeStore):
             return TreeMultiMap()
         else:
             self.prev_query = attr_vals
-            return self.retrieve(mem_id)
+            return self.retrieve(timestep, mem_id)
 
     def _true_query(self, attr_vals, offset=0):
         condition = ' ; '.join(
@@ -644,7 +653,7 @@ class SparqlKB(KnowledgeStore):
     def has_prev_result(self): # noqa: D102
         return self.prev_query is not None and self.query_offset > 0
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, _): # noqa: D102
         if not self.has_prev_result:
             return None
         self.query_offset -= 1
@@ -654,7 +663,7 @@ class SparqlKB(KnowledgeStore):
     def has_next_result(self): # noqa: D102
         return self.prev_query is not None
 
-    def next_result(self): # noqa: D102
+    def next_result(self, _): # noqa: D102
         if not self.has_next_result:
             return None
         self.query_offset += 1
