@@ -468,9 +468,9 @@ class NetworkXKB(KnowledgeStore):
 
     def _activate_and_return(self, mem_id):
         self.activation_fn(self.graph, mem_id)
-        result = TreeMultiMap()
+        result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
-            result.add(data['attribute'], value)
+            result[data['attribute']] = value
         return result
 
     def retrieve(self, mem_id): # noqa: D102
