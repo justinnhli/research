@@ -375,7 +375,7 @@ class NaiveDictKB(KnowledgeStore):
         self.query_index = None
         self.query_matches = []
 
-    def store(self, **kwargs): # noqa: D102
+    def store(self, mem_id=None, **kwargs): # noqa: D102
         self.knowledge.append(AVLTree.from_dict(kwargs))
         return True
 
