@@ -1,5 +1,7 @@
 """Reinforcement learning environments."""
 
+from typing import Any, Type, Iterable, Tuple, List
+
 from .randommixin import RandomMixin
 from .data_structures import TreeMultiMap
 
@@ -8,6 +10,7 @@ class Environment:
     """A reinforcement learning environment."""
 
     def get_state(self):
+        # type: () -> State
         """Get the current state.
 
         This is different from get_observation() in that the state includes
@@ -22,6 +25,7 @@ class Environment:
         raise NotImplementedError()
 
     def get_observation(self):
+        # type: () -> State
         """Get the current observation.
 
         See note on get_state() for the difference between the methods.
@@ -32,6 +36,7 @@ class Environment:
         return self.get_state()
 
     def get_actions(self):
+        # type: () -> List[Action]
         """Get the available actions.
 
         Returns:
@@ -40,6 +45,7 @@ class Environment:
         raise NotImplementedError()
 
     def end_of_episode(self):
+        # type: () -> bool
         """Determine if the episode has ended.
 
         Returns:
@@ -48,6 +54,7 @@ class Environment:
         return self.get_actions() == []
 
     def reset(self):
+        # type: () -> None
         """Reset the environment entirely.
 
         The result of calling this method should have the same effect as
@@ -57,6 +64,7 @@ class Environment:
         raise NotImplementedError()
 
     def start_new_episode(self):
+        # type: () -> None
         """Reset the environment for a new episode.
 
         See note on reset() for the difference between the methods.
@@ -64,6 +72,7 @@ class Environment:
         raise NotImplementedError()
 
     def react(self, action):
+        # type: (Action) -> float
         """Update the environment to an agent action.
 
         Assumes the argument is one of the returned actions from get_actions().
@@ -77,6 +86,7 @@ class Environment:
         raise NotImplementedError()
 
     def visualize(self):
+        # type: () -> str
         """Create visualization of the environment.
 
         Returns:
@@ -89,6 +99,7 @@ class Action(TreeMultiMap):
     """An action in a reinforcement learning environment."""
 
     def __init__(self, name, **kwargs):
+        # type: (str, **Any) -> None
         """Initialize an Action object.
 
         Arguments:
@@ -99,9 +110,11 @@ class Action(TreeMultiMap):
         self.name = name
 
     def __hash__(self):
+        # type: () -> int
         return hash(tuple([self.name, *self]))
 
     def __lt__(self, other):
+        # type: (Any) -> bool
         if self.name < other.name:
             return True
         elif self.name > other.name:
@@ -110,12 +123,14 @@ class Action(TreeMultiMap):
             return super().__lt__(other)
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         # pylint: disable = protected-access
         if not isinstance(other, Action):
             return False
         return self.name == other.name and super().__eq__(other)
 
     def __str__(self):
+        # type: () -> str
         return 'Action("{}", {})'.format(
             self.name,
             ', '.join('{}={}'.format(k, v) for k, v in self.items()),
@@ -126,6 +141,7 @@ class State(TreeMultiMap):
     """A state or observation in a reinforcement learning environment."""
 
     def __init__(self, **kwargs):
+        # type: (**Any) -> None
         """Initialize a State object.
 
         Arguments:
@@ -138,6 +154,7 @@ class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
 
     def __init__(self, width, height, start, goal, *args, **kwargs):
+        # type: (int, int, Tuple[int, int], Tuple[int, int], *Any, **Any) -> None
         """Initialize a GridWorld.
 
         Arguments:
@@ -148,7 +165,7 @@ class GridWorld(Environment):
             *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs) # type: ignore
         self.width = width
         self.height = height
         self.start = list(start)
@@ -157,9 +174,11 @@ class GridWorld(Environment):
         self.col = start[1]
 
     def get_state(self): # noqa: D102
+        # type: () -> State
         return State(row=self.row, col=self.col)
 
     def get_actions(self): # noqa: D102
+        # type: () -> List[Action]
         if [self.row, self.col] == self.goal:
             return []
         actions = []
@@ -174,13 +193,16 @@ class GridWorld(Environment):
         return actions
 
     def reset(self): # noqa: D102
+        # type: () -> None
         self.start_new_episode()
 
     def start_new_episode(self): # noqa: D102
+        # type: () -> None
         self.row = self.start[0]
         self.col = self.start[1]
 
-    def react(self, action=None): # noqa: D102
+    def react(self, action): # noqa: D102
+        # type: (Action) -> float
         assert action in self.get_actions()
         if action.name == 'up':
             self.row = max(0, self.row - 1)
@@ -196,10 +218,12 @@ class GridWorld(Environment):
             return -1
 
     def visualize(self): # noqa: D102
+        # type: () -> str
         raise NotImplementedError
 
 
 def augment_state(state, memories, prefix):
+    # type: (State, Iterable[Any], str) -> State
     """Add memory items to states and observations.
 
     Note that we need to remove existing 'memory_' attributes because
@@ -221,6 +245,7 @@ def augment_state(state, memories, prefix):
 
 
 def gating_memory(cls):
+    # type: (Type[Environment]) -> Type[Environment]
     """Decorate an Environment to include a gating memory.
 
     This decorator function takes a class (and some parameters) and, on the
@@ -240,7 +265,7 @@ def gating_memory(cls):
     """
     assert issubclass(cls, Environment)
 
-    class GatingMemoryMetaEnvironment(cls):
+    class GatingMemoryMetaEnvironment(cls): # type: ignore
         """A subclass to add a gating memory to an Environment."""
 
         # pylint: disable = missing-docstring
@@ -248,6 +273,7 @@ def gating_memory(cls):
         ATTR_PREFIX = 'memory_'
 
         def __init__(self, num_memory_slots=1, reward=0, *args, **kwargs):
+            # type: (int, float, *Any, **Any) -> None
             """Initialize a GatingMemoryMetaEnvironment.
 
             Arguments:
@@ -262,18 +288,21 @@ def gating_memory(cls):
             self.memories = num_memory_slots * [None]
 
         def get_state(self):
+            # type: () -> State
             state = super().get_state()
             if state is None:
                 return None
             return augment_state(state, self.memories, self.ATTR_PREFIX)
 
         def get_observation(self):
+            # type: () -> State
             observation = super().get_observation()
             if observation is None:
                 return None
             return augment_state(observation, self.memories, self.ATTR_PREFIX)
 
         def get_actions(self):
+            # type: () -> List[Action]
             actions = super().get_actions()
             if actions == []:
                 return actions
@@ -288,14 +317,17 @@ def gating_memory(cls):
             return actions
 
         def reset(self):
+            # type: () -> None
             super().reset()
             self.memories = len(self.memories) * [None]
 
         def start_new_episode(self):
+            # type: () -> None
             super().start_new_episode()
             self.memories = len(self.memories) * [None]
 
         def react(self, action):
+            # type: (Action) -> float
             if action.name == 'gate':
                 self.memories[action.slot] = getattr(super().get_observation(), action.attribute)
                 return self.reward
@@ -306,6 +338,7 @@ def gating_memory(cls):
 
 
 def fixed_long_term_memory(cls):
+    # type: (Type[Environment]) -> Type[Environment]
     """Decorate an Environment to include a long-term memory of fixed size.
 
     Arguments:
@@ -316,7 +349,7 @@ def fixed_long_term_memory(cls):
     """
     assert issubclass(cls, Environment)
 
-    class LongTermMemoryMetaEnvironment(cls):
+    class LongTermMemoryMetaEnvironment(cls): # type: ignore
         """A subclass to add a long-term memory to an Environment."""
 
         # pylint: disable = missing-docstring
@@ -325,6 +358,7 @@ def fixed_long_term_memory(cls):
         LTM_PREFIX = 'ltm_' # pylint: disable = invalid-name
 
         def __init__(self, num_wm_slots=1, num_ltm_slots=1, reward=0, *args, **kwargs):
+            # type: (int, int, float, *Any, **Any) -> None
             """Initialize a LongTermMemoryMetaEnvironment.
 
             Arguments:
@@ -341,6 +375,7 @@ def fixed_long_term_memory(cls):
             self.ltm = num_ltm_slots * [None]
 
         def get_state(self):
+            # type: () -> State
             state = super().get_state()
             if state is None:
                 return None
@@ -349,12 +384,14 @@ def fixed_long_term_memory(cls):
             return state
 
         def get_observation(self):
+            # type: () -> State
             observation = super().get_observation()
             if observation is None:
                 return None
             return augment_state(observation, self.wm, self.WM_PREFIX)
 
         def get_actions(self):
+            # type: () -> List[Action]
             actions = super().get_actions()
             if actions == []:
                 return actions
@@ -372,16 +409,19 @@ def fixed_long_term_memory(cls):
             return actions
 
         def reset(self):
+            # type: () -> None
             super().reset()
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
         def start_new_episode(self):
+            # type: () -> None
             super().start_new_episode()
             self.wm = len(self.wm) * [None]
             self.ltm = len(self.ltm) * [None]
 
         def react(self, action):
+            # type: (Action) -> float
             if action.name == 'store':
                 self.ltm[action.slot] = getattr(super().get_observation(), action.attribute)
                 return self.reward
@@ -398,6 +438,7 @@ class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
     def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs):
+        # type: (int, int, int, *Any, **Any) -> None
         """Initialize the TMaze.
 
         Arguments:
@@ -419,15 +460,18 @@ class SimpleTMaze(Environment, RandomMixin):
         self.goal_x = 0 # dummy value
 
     def get_state(self): # noqa: D102
+        # type: () -> State
         observation = self.get_observation()
         return State(goal_x=self.goal_x, **observation)
 
     def get_observation(self): # noqa: D102
+        # type: () -> State
         if self.y == self.hint_pos:
             return State(x=self.x, y=self.y, symbol=self.goal_x)
         return State(x=self.x, y=self.y, symbol=0)
 
     def get_actions(self): # noqa: D102
+        # type: () -> List[Action]
         actions = []
         if self.x == 0:
             if self.y < self.length:
@@ -438,9 +482,11 @@ class SimpleTMaze(Environment, RandomMixin):
         return actions
 
     def reset(self): # noqa: D102
+        # type: () -> None
         self.start_new_episode()
 
     def start_new_episode(self): # noqa: D102
+        # type: () -> None
         self.x = 0
         self.y = 0
         if self.init_goal_x == 0:
@@ -449,6 +495,7 @@ class SimpleTMaze(Environment, RandomMixin):
             self.goal_x = self.init_goal_x
 
     def react(self, action): # noqa: D102
+        # type: (Action) -> float
         assert action in self.get_actions()
         if action.name == 'up':
             self.y += 1
@@ -469,6 +516,7 @@ class SimpleTMaze(Environment, RandomMixin):
             return -1
 
     def visualize(self): # noqa: D102
+        # type: () -> str
         lines = []
         for _ in range(self.length + 1):
             lines.append([' ', '_', ' '])
