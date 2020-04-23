@@ -1,10 +1,13 @@
 """Utility data structures."""
 
+from typing import Any, Optional, Iterable, Iterator, Generator, Mapping, Hashable, AbstractSet, Tuple, ValuesView
+
 
 class UnionFind:
     """UnionFind for discrete sets."""
 
     def __init__(self, nodes=None):
+        # type: (Optional[Iterable[Hashable]]) -> None
         """Initialize the UnionFind.
 
         Arguments:
@@ -15,12 +18,15 @@ class UnionFind:
         self.parents = {node: node for node in nodes}
 
     def __len__(self):
+        # type: () -> int
         return len(self.parents)
 
     def __contains__(self, node):
+        # type: (Hashable) -> bool
         return node in self.parents
 
     def __getitem__(self, node):
+        # type: (Hashable) -> Hashable
         path = []
         while self.parents[node] != node:
             path.append(node)
@@ -32,12 +38,15 @@ class UnionFind:
         return rep
 
     def __iter__(self):
+        # type: () -> Iterator[Hashable]
         return iter(self.parents)
 
     def __bool__(self):
+        # type: () -> bool
         return bool(self.parents)
 
     def union(self, node1, node2):
+        # type: (Hashable, Hashable) -> None
         """Join two discrete sets.
 
         Arguments:
@@ -51,6 +60,7 @@ class UnionFind:
         self.parents[rep2] = rep1
 
     def same(self, node1, node2):
+        # type: (Hashable, Hashable) -> bool
         """Check if two members are in the same set.
 
         Arguments:
@@ -63,6 +73,7 @@ class UnionFind:
         return self[node1] == self[node2]
 
     def add(self, node, parent=None):
+        # type: (Hashable, Optional[Hashable]) -> bool
         """Add a node.
 
         Arguments:
@@ -80,7 +91,7 @@ class UnionFind:
         return True
 
 
-class TreeMultiMap:
+class TreeMultiMap(Mapping[Any, Any]):
     """A tree-based multi-map."""
 
     UNIQUE_KEY = 0
@@ -91,6 +102,7 @@ class TreeMultiMap:
         """A tree node."""
 
         def __init__(self, key, value):
+            # type: (Any, Any) -> None
             """Initialize the Node.
 
             Arguments:
@@ -99,15 +111,17 @@ class TreeMultiMap:
             """
             self.key = key
             self.value = value
-            self.left = None
-            self.right = None
+            self.left = None # type: Optional[TreeMultiMap.Node]
+            self.right = None # type: Optional[TreeMultiMap.Node]
             self.height = 1
             self.balance = 0
 
         def __contains__(self, key):
+            # type: (Any) -> bool
             return self.get_first(key) is not None
 
         def __iter__(self):
+            # type: () -> Generator[TreeMultiMap.Node, None, None]
             if self.left:
                 yield from self.left # pylint: disable = not-an-iterable
             yield self
@@ -115,10 +129,12 @@ class TreeMultiMap:
                 yield from self.right # pylint: disable = not-an-iterable
 
         def __str__(self):
+            # type: () -> str
             return f'Node({self.key}, {self.value})'
 
         @property
         def childless(self):
+            # type: () -> bool
             """Whether a node has children.
 
             Returns:
@@ -128,6 +144,7 @@ class TreeMultiMap:
             return self.left is None and self.right is None
 
         def get_first(self, key):
+            # type: (Any) -> Any
             """Find the first node in the subtree with a given key.
 
             Arguments:
@@ -152,6 +169,7 @@ class TreeMultiMap:
             return None
 
         def get_last(self, key):
+            # type: (Any) -> Any
             """Find the last node in the subtree with a given key.
 
             Arguments:
@@ -176,6 +194,7 @@ class TreeMultiMap:
             return None
 
         def yield_all(self, key):
+            # type: (Any) -> Generator[Any, None, None]
             """Iterate through all nodes with a given key.
 
             Arguments:
@@ -196,6 +215,7 @@ class TreeMultiMap:
                     yield from self.right.yield_all(key)
 
         def update_height_balance(self):
+            # type: () -> None
             """Update the height and balance of this node."""
             if self.left:
                 left_height = self.left.height
@@ -209,6 +229,7 @@ class TreeMultiMap:
             self.height = max(left_height, right_height) + 1
 
     def __init__(self, multi_level=None, **kwargs):
+        # type: (int, **str) -> None
         """Initialize the TreeMultiMap.
 
         Arguments:
@@ -217,7 +238,7 @@ class TreeMultiMap:
                 constants of the TreeMultiMap class.
             **kwargs: Arbitrary keyword arguments.
         """
-        self.root = None
+        self.root = None # type: Optional[TreeMultiMap.Node]
         self.size = 0
         if multi_level is None:
             self._multi_level = TreeMultiMap.UNIQUE_KEY
@@ -228,6 +249,7 @@ class TreeMultiMap:
 
     @property
     def multi_level(self):
+        # type: () -> int
         """Return the degree of multi-mapping of this tree.
 
         Returns:
@@ -238,12 +260,15 @@ class TreeMultiMap:
         return self._multi_level
 
     def __bool__(self):
+        # type: () -> bool
         return self.size != 0
 
     def __len__(self):
+        # type: () -> int
         return self.size
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         if not isinstance(other, TreeMultiMap):
             return False
         if self.size != other.size:
@@ -258,9 +283,11 @@ class TreeMultiMap:
         return True
 
     def __hash__(self):
+        # type: () -> int
         return hash(tuple(self.items()))
 
     def __lt__(self, other):
+        # type: (Any) -> bool
         assert isinstance(other, TreeMultiMap)
         if self.root is None and other.root is None:
             return False
@@ -280,14 +307,17 @@ class TreeMultiMap:
         return self.size < other.size
 
     def __contains__(self, key):
+        # type: (Any) -> bool
         if self.root is None:
             return False
         return key in self.root
 
     def __iter__(self):
+        # type: () -> Generator[Any, None, None]
         yield from self.keys()
 
     def __getattr__(self, name):
+        # type: (Any) -> Any
         try:
             result = self.get_first(name)
             if result is None:
@@ -297,11 +327,13 @@ class TreeMultiMap:
             raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
 
     def __getitem__(self, key):
+        # type: (Any) -> Any
         if self.root is None:
             return None
         return next(self.root.yield_all(key)).value
 
     def __setitem__(self, key, value):
+        # type: (Any, Any) -> None
         if self.multi_level != TreeMultiMap.UNIQUE_KEY:
             raise NotImplementedError()
         if self.root is not None:
@@ -311,9 +343,11 @@ class TreeMultiMap:
         self.add(key, value)
 
     def __delitem__(self, key):
+        # type: (Any) -> None
         self.remove(key, self.get_first(key))
 
     def _compare(self, key, value, node):
+        # type: (Any, Any, Node) -> int
         if self._multi_level == TreeMultiMap.UNIQUE_KEY:
             comp_key = key
             node_key = node.key
@@ -328,11 +362,13 @@ class TreeMultiMap:
             return 0
 
     def clear(self):
+        # type: () -> None
         """Remove all key and values."""
         self.root = None
         self.size = 0
 
     def _balance(self, node):
+        # type: (Node) -> Node
         node.update_height_balance()
         if node.balance < -1:
             return self._balance_left(node)
@@ -342,6 +378,7 @@ class TreeMultiMap:
             return node
 
     def _balance_left(self, node):
+        # type: (Node) -> Node
         if node.left.balance == -1:
             return self._rotate_right(node)
         elif node.left.balance == 0:
@@ -356,6 +393,7 @@ class TreeMultiMap:
         return None
 
     def _balance_right(self, node):
+        # type: (Node) -> Node
         if node.right.balance == 1:
             return self._rotate_left(node)
         elif node.right.balance == 0:
@@ -370,6 +408,7 @@ class TreeMultiMap:
         return None
 
     def add(self, key, value):
+        # type: (Any, Any) -> None
         """Associate the value with the key.
 
         Arguments:
@@ -380,6 +419,7 @@ class TreeMultiMap:
         self.size += 1
 
     def _add(self, key, value, node):
+        # type: (Any, Any, Node) -> Node
         if node is None:
             return TreeMultiMap.Node(key, value)
         comparison = self._compare(key, value, node)
@@ -396,6 +436,7 @@ class TreeMultiMap:
         return self._balance(node)
 
     def get(self, key, default=None):
+        # type: (Any, Optional[Any]) -> Any
         """Get a key or return a default value.
 
         Arguments:
@@ -411,13 +452,14 @@ class TreeMultiMap:
             return default
 
     def get_first(self, key):
+        # type: (Any) -> Any
         """Find the first value with a given key.
 
         Arguments:
             key (Any): The key to find.
 
         Returns:
-            Node: The first value with the given key, or None.
+            Any: The first value with the given key, or None.
         """
         if self.root is None:
             return None
@@ -428,13 +470,14 @@ class TreeMultiMap:
             return node.value
 
     def get_last(self, key):
+        # type: (Any) -> Any
         """Find the last value with a given key.
 
         Arguments:
             key (Any): The key to find.
 
         Returns:
-            Node: The last value with the given key, or None.
+            Any: The last value with the given key, or None.
         """
         if self.root is None:
             return None
@@ -445,6 +488,7 @@ class TreeMultiMap:
             return node.value
 
     def yield_all(self, key):
+        # type: (Any) -> Generator[Any, None, None]
         """Iterate through all nodes with a given key.
 
         Arguments:
@@ -457,6 +501,7 @@ class TreeMultiMap:
             yield node.value
 
     def remove(self, key, value):
+        # type: (Any, Any) -> None
         """Remove the key-value pair from the map.
 
         Arguments:
@@ -470,6 +515,7 @@ class TreeMultiMap:
         self.size -= 1
 
     def _remove(self, key, value, node):
+        # type: (Any, Any, Node) -> Node
         if node is None:
             raise ValueError('key-value does not exist in map')
         comparison = self._compare(key, value, node)
@@ -489,6 +535,7 @@ class TreeMultiMap:
         return self._balance(node)
 
     def _remove_left(self, node):
+        # type: (Node) -> Node
         replace_node = node.left
         if replace_node.right:
             while replace_node.right:
@@ -502,6 +549,7 @@ class TreeMultiMap:
         return node
 
     def _remove_right(self, node):
+        # type: (Node) -> Node
         replace_node = node.right
         if replace_node.left:
             while replace_node.left:
@@ -515,6 +563,7 @@ class TreeMultiMap:
         return node
 
     def keys(self):
+        # type: () -> AbstractSet[Any]
         """Iterate through all keys.
 
         Yields:
@@ -526,6 +575,7 @@ class TreeMultiMap:
             yield node.key
 
     def values(self):
+        # type: () -> ValuesView[Any]
         """Iterate through all values.
 
         Yields:
@@ -537,6 +587,7 @@ class TreeMultiMap:
             yield node.value
 
     def items(self):
+        # type: () -> AbstractSet[Tuple[Any, Any]]
         """Iterate through all key-value pairs.
 
         Yields:
@@ -549,6 +600,7 @@ class TreeMultiMap:
 
     @staticmethod
     def _rotate_left(node):
+        # type: (Node) -> Node
         r"""Perform a left rotation.
 
         If the node is B, go from:
@@ -578,6 +630,7 @@ class TreeMultiMap:
 
     @staticmethod
     def _rotate_right(node):
+        # type: (Node) -> Node
         r"""Perform a right rotation.
 
         If the node is C, go from:
@@ -607,6 +660,7 @@ class TreeMultiMap:
 
     @staticmethod
     def from_dict(src_dict):
+        # type: (Mapping[Any, Any]) -> TreeMultiMap
         """Create a TreeMultiMap from a dictionary.
 
         Arguments:
