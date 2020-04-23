@@ -1,12 +1,14 @@
 """Encapsulate a randomized object."""
 
 from random import Random, random
+from typing import Any
 
 
 class RandomMixin:
     """Encapsulation of a randomized object."""
 
     def __init__(self, random_seed=None):
+        # type: (Any) -> None
         """Initialize the RandomClass.
 
         Arguments:
