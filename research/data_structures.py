@@ -1,6 +1,8 @@
 """Utility data structures."""
 
-from typing import Any, Optional, Iterable, Iterator, Generator, Mapping, Hashable, AbstractSet, Tuple, ValuesView
+from typing import Any, Optional, Union
+from typing import Iterable, Iterator, Generator, Mapping, Hashable, Callable, Collection, AbstractSet
+from typing import Tuple, Set, Dict, ValuesView
 
 
 class UnionFind:
@@ -91,7 +93,7 @@ class UnionFind:
         return True
 
 
-class AVLTree:
+class AVLTree(Mapping[Any, Any]):
     # pylint: disable = too-many-public-methods
     """AVLTree as a set and as a dict."""
 
@@ -99,6 +101,7 @@ class AVLTree:
         """An AVL tree node."""
 
         def __init__(self, key, value):
+            # type: (Any, Any) -> None
             """Initialize the Node.
 
             Arguments:
@@ -107,12 +110,13 @@ class AVLTree:
             """
             self.key = key
             self.value = value
-            self.left = None
-            self.right = None
+            self.left = None # type: Optional[AVLTree.Node]
+            self.right = None # type: Optional[AVLTree.Node]
             self.height = 1
             self.balance = 0
 
         def update_metadata(self):
+            # type: () -> None
             """Update the height and balance of the node."""
             left_height = (self.left.height if self.left else 0)
             right_height = (self.right.height if self.right else 0)
@@ -120,6 +124,7 @@ class AVLTree:
             self.balance = right_height - left_height
 
     def __init__(self, factory=None):
+        # type: (Callable[[], Any]) -> None
         """Initialize the AVLTree.
 
         Parameters:
@@ -128,15 +133,21 @@ class AVLTree:
         """
         self.factory = factory
         self.size = 0
-        self.root = None
+        self.root = None # type: Optional[AVLTree.Node]
 
     def __getattr__(self, name):
+        # type: (str) -> Any
         node = self._get_node(name)
         if node is None:
             raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
         return node.value
 
+    def __bool__(self):
+        # type: () -> bool
+        return self.size != 0
+
     def __eq__(self, other):
+        # type: (Any) -> bool
         if type(self) is not type(other):
             return False
         if len(self) != len(other):
@@ -146,20 +157,29 @@ class AVLTree:
                 return False
         return True
 
+    def __lt__(self, other):
+        # type: (Any) -> bool
+        pass # FIXME
+
     def __len__(self):
+        # type: () -> int
         return self.size
 
     def __contains__(self, key):
+        # type: (Any) -> bool
         return self._get_node(key) is not None
 
     def __iter__(self):
+        # type: () -> Generator[Any, None, None]
         for node in self._nodes():
             yield node.key
 
     def __setitem__(self, key, value):
+        # type: (Any, Any) -> None
         self._put(key, value)
 
     def __getitem__(self, key):
+        # type: (Any) -> Any
         node = self._get_node(key)
         if node is not None:
             return node.value
@@ -171,12 +191,15 @@ class AVLTree:
             return result
 
     def __delitem__(self, key):
+        # type: (Any) -> None
         self._del(key)
 
     def _put(self, key, value):
+        # type: (Any, Any) -> None
         self.root = self._put_helper(self.root, key, value)
 
     def _put_helper(self, node, key, value):
+        # type: (AVLTree.Node, Any, Any) -> AVLTree.Node
         if node is None:
             self.size += 1
             return self.Node(key, value)
@@ -190,8 +213,11 @@ class AVLTree:
         return self._balance(node)
 
     def _get_node(self, key):
+        # type: (Any) -> AVLTree.Node
 
         def _get_node_helper(node, key):
+            # type: (AVLTree.Node, Any) -> AVLTree.Node
+            # FIXME should the first argument be Optional?
             if node is None:
                 return None
             elif key < node.key:
@@ -204,10 +230,12 @@ class AVLTree:
         return _get_node_helper(self.root, key)
 
     def _del(self, key):
+        # type: (Any) -> Any
         self.root, value = self._del_helper(self.root, key)
         return value
 
     def _del_helper(self, node, key):
+        # type: (AVLTree.Node, Any) -> Tuple[AVLTree.Node, Any]
         value = None
         if node is None:
             raise KeyError(key)
@@ -235,8 +263,10 @@ class AVLTree:
         return self._balance(node), value
 
     def _nodes(self):
+        # type: () -> Generator[AVLTree.Node, None, None]
 
         def _nodes_helper(node):
+            # type: (Optional[AVLTree.Node]) -> Generator[AVLTree.Node, None, None]
             if node is None:
                 return
             yield from _nodes_helper(node.left)
@@ -246,11 +276,13 @@ class AVLTree:
         yield from _nodes_helper(self.root)
 
     def clear(self):
+        # type: () -> None
         """Remove all elements from the AVLTree."""
         self.size = 0
         self.root = None
 
     def add(self, element):
+        # type: (Any) -> None
         """Add an element to the AVLTree (set).
 
         Parameters:
@@ -259,6 +291,7 @@ class AVLTree:
         self._put(element, None)
 
     def remove(self, element):
+        # type: (Any) -> None
         """Remove an element from the set.
 
         Parameters:
@@ -270,6 +303,7 @@ class AVLTree:
         self._del(element)
 
     def discard(self, element):
+        # type: (Any) -> None
         """Remove an element from the set if it is present.
 
         Parameters:
@@ -281,6 +315,7 @@ class AVLTree:
             pass
 
     def is_disjoint(self, other):
+        # type: (Iterable[Any]) -> bool
         """Check if the two sets are disjoint.
 
         Parameters:
@@ -292,6 +327,7 @@ class AVLTree:
         return all((element not in other) for element in self)
 
     def is_subset(self, other):
+        # type: (Collection[Any]) -> bool
         """Check if this is a subset of another set.
 
         Parameters:
@@ -306,6 +342,7 @@ class AVLTree:
         )
 
     def is_superset(self, other):
+        # type: (Collection[Any]) -> bool
         """Check if this is a superset of another set.
 
         Parameters:
@@ -320,6 +357,7 @@ class AVLTree:
         )
 
     def union(self, *others):
+        # type: (*Iterable[Any]) -> AVLTree
         """Create the union of this and other sets.
 
         Parameters:
@@ -333,6 +371,7 @@ class AVLTree:
         return tree
 
     def intersection(self, *others):
+        # type: (*Collection[Any]) -> AVLTree
         """Create the intersection of this and other sets.
 
         Parameters:
@@ -342,12 +381,13 @@ class AVLTree:
             AVLTree: The intersection of all the sets.
         """
         tree = AVLTree()
-        tree.union_update(min(others, key=len))
+        tree.union_update(min(others, key=len)) # type: ignore
         tree.intersection_update(self)
         tree.intersection_update(*others)
         return tree
 
     def difference(self, *others):
+        # type: (*Iterable[Any]) -> AVLTree
         """Create the difference of this and other sets.
 
         Parameters:
@@ -362,6 +402,7 @@ class AVLTree:
         return tree
 
     def union_update(self, *others):
+        # type: (*Iterable[Any]) -> None
         """Update this set to be the union of this and other sets.
 
         Parameters:
@@ -372,17 +413,19 @@ class AVLTree:
                 self.add(element)
 
     def intersection_update(self, *others):
+        # type: (*Iterable[Any]) -> None
         """Keep only the intersection of this and other sets.
 
         Parameters:
             *others (Set[Any]): The other sets.
         """
-        others = sorted(others, key=len)
+        sorted_others = sorted(others, key=len) # type: ignore
         for element in self:
-            if any((element not in other) for other in others):
+            if any((element not in other) for other in sorted_others):
                 self.remove(element)
 
     def difference_update(self, *others):
+        # type: (*Iterable[Any]) -> None
         """Keep only the difference of this and other sets.
 
         Parameters:
@@ -395,6 +438,7 @@ class AVLTree:
                 self.remove(element)
 
     def setdefault(self, key, default=None):
+        # type: (Any, Optional[Any]) -> Any
         """Get the value of a key, or set it to the default.
 
         Parameters:
@@ -412,18 +456,22 @@ class AVLTree:
             return node.value
 
     def update(self, *mappings):
+        # type: (*Union[AbstractSet[Tuple[Any, Any]], Mapping[Any, Any]]) -> None
         """Add the key and values to the map, overwriting existing values.
 
         Parameters:
             *mappings (Mapping[Any, Any]): The key-value pairs to be added or updated.
         """
         for mapping in mappings:
-            if isinstance(mapping, dict):
-                mapping = mapping.items()
-            for key, value in mapping:
-                self._put(key, value)
+            if isinstance(mapping, Mapping):
+                for key, value in mapping.items():
+                    self._put(key, value)
+            else:
+                for key, value in mapping:
+                    self._put(key, value)
 
     def get(self, key, default=None):
+        # type: (Any, Any) -> Any
         """Return the value for the key, or the default if it doesn't exist.
 
         Parameters:
@@ -440,6 +488,7 @@ class AVLTree:
             return node.value
 
     def pop(self, key, default=None):
+        # type: (Any, Any) -> Any
         """Remove the key and return the value, or the default if it doesn't exist.
 
         Parameters:
@@ -447,7 +496,7 @@ class AVLTree:
             default (Any): The default value to return. Defaults to None.
 
         Returns:
-            Any: THe value or the default.
+            Any: The value or the default.
         """
         try:
             value = self._del(key)
@@ -456,6 +505,7 @@ class AVLTree:
             return default
 
     def keys(self):
+        # type: () -> AbstractSet[Any]
         """Create a generator of the keys.
 
         Yields:
@@ -465,6 +515,7 @@ class AVLTree:
             yield node.key
 
     def values(self):
+        # type: () -> ValuesView[Any]
         """Create a generator of the values.
 
         Yields:
@@ -474,6 +525,7 @@ class AVLTree:
             yield node.value
 
     def items(self):
+        # type: () -> AbstractSet[Tuple[Any, Any]]
         """Create a generator of the key-value pairs.
 
         Yields:
@@ -483,6 +535,7 @@ class AVLTree:
             yield node.key, node.value
 
     def to_set(self):
+        # type: () -> Set[Any]
         """Return the elements in a normal set.
 
         Returns:
@@ -491,6 +544,7 @@ class AVLTree:
         return set(self)
 
     def to_dict(self):
+        # type: () -> Dict[Any, Any]
         """Return the keyus and values in a normal dict.
 
         Returns:
@@ -500,12 +554,13 @@ class AVLTree:
 
     @staticmethod
     def _balance(node):
+        # type: (AVLTree.Node) -> Node
         node.update_metadata()
         if node.balance < -1:
             if node.left.balance == 1:
                 node.left = AVLTree._rotate_ccw(node.left)
             return AVLTree._rotate_cw(node)
-        elif node.valance < 1:
+        elif node.balance < 1:
             if node.right.balance == -1:
                 node.right = AVLTree._rotate_cw(node.right)
             return AVLTree._rotate_ccw(node)
@@ -514,6 +569,7 @@ class AVLTree:
 
     @staticmethod
     def _rotate_cw(node):
+        # type: (AVLTree.Node) -> Node
         left = node.left
         node.left = left.right
         left.right = node
@@ -523,6 +579,7 @@ class AVLTree:
 
     @staticmethod
     def _rotate_ccw(node):
+        # type: (AVLTree.Node) -> Node
         right = node.right
         node.right = right.left
         right.left = node
@@ -532,6 +589,7 @@ class AVLTree:
 
     @staticmethod
     def from_set(src_set):
+        # type: (Set[Any]) -> AVLTree
         """Create an AVLTree (as a set) from a set.
 
         Arguments:
@@ -546,6 +604,7 @@ class AVLTree:
 
     @staticmethod
     def from_dict(src_dict):
+        # type: (Mapping[Any, Any]) -> AVLTree
         """Create an AVLTree (as a dict) from a dictionary.
 
         Arguments:
