@@ -3,7 +3,7 @@
 from typing import Any, Type, Iterable, Tuple, List
 
 from .randommixin import RandomMixin
-from .data_structures import TreeMultiMap
+from .data_structures import AVLTree
 
 
 class Environment:
@@ -95,7 +95,7 @@ class Environment:
         raise NotImplementedError()
 
 
-class Action(TreeMultiMap):
+class Action(AVLTree):
     """An action in a reinforcement learning environment."""
 
     def __init__(self, name, **kwargs):
@@ -106,12 +106,13 @@ class Action(TreeMultiMap):
             name (str): The name of the Action
             **kwargs: Arbitrary key-value pairs
         """
-        super().__init__(multi_level=TreeMultiMap.UNIQUE_KEY, **kwargs)
+        super().__init__()
+        self.update(kwargs)
         self.name = name
 
     def __hash__(self):
         # type: () -> int
-        return hash(tuple([self.name, *self]))
+        return hash(tuple([self.name, *self.items()]))
 
     def __lt__(self, other):
         # type: (Any) -> bool
@@ -120,7 +121,7 @@ class Action(TreeMultiMap):
         elif self.name > other.name:
             return False
         else:
-            return super().__lt__(other)
+            return tuple(self.items()) < tuple(other.items())
 
     def __eq__(self, other):
         # type: (Any) -> bool
@@ -137,7 +138,7 @@ class Action(TreeMultiMap):
         )
 
 
-class State(TreeMultiMap):
+class State(AVLTree):
     """A state or observation in a reinforcement learning environment."""
 
     def __init__(self, **kwargs):
@@ -147,7 +148,15 @@ class State(TreeMultiMap):
         Arguments:
             **kwargs: Arbitrary key-value pairs
         """
-        super().__init__(multi_level=TreeMultiMap.UNIQUE_KEY, **kwargs)
+        super().__init__()
+        self.update(kwargs)
+
+    def __hash__(self):
+        return hash(tuple(self.items()))
+
+    def __lt__(self, other):
+        return tuple(self.items()) < tuple(other.items())
+
 
 
 class GridWorld(Environment):

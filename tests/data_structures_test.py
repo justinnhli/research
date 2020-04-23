@@ -4,13 +4,11 @@ import sys
 from os.path import dirname, realpath
 from itertools import permutations
 
-import pytest
-
 DIRECTORY = dirname(realpath(__file__))
 sys.path.insert(0, dirname(DIRECTORY))
 
 # pylint: disable = wrong-import-position
-from research.data_structures import UnionFind, TreeMultiMap
+from research.data_structures import UnionFind, AVLTree
 
 
 def test_unionfind():
@@ -27,53 +25,51 @@ def test_unionfind():
     assert all(union_find.same(5, i) for i in range(1, 8, 2))
     assert set(union_find[i] for i in range(0, 8, 2)) == set(range(0, 8, 2))
 
-def _test_tmm_order(order):
-    perm_size = len(order)
-    tmm = TreeMultiMap()
-    assert not tmm
-    for size, number in enumerate(order, start=1):
-        assert number not in tmm
-        tmm.add(number, number)
-        assert number in tmm
-        assert len(tmm) == size
-    assert list(tmm) == list(tmm.keys()) == list(tmm.values()) == list(range(perm_size))
-    assert list(tmm.items()) == [(num, num) for num in range(perm_size)]
-    for num_removed, number in enumerate(order, start=1):
-        tmm.remove(number, number)
-        assert tmm.size == perm_size - num_removed
-        assert list(tmm.items()) == sorted((num, num) for num in order[num_removed:])
 
-def test_treemultimap():
-    """Test TreeMultiMap."""
-    tmm = TreeMultiMap()
-    assert 0 not in tmm
-    assert tmm.get_first(0) is None
-    assert tmm.get_last(0) is None
-    assert list(tmm) == list(tmm.keys()) == list(tmm.values()) == list(tmm.items()) == []
-    perm_size = 5
-    for order in permutations(range(perm_size)):
-        _test_tmm_order(order)
-    test_cases = [
-        (0, 1, 2, 7, 8, 9, 3, 4, 5, 6),
-    ]
-    for order in test_cases:
-        _test_tmm_order(order)
-    tmm = TreeMultiMap(multi_level=TreeMultiMap.UNIQUE_VALUE)
-    for key in range(1, 11):
-        for value in range(key):
-            tmm.add(key, value)
-    for key in range(1, 11):
-        assert tmm.get_first(key) == 0
-        assert tmm.get_last(key) == key - 1
-        assert list(tmm.yield_all(key)) == list(range(key))
-    tmm.clear()
-    assert tmm.size == 0
-    assert list(tmm) == []
-    tmm = TreeMultiMap.from_dict({i: i for i in range(100)})
-    assert list(tmm.items()) == [(i, i) for i in range(100)]
-    tmm = TreeMultiMap()
-    tmm.add(42, 42)
-    with pytest.raises(ValueError):
-        tmm.add(42, 42)
-    with pytest.raises(ValueError):
-        tmm.remove(42, 43)
+def test_avltree():
+    """Test AVLTree."""
+    tree = AVLTree()
+    assert 0 not in tree
+    assert list(tree) == list(tree.keys()) == list(tree.values()) == list(tree.items()) == []
+    size = 7
+    # set check
+    for permutation in permutations(range(size)):
+        tree = AVLTree()
+        for element in permutation:
+            tree.add(element)
+        assert len(tree) == size
+        assert list(e for e in tree) == list(range(size))
+        for num in range(size):
+            assert num in tree
+        for num in range(size):
+            tree.discard(num)
+            assert len(tree) == size - num - 1
+            assert list(e for e in tree) == list(range(num + 1, size))
+    src_set = set(range(101))
+    assert AVLTree.from_set(src_set).to_set() == src_set
+    # map check
+    for permutation in permutations(range(size)):
+        tree = AVLTree()
+        for key in permutation:
+            tree[key] = key * key
+        assert len(tree) == size
+        assert list(e for e in tree) == list(range(size))
+        assert list(tree.items()) == list((num, num * num) for num in range(size))
+        for num in range(size):
+            assert num in tree
+            assert tree[num] == num * num
+        for num in range(size):
+            del tree[num]
+            assert len(tree) == size - num - 1
+    src_dict = {num: num * num for num in range(101)}
+    assert AVLTree.from_dict(src_dict).to_dict() == src_dict
+    # defaultdict check
+    tree = AVLTree(factory=AVLTree)
+    for i in range(10):
+        for j in range(i, i + 5):
+            tree[i].add(j)
+    for i in range(10):
+        assert tree[i].to_set() == set(range(i, i + 5))
+    tree.clear()
+    assert len(tree) == 0
+    assert list(tree) == []

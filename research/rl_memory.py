@@ -6,8 +6,8 @@ from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
 
+from .data_structures import AVLTree
 from .rl_environments import State, Action, Environment
-from .data_structures import TreeMultiMap
 
 
 def memory_architecture(cls):
@@ -114,7 +114,7 @@ def memory_architecture(cls):
             for buf, _ in self.BUFFERS.items():
                 if buf in self.buf_ignore:
                     continue
-                self.buffers[buf] = TreeMultiMap()
+                self.buffers[buf] = AVLTree()
 
         def _clear_ltm_buffers(self):
             self.buffers['query'].clear()
@@ -299,7 +299,7 @@ class KnowledgeStore:
             mem_id (any): The ID of the desired element.
 
         Returns:
-            TreeMultiMap: The desired element, or None.
+            AVLTree: The desired element, or None.
         """
         raise NotImplementedError()
 
@@ -310,7 +310,7 @@ class KnowledgeStore:
             attr_vals (Mapping[str, Any]): Attributes and values of the desired element.
 
         Returns:
-            TreeMultiMap: A search result, or None.
+            AVLTree: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -327,7 +327,7 @@ class KnowledgeStore:
         """Get the prev element that matches the most recent search.
 
         Returns:
-            TreeMultiMap: A search result, or None.
+            AVLTree: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -344,7 +344,7 @@ class KnowledgeStore:
         """Get the next element that matches the most recent search.
 
         Returns:
-            TreeMultiMap: A search result, or None.
+            AVLTree: A search result, or None.
         """
         raise NotImplementedError()
 
@@ -376,7 +376,7 @@ class NaiveDictKB(KnowledgeStore):
         self.query_matches = []
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
-        self.knowledge.append(TreeMultiMap(**kwargs))
+        self.knowledge.append(AVLTree.from_dict(kwargs))
         return True
 
     def retrieve(self, mem_id): # noqa: D102
@@ -398,7 +398,7 @@ class NaiveDictKB(KnowledgeStore):
                 curr_retrieved = self.query_matches[self.query_index]
             else:
                 curr_retrieved = None
-            self.query_matches = sorted(candidates)
+            self.query_matches = sorted(candidates, key=(lambda candidate: tuple(candidate.items())))
             # use the ValueError from list.index() to determine if the query still matches
             try:
                 self.query_index = self.query_matches.index(curr_retrieved)
@@ -468,9 +468,9 @@ class NetworkXKB(KnowledgeStore):
 
     def _activate_and_return(self, mem_id):
         self.activation_fn(self.graph, mem_id)
-        result = TreeMultiMap()
+        result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
-            result.add(data['attribute'], value)
+            result[data['attribute']] = value
         return result
 
     def retrieve(self, mem_id): # noqa: D102
@@ -587,7 +587,7 @@ class SparqlKB(KnowledgeStore):
                     if new_prop_val is not None:
                         new_prop, new_val = new_prop_val
                         result[new_prop] = new_val
-            self.retrieve_cache[mem_id] = TreeMultiMap.from_dict(result)
+            self.retrieve_cache[mem_id] = AVLTree.from_dict(result)
         result = self.retrieve_cache[mem_id]
         self.prev_query = None
         self.query_offset = 0
@@ -619,7 +619,7 @@ class SparqlKB(KnowledgeStore):
         self.query_offset = 0
         if mem_id is None:
             self.prev_query = None
-            return TreeMultiMap()
+            return AVLTree()
         else:
             self.prev_query = attr_vals
             return self.retrieve(mem_id)
