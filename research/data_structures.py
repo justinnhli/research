@@ -560,7 +560,7 @@ class AVLTree(Mapping[Any, Any]):
             if node.left.balance == 1:
                 node.left = AVLTree._rotate_ccw(node.left)
             return AVLTree._rotate_cw(node)
-        elif node.balance < 1:
+        elif node.balance > 1:
             if node.right.balance == -1:
                 node.right = AVLTree._rotate_cw(node.right)
             return AVLTree._rotate_ccw(node)
