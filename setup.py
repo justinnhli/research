@@ -21,18 +21,15 @@ def get_dependency(package, location):
 setup(
     name='justinnhli-research',
     version='',
-
     description="Justin Li's main research code repository.",
-    long_description='',
     license='MIT',
-
     author='Justin Li',
     author_email='justinnhli@oxy.edu',
     url='https://github.com/justinnhli/research',
     entry_points={
         'console_scripts': [
             'rdfsqlize = research.rdfsqlize:main',
-        ]
+        ],
     },
     install_requires=[
         # knowledge base packages
