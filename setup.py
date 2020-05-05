@@ -19,7 +19,7 @@ def get_dependency(package, location):
 
 
 setup(
-    name='research',
+    name='justinnhli-research',
     version='',
 
     description='',
