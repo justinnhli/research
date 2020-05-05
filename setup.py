@@ -22,7 +22,7 @@ setup(
     name='justinnhli-research',
     version='',
 
-    description='',
+    description="Justin Li's main research code repository.",
     long_description='',
     license='MIT',
 
