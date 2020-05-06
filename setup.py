@@ -10,6 +10,19 @@ DEPENDENCIES = {
 
 
 def get_dependency(package, location):
+    # type: (str, str) -> str
+    """Generate the depdenency line for setup().
+
+    Parameters:
+        package (str): The package dependency.
+        location (str): Either 'install' or 'link'.
+
+    Returns:
+        str: The appropriate line for setup().
+
+    Raises:
+        ValueError: If the location is invalid.
+    """
     if location == 'install':
         return f'{package} @ git+{DEPENDENCIES[package]}'
     elif location == 'link':
