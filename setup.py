@@ -71,6 +71,7 @@ setup(
         'pylint==2.4.4',
         'pydocstyle==4.0.1',
         'pytest-cov==2.8.1',
+        'coveralls==2.0.0',
     ],
     dependency_links=[
         get_dependency('pydictionary', location='link'),

@@ -16,3 +16,5 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ..
 # run pytest
 "$pytest" --verbose --cov=research/ --cov-branch --cov-report=html:htmlcov tests
+# submit coverage to coveralls
+coveralls
