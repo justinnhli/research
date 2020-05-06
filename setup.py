@@ -54,8 +54,7 @@ setup(
         # NLP packages
         'spacy==2.2.3',
         'nltk==3.4.5',
-        # Justin's less chatty fork of pydictionary
-        get_dependency('pydictionary', location='install'),
+        get_dependency('pydictionary', location='install'), # a less chatty fork of pydictionary
         # jupyter notebook packages
         'jupyter==1.0.0',
         'bokeh==1.4.0',
