@@ -17,4 +17,6 @@ cd ..
 # run pytest
 "$pytest" --verbose --cov=research/ --cov-branch --cov-report=html:htmlcov tests
 # submit coverage to coveralls
-coveralls
+if [ "$TRAVIS" == "true" ]; then
+    coveralls
+fi
