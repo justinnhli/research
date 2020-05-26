@@ -1,13 +1,7 @@
 """Tests for data_structures.py."""
 
-import sys
-from os.path import dirname, realpath
 from itertools import permutations
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
-
-# pylint: disable = wrong-import-position
 from research.data_structures import UnionFind, AVLTree
 
 

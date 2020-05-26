@@ -1,14 +1,9 @@
 """Tests for knowledge_base.py."""
 
-import sys
 from os.path import dirname, realpath, join as join_path
 from shutil import copy
 from tempfile import TemporaryDirectory
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
-
-# pylint: disable = wrong-import-position
 from research.knowledge_base import KnowledgeFile
 from research.rdfsqlize import sqlize
 
@@ -18,7 +13,7 @@ def test_rdfsqlize():
     with TemporaryDirectory() as temp_dir:
         print(temp_dir)
 
-        nt_file = copy(join_path(DIRECTORY, 'states.nt'), temp_dir)
+        nt_file = copy(join_path(dirname(realpath(__file__)), 'states.nt'), temp_dir)
 
         output_file = sqlize(nt_file, 'states')
 

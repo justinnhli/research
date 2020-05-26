@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 """Tests for basic reinforcement learning code."""
 
-import sys
 from collections import namedtuple
 from math import copysign
-from os.path import dirname, realpath
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
-
-# pylint: disable = wrong-import-position
 from research.rl_core import train_and_evaluate
 from research.rl_environments import State, Action, Environment, RandomMixin
 from research.rl_environments import GridWorld, SimpleTMaze

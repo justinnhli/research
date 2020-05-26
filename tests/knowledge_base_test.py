@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """Tests for knowledge_base.py."""
 
-import sys
 from ast import literal_eval
-from os.path import dirname, realpath
 
 import pytest
 
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
-
-# pylint: disable = wrong-import-position
 from research.knowledge_base import Value, SparqlEndpoint
 
 

@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 """Tests for RL memory code."""
 
-import sys
-from os.path import dirname, realpath
-
-DIRECTORY = dirname(realpath(__file__))
-sys.path.insert(0, dirname(DIRECTORY))
-
-# pylint: disable = wrong-import-position
 from research.knowledge_base import SparqlEndpoint
 from research.rl_environments import State, Action, Environment
 from research.rl_memory import memory_architecture, NaiveDictKB, NetworkXKB, SparqlKB
