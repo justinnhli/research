@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Tests for RL memory code."""
 
-from research.knowledge_base import SparqlEndpoint
-from research.rl_environments import State, Action, Environment
-from research.rl_memory import memory_architecture, NaiveDictKB, NetworkXKB, SparqlKB
+from research import SparqlEndpoint
+from research import State, Action, Environment
+from research import memory_architecture
+from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
 
 
 def test_memory_architecture():
@@ -57,7 +58,7 @@ def test_memory_architecture():
     size = 5
     env = memory_architecture(TestEnv)(
         # memory architecture
-        knowledge_store=NaiveDictKB(),
+        ltm=NaiveDictLTM(),
         # TestEnv
         size=size,
         index=0,
@@ -133,63 +134,63 @@ def test_memory_architecture():
     assert reward == 100, reward
 
 
-def test_networkxkb():
-    """Test the NetworkX KnowledgeStore."""
+def test_networkxltm():
+    """Test the NetworkX LTM."""
 
     def activation_fn(graph, mem_id):
         graph.nodes[mem_id]['activation'] += 1
 
-    store = NetworkXKB(activation_fn=activation_fn)
-    store.store('cat', is_a='mammal', has='fur', name='cat')
-    store.store('bear', is_a='mammal', has='fur', name='bear')
-    store.store('whale', is_a='mammal', lives_in='water')
-    store.store('whale', name='whale') # this activates whale
-    store.store('fish', is_a='animal', lives_in='water')
-    store.store('mammal', has='vertebra', is_a='animal')
+    ltm = NetworkXLTM(activation_fn=activation_fn)
+    ltm.store('cat', is_a='mammal', has='fur', name='cat')
+    ltm.store('bear', is_a='mammal', has='fur', name='bear')
+    ltm.store('whale', is_a='mammal', lives_in='water')
+    ltm.store('whale', name='whale') # this activates whale
+    ltm.store('fish', is_a='animal', lives_in='water')
+    ltm.store('mammal', has='vertebra', is_a='animal')
     # retrieval
-    result = store.retrieve('whale')
+    result = ltm.retrieve('whale')
     assert sorted(result.items()) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
     # failed query
-    result = store.query({'has': 'vertebra', 'lives_in': 'water'})
+    result = ltm.query({'has': 'vertebra', 'lives_in': 'water'})
     assert result is None
     # unique query
-    result = store.query({'has': 'vertebra'})
+    result = ltm.query({'has': 'vertebra'})
     assert sorted(result.items()) == [('has', 'vertebra'), ('is_a', 'animal')]
     # query traversal
-    store.store('cat')
+    ltm.store('cat')
     # at this point, whale has been activated twice (from the store and the retrieve)
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
-    result = store.query({'is_a': 'mammal'})
+    result = ltm.query({'is_a': 'mammal'})
     assert result['name'] == 'whale'
-    assert store.has_next_result
-    result = store.next_result()
+    assert ltm.has_next_result
+    result = ltm.next_result()
     assert result['name'] == 'cat'
-    assert store.has_next_result
-    result = store.next_result()
+    assert ltm.has_next_result
+    result = ltm.next_result()
     assert result['name'] == 'bear'
-    assert not store.has_next_result
-    assert store.has_prev_result
-    result = store.prev_result()
-    assert store.has_prev_result
-    result = store.prev_result()
+    assert not ltm.has_next_result
+    assert ltm.has_prev_result
+    result = ltm.prev_result()
+    assert ltm.has_prev_result
+    result = ltm.prev_result()
     assert result['name'] == 'whale'
-    assert not store.has_prev_result
+    assert not ltm.has_prev_result
 
 
-def test_sparqlkb():
-    """Test the SPARQL endpoint KnowledgeStore."""
+def test_sparqlltm():
+    """Test the SPARQL endpoint LTM."""
     release_date_attr = '<http://dbpedia.org/ontology/releaseDate>'
     release_date_value = '"1979-11-30"^^<http://www.w3.org/2001/XMLSchema#date>'
     # connect to DBpedia
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
     # test retrieve
-    store = SparqlKB(dbpedia)
-    result = store.retrieve('<http://dbpedia.org/resource/The_Wall>')
+    ltm = SparqlLTM(dbpedia)
+    result = ltm.retrieve('<http://dbpedia.org/resource/The_Wall>')
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]
     # test query
-    result = store.query({
+    result = ltm.query({
         '<http://dbpedia.org/ontology/releaseDate>': '"1979-11-30"^^xsd:date',
         '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>': '<http://dbpedia.org/ontology/Album>',
     })

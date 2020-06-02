@@ -4,12 +4,11 @@
 from collections import namedtuple
 from math import copysign
 
-from research.rl_core import train_and_evaluate
-from research.rl_environments import State, Action, Environment, RandomMixin
-from research.rl_environments import GridWorld, SimpleTMaze
-from research.rl_environments import gating_memory, fixed_long_term_memory
-from research.rl_agents import TabularQLearningAgent, LinearQLearner
-from research.rl_agents import epsilon_greedy
+from research import train_and_evaluate
+from research import State, Action, Environment, RandomMixin
+from research import GridWorld, SimpleTMaze
+from research import TabularQLearningAgent, LinearQLearner
+from research import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
@@ -65,158 +64,6 @@ def test_simpletmaze():
             10,
         ),
         RLTestStep(State(x=-1, y=2, symbol=0), [], None, None),
-    ]
-    for expected in expected_steps:
-        assert env.get_observation() == expected.observation
-        assert set(env.get_actions()) == set(expected.actions)
-        if expected.action is not None:
-            reward = env.react(expected.action)
-            assert reward == expected.reward
-
-
-def test_simpletmaze_gatingmemory():
-    """Test the gating memory meta-environment."""
-    env = gating_memory(SimpleTMaze)(
-        num_memory_slots=1,
-        reward=-0.05,
-        length=2,
-        hint_pos=1,
-    )
-    env.start_new_episode()
-    goal = env.get_state().goal_x
-    assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=goal, memory_0=None)
-    expected_steps = [
-        RLTestStep(
-            State(x=0, y=0, symbol=0, memory_0=None),
-            [
-                Action('up'),
-                Action('gate', slot=0, attribute='x'),
-                Action('gate', slot=0, attribute='y'),
-                Action('gate', slot=0, attribute='symbol'),
-            ],
-            Action('up'),
-            -1,
-        ),
-        RLTestStep(
-            State(x=0, y=1, symbol=goal, memory_0=None),
-            [
-                Action('up'),
-                Action('gate', slot=0, attribute='x'),
-                Action('gate', slot=0, attribute='y'),
-                Action('gate', slot=0, attribute='symbol'),
-            ],
-            Action('gate', slot=0, attribute='symbol'),
-            -0.05,
-        ),
-        RLTestStep(
-            State(x=0, y=1, symbol=goal, memory_0=goal),
-            [
-                Action('up'),
-                Action('gate', slot=0, attribute='x'),
-                Action('gate', slot=0, attribute='y'),
-                Action('gate', slot=0, attribute='symbol'),
-            ],
-            Action('up'),
-            -1,
-        ),
-        RLTestStep(
-            State(x=0, y=2, symbol=0, memory_0=goal),
-            [
-                Action('left'),
-                Action('right'),
-                Action('gate', slot=0, attribute='x'),
-                Action('gate', slot=0, attribute='y'),
-                Action('gate', slot=0, attribute='symbol'),
-            ],
-            Action('right' if goal == -1 else 'left'),
-            -10,
-        ),
-        RLTestStep(State(x=1 if goal == -1 else -1, y=2, symbol=0, memory_0=goal), [], None, None),
-    ]
-    for expected in expected_steps:
-        assert env.get_observation() == expected.observation
-        assert set(env.get_actions()) == set(expected.actions)
-        if expected.action is not None:
-            reward = env.react(expected.action)
-            assert reward == expected.reward
-
-
-def test_simpletmaze_fixedltm():
-    """Test the fixed LTM meta-environment."""
-    env = fixed_long_term_memory(SimpleTMaze)(
-        num_wm_slots=1,
-        num_ltm_slots=1,
-        reward=-0.05,
-        length=2,
-        hint_pos=1,
-        goal_x=1,
-    )
-    env.start_new_episode()
-    assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=1, wm_0=None, ltm_0=None)
-    expected_steps = [
-        RLTestStep(
-            State(x=0, y=0, symbol=0, wm_0=None),
-            [
-                Action('up'),
-                Action('store', slot=0, attribute='x'),
-                Action('store', slot=0, attribute='y'),
-                Action('store', slot=0, attribute='symbol'),
-                Action('retrieve', wm_slot=0, ltm_slot=0),
-            ],
-            Action('up'),
-            -1,
-        ),
-        RLTestStep(
-            State(x=0, y=1, symbol=1, wm_0=None),
-            [
-                Action('up'),
-                Action('store', slot=0, attribute='x'),
-                Action('store', slot=0, attribute='y'),
-                Action('store', slot=0, attribute='symbol'),
-                Action('retrieve', wm_slot=0, ltm_slot=0),
-            ],
-            Action('store', slot=0, attribute='symbol'),
-            -0.05,
-        ),
-        RLTestStep(
-            State(x=0, y=1, symbol=1, wm_0=None),
-            [
-                Action('up'),
-                Action('store', slot=0, attribute='x'),
-                Action('store', slot=0, attribute='y'),
-                Action('store', slot=0, attribute='symbol'),
-                Action('retrieve', wm_slot=0, ltm_slot=0),
-            ],
-            Action('up'),
-            -1,
-        ),
-        RLTestStep(
-            State(x=0, y=2, symbol=0, wm_0=None),
-            [
-                Action('left'),
-                Action('right'),
-                Action('store', slot=0, attribute='x'),
-                Action('store', slot=0, attribute='y'),
-                Action('store', slot=0, attribute='symbol'),
-                Action('retrieve', wm_slot=0, ltm_slot=0),
-            ],
-            Action('retrieve', wm_slot=0, ltm_slot=0),
-            -0.05,
-        ),
-        RLTestStep(
-            State(x=0, y=2, symbol=0, wm_0=1),
-            [
-                Action('left'),
-                Action('right'),
-                Action('store', slot=0, attribute='x'),
-                Action('store', slot=0, attribute='y'),
-                Action('store', slot=0, attribute='symbol'),
-                Action('retrieve', wm_slot=0, ltm_slot=0),
-            ],
-            Action('right'),
-            10,
-        ),
-        RLTestStep(State(x=1, y=2, symbol=0, wm_0=1), [], None, None),
     ]
     for expected in expected_steps:
         assert env.get_observation() == expected.observation
