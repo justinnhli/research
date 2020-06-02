@@ -4,7 +4,7 @@
 from research import SparqlEndpoint
 from research import State, Action, Environment
 from research import memory_architecture
-from research import NaiveDictKB, NetworkXKB, SparqlKB
+from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
 
 
 def test_memory_architecture():
@@ -58,7 +58,7 @@ def test_memory_architecture():
     size = 5
     env = memory_architecture(TestEnv)(
         # memory architecture
-        knowledge_store=NaiveDictKB(),
+        knowledge_store=NaiveDictLTM(),
         # TestEnv
         size=size,
         index=0,
@@ -140,7 +140,7 @@ def test_networkxkb():
     def activation_fn(graph, mem_id):
         graph.nodes[mem_id]['activation'] += 1
 
-    store = NetworkXKB(activation_fn=activation_fn)
+    store = NetworkXLTM(activation_fn=activation_fn)
     store.store('cat', is_a='mammal', has='fur', name='cat')
     store.store('bear', is_a='mammal', has='fur', name='bear')
     store.store('whale', is_a='mammal', lives_in='water')
@@ -185,7 +185,7 @@ def test_sparqlkb():
     # connect to DBpedia
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')
     # test retrieve
-    store = SparqlKB(dbpedia)
+    store = SparqlLTM(dbpedia)
     result = store.retrieve('<http://dbpedia.org/resource/The_Wall>')
     assert release_date_attr in result, sorted(result.keys())
     assert result[release_date_attr] == release_date_value, result[release_date_attr]

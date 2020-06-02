@@ -12,11 +12,11 @@ class LongTermMemory:
     """Generic interface to a knowledge base."""
 
     def clear(self):
-        """Remove all knowledge from the KB."""
+        """Remove all knowledge from the LTM."""
         raise NotImplementedError()
 
     def store(self, mem_id=None, **kwargs):
-        """Add knowledge to the KB.
+        """Add knowledge to the LTM.
 
         Arguments:
             mem_id (any): The ID of the element. Defaults to None.
@@ -39,7 +39,7 @@ class LongTermMemory:
         raise NotImplementedError()
 
     def query(self, attr_vals):
-        """Search the KB for elements with the given attributes.
+        """Query the LTM for elements with the given attributes.
 
         Arguments:
             attr_vals (Mapping[str, Any]): Attributes and values of the desired element.
@@ -96,11 +96,11 @@ class LongTermMemory:
         raise NotImplementedError()
 
 
-class NaiveDictKB(LongTermMemory):
+class NaiveDictLTM(LongTermMemory):
     """A list-of-dictionary implementation of a knowledge store."""
 
     def __init__(self):
-        """Initialize the NaiveDictKB."""
+        """Initialize the NaiveDictLTM."""
         self.knowledge = []
         self.query_index = None
         self.query_matches = []
@@ -165,11 +165,11 @@ class NaiveDictKB(LongTermMemory):
         return False
 
 
-class NetworkXKB(LongTermMemory):
+class NetworkXLTM(LongTermMemory):
     """A NetworkX implementation of a knowledge store."""
 
     def __init__(self, activation_fn=None):
-        """Initialize the NetworkXKB."""
+        """Initialize the NetworkXLTM."""
         # parameters
         if activation_fn is None:
             activation_fn = (lambda graph, mem_id: None)
@@ -267,7 +267,7 @@ class NetworkXKB(LongTermMemory):
         return isinstance(mem_id, Hashable)
 
 
-class SparqlKB(LongTermMemory):
+class SparqlLTM(LongTermMemory):
     """An adaptor for RL agents to use KnowledgeSources."""
 
     # FIXME arguably this should be abstracted and moved to LongTermMemory
@@ -279,7 +279,7 @@ class SparqlKB(LongTermMemory):
     ])
 
     def __init__(self, knowledge_source, augments=None):
-        """Initialize a SparqlKB.
+        """Initialize a SparqlLTM.
 
         Arguments:
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
