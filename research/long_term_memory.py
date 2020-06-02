@@ -97,7 +97,7 @@ class LongTermMemory:
 
 
 class NaiveDictLTM(LongTermMemory):
-    """A list-of-dictionary implementation of a knowledge store."""
+    """A list-of-dictionary implementation of LTM."""
 
     def __init__(self):
         """Initialize the NaiveDictLTM."""
@@ -166,7 +166,7 @@ class NaiveDictLTM(LongTermMemory):
 
 
 class NetworkXLTM(LongTermMemory):
-    """A NetworkX implementation of a knowledge store."""
+    """A NetworkX implementation of LTM."""
 
     def __init__(self, activation_fn=None):
         """Initialize the NetworkXLTM."""

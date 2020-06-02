@@ -44,14 +44,14 @@ def memory_architecture(cls):
         }
 
         def __init__(
-                self, knowledge_store,
+                self, ltm,
                 buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
 
             Arguments:
-                knowledge_store (LongTermMemory): The memory model to use.
+                ltm (LongTermMemory): The memory model to use.
                 buf_ignore (Iterable[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
@@ -66,7 +66,7 @@ def memory_architecture(cls):
             self.internal_reward = internal_reward
             self.max_internal_actions = max_internal_actions
             # infrastructure
-            self.knowledge_store = knowledge_store
+            self.ltm = ltm
             # variables
             self.buffers = {}
             self.internal_action_count = 0
@@ -181,16 +181,16 @@ def memory_architecture(cls):
                 if buf in self.buf_ignore or not buf_props.copyable:
                     continue
                 for attr, value in self.buffers[buf].items():
-                    if self.knowledge_store.retrievable(value):
+                    if self.ltm.retrievable(value):
                         actions.append(Action('retrieve', buf=buf, attr=attr))
             return actions
 
         def _generate_cursor_actions(self):
             actions = []
             if self.buffers['retrieval']:
-                if self.knowledge_store.has_prev_result:
+                if self.ltm.has_prev_result:
                     actions.append(Action('prev-result'))
-                if self.knowledge_store.has_next_result:
+                if self.ltm.has_next_result:
                     actions.append(Action('next-result'))
             return actions
 
@@ -227,16 +227,16 @@ def memory_architecture(cls):
                 if action.buf == 'query':
                     self._query_ltm()
             elif action.name == 'retrieve':
-                result = self.knowledge_store.retrieve(self.buffers[action.buf][action.attr])
+                result = self.ltm.retrieve(self.buffers[action.buf][action.attr])
                 self.buffers['query'].clear()
                 if result is None:
                     self.buffers['retrieval'].clear()
                 else:
                     self.buffers['retrieval'] = result
             elif action.name == 'prev-result':
-                self.buffers['retrieval'] = self.knowledge_store.prev_result()
+                self.buffers['retrieval'] = self.ltm.prev_result()
             elif action.name == 'next-result':
-                self.buffers['retrieval'] = self.knowledge_store.next_result()
+                self.buffers['retrieval'] = self.ltm.next_result()
             else:
                 return True
             return False
@@ -245,7 +245,7 @@ def memory_architecture(cls):
             if not self.buffers['query']:
                 self.buffers['retrieval'].clear()
                 return
-            result = self.knowledge_store.query(self.buffers['query'])
+            result = self.ltm.query(self.buffers['query'])
             if result is None:
                 self.buffers['retrieval'].clear()
             else:
@@ -261,6 +261,6 @@ def memory_architecture(cls):
             Arguments:
                 **kwargs: The key-value pairs of the memory element.
             """
-            self.knowledge_store.store(**kwargs)
+            self.ltm.store(**kwargs)
 
     return MemoryArchitectureMetaEnvironment
