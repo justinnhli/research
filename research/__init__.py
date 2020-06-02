@@ -16,7 +16,7 @@ from .long_term_memory import LongTermMemory, NaiveDictKB, NetworkXKB, SparqlKB
 
 from .rl_memory import memory_architecture
 
-from .rl_core import run_episodes, evaluate_agent, train_agent, train_and_evaluate
+from .rl_experiments import run_episodes, evaluate_agent, train_agent, train_and_evaluate
 
 from .pipeline import PipelineError, PipelineStep
 
