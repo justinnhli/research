@@ -3,7 +3,8 @@
 
 from research.knowledge_base import SparqlEndpoint
 from research.rl_environments import State, Action, Environment
-from research.rl_memory import memory_architecture, NaiveDictKB, NetworkXKB, SparqlKB
+from research.rl_memory import memory_architecture
+from research.long_term_memory import NaiveDictKB, NetworkXKB, SparqlKB
 
 
 def test_memory_architecture():
