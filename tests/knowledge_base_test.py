@@ -5,7 +5,7 @@ from ast import literal_eval
 
 import pytest
 
-from research.knowledge_base import Value, SparqlEndpoint
+from research import Value, SparqlEndpoint
 
 
 def test_value():

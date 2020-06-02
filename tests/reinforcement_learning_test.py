@@ -4,11 +4,11 @@
 from collections import namedtuple
 from math import copysign
 
-from research.rl_core import train_and_evaluate
-from research.rl_environments import State, Action, Environment, RandomMixin
-from research.rl_environments import GridWorld, SimpleTMaze
-from research.rl_agents import TabularQLearningAgent, LinearQLearner
-from research.rl_agents import epsilon_greedy
+from research import train_and_evaluate
+from research import State, Action, Environment, RandomMixin
+from research import GridWorld, SimpleTMaze
+from research import TabularQLearningAgent, LinearQLearner
+from research import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 

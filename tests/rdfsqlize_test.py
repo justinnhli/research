@@ -4,8 +4,8 @@ from os.path import dirname, realpath, join as join_path
 from shutil import copy
 from tempfile import TemporaryDirectory
 
-from research.knowledge_base import KnowledgeFile
-from research.rdfsqlize import sqlize
+from research import KnowledgeFile
+from research import sqlize
 
 
 def test_rdfsqlize():

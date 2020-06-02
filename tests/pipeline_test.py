@@ -4,7 +4,7 @@ from os.path import join as join_path
 from datetime import datetime
 from tempfile import TemporaryDirectory
 
-from research.pipeline import PipelineStep
+from research import PipelineStep
 
 
 class RangeStep(PipelineStep):
