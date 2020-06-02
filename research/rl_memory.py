@@ -3,7 +3,6 @@
 from collections import namedtuple
 
 from .data_structures import AVLTree
-from .long_term_memory import LongTermMemory
 from .rl_environments import State, Action, Environment
 
 
@@ -45,18 +44,17 @@ def memory_architecture(cls):
         }
 
         def __init__(
-                self,
+                self, knowledge_store,
                 buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
-                knowledge_store=None,
                 *args, **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
 
             Arguments:
+                knowledge_store (LongTermMemory): The memory model to use.
                 buf_ignore (Iterable[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
-                knowledge_store (LongTermMemory): The memory model to use.
                 *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
@@ -68,8 +66,6 @@ def memory_architecture(cls):
             self.internal_reward = internal_reward
             self.max_internal_actions = max_internal_actions
             # infrastructure
-            if knowledge_store is None:
-                knowledge_store = NaiveDictKB()
             self.knowledge_store = knowledge_store
             # variables
             self.buffers = {}
