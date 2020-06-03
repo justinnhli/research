@@ -9,6 +9,12 @@ from .data_structures import AVLTree
 class Environment:
     """A reinforcement learning environment."""
 
+    def __init__(self):
+        """Initialize the Environment."""
+        self._state_cache = {}
+        self._observation_cache = {}
+        self._action_cache = {}
+
     def get_state(self):
         # type: () -> State
         """Get the current state.
@@ -23,6 +29,21 @@ class Environment:
             State: The state, or None if at the end of an episode
         """
         raise NotImplementedError()
+
+    def _cache_item(self, cache, key, callback):
+        # pylint: disable = no-self-use
+        if key not in cache:
+            cache[key] = callback()
+        return cache[key]
+
+    def _cache_state(self, key, callback):
+        return self._cache_item(self._state_cache, key, callback)
+
+    def _cache_observation(self, key, callback):
+        return self._cache_item(self._observation_cache, key, callback)
+
+    def _cache_action(self, key, callback):
+        return self._cache_item(self._action_cache, key, callback)
 
     def get_observation(self):
         # type: () -> State
