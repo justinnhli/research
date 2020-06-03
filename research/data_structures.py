@@ -550,7 +550,7 @@ class AVLTree(Mapping[Any, Any]):
 
     def to_dict(self):
         # type: () -> Dict[Any, Any]
-        """Return the keyus and values in a normal dict.
+        """Return the keys and values in a normal dict.
 
         Returns:
             Dict[Any, Any]: The resulting dict.
