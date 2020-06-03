@@ -152,14 +152,17 @@ class AVLTree(Mapping[Any, Any]):
             return False
         if len(self) != len(other):
             return False
-        for (key1, value1), (key2, value2) in zip(self.items(), other.items()):
-            if key1 != key2 or value1 != value2:
-                return False
-        return True
+        return all(
+            pair1 == pair2 for pair1, pair2
+            in zip(self.items(), other.items())
+        )
 
     def __lt__(self, other):
         # type: (Any) -> bool
-        pass # FIXME
+        return any(
+            pair1 < pair2 for pair1, pair2
+            in zip(self.items(), other.items())
+        )
 
     def __len__(self):
         # type: () -> int
