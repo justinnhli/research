@@ -196,21 +196,22 @@ class AVLTree(Mapping[Any, Any]):
 
     def _put(self, key, value):
         # type: (Any, Any) -> None
-        self.root = self._put_helper(self.root, key, value)
 
-    def _put_helper(self, node, key, value):
-        # type: (AVLTree.Node, Any, Any) -> AVLTree.Node
-        if node is None:
-            self.size += 1
-            return self.Node(key, value)
-        elif key == node.key:
-            node.value = value
-            return node
-        elif key < node.key:
-            node.left = self._put_helper(node.left, key, value)
-        else:
-            node.right = self._put_helper(node.right, key, value)
-        return self._balance(node)
+        def _put_helper(self, node, key, value):
+            # type: (AVLTree.Node, Any, Any) -> AVLTree.Node
+            if node is None:
+                self.size += 1
+                return self.Node(key, value)
+            elif key == node.key:
+                node.value = value
+                return node
+            elif key < node.key:
+                node.left = _put_helper(self, node.left, key, value)
+            else:
+                node.right = _put_helper(self, node.right, key, value)
+            return self._balance(node)
+
+        self.root = _put_helper(self, self.root, key, value)
 
     def _get_node(self, key):
         # type: (Any) -> AVLTree.Node
@@ -231,36 +232,37 @@ class AVLTree(Mapping[Any, Any]):
 
     def _del(self, key):
         # type: (Any) -> Any
-        self.root, value = self._del_helper(self.root, key)
-        return value
 
-    def _del_helper(self, node, key):
-        # type: (AVLTree.Node, Any) -> Tuple[AVLTree.Node, Any]
-        value = None
-        if node is None:
-            raise KeyError(key)
-        if key < node.key:
-            node.left, value = self._del_helper(node.left, key)
-        elif node.key < key:
-            node.right, value = self._del_helper(node.right, key)
-        else:
-            if node.left is None and node.right is None:
-                self.size -= 1
-                return None, node.value
-            replacement = node
-            if node.left is not None:
-                replacement = node.left
-                while replacement.right is not None:
-                    replacement = replacement.right
-                node.left, value = self._del_helper(node.left, replacement.key)
-            elif node.right is not None:
-                replacement = node.right
-                while replacement.left is not None:
-                    replacement = replacement.left
-                node.right, value = self._del_helper(node.right, replacement.key)
-            node.key = replacement.key
-            node.value = replacement.value
-        return self._balance(node), value
+        def _del_helper(self, node, key):
+            # type: (AVLTree.Node, Any) -> Tuple[AVLTree.Node, Any]
+            value = None
+            if node is None:
+                raise KeyError(key)
+            if key < node.key:
+                node.left, value = _del_helper(self, node.left, key)
+            elif node.key < key:
+                node.right, value = _del_helper(self, node.right, key)
+            else:
+                if node.left is None and node.right is None:
+                    self.size -= 1
+                    return None, node.value
+                replacement = node
+                if node.left is not None:
+                    replacement = node.left
+                    while replacement.right is not None:
+                        replacement = replacement.right
+                    node.left, value = _del_helper(self, node.left, replacement.key)
+                elif node.right is not None:
+                    replacement = node.right
+                    while replacement.left is not None:
+                        replacement = replacement.left
+                    node.right, value = _del_helper(self, node.right, replacement.key)
+                node.key = replacement.key
+                node.value = replacement.value
+            return self._balance(node), value
+
+        self.root, value = _del_helper(self, self.root, key)
+        return value
 
     def _nodes(self):
         # type: () -> Generator[AVLTree.Node, None, None]
