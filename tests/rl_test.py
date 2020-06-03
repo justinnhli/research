@@ -110,6 +110,17 @@ def test_linear_agent():
     class InfiniteGridWorld(Environment, RandomMixin):
         """An infinite gridworld. Goal is (0, 0)."""
 
+        ACTIONS = [
+            Action('up'),
+            Action('down'),
+            Action('left'),
+            Action('right'),
+            Action('upleft'),
+            Action('upright'),
+            Action('downleft'),
+            Action('downright'),
+        ]
+
         def __init__(self, max_size, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.max_size = max_size
@@ -127,16 +138,7 @@ def test_linear_agent():
             if self.row == self.col == 0:
                 return []
             else:
-                return [
-                    Action('up'),
-                    Action('down'),
-                    Action('left'),
-                    Action('right'),
-                    Action('upleft'),
-                    Action('upright'),
-                    Action('downleft'),
-                    Action('downright'),
-                ]
+                return self.ACTIONS
 
         def reset(self): # noqa: D102
             self.start_new_episode()
