@@ -108,27 +108,11 @@ class Action(AVLTree):
         """
         super().__init__()
         self.update(kwargs)
-        self.name = name
+        self['_name_'] = name
 
     def __hash__(self):
         # type: () -> int
-        return hash(tuple([self.name, *self.items()]))
-
-    def __lt__(self, other):
-        # type: (Any) -> bool
-        if self.name < other.name:
-            return True
-        elif self.name > other.name:
-            return False
-        else:
-            return tuple(self.items()) < tuple(other.items())
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        # pylint: disable = protected-access
-        if not isinstance(other, Action):
-            return False
-        return self.name == other.name and super().__eq__(other)
+        return self.contents_hash
 
     def __str__(self):
         # type: () -> str
@@ -136,6 +120,15 @@ class Action(AVLTree):
             self.name,
             ', '.join('{}={}'.format(k, v) for k, v in self.items()),
         )
+
+    @property
+    def name(self):
+        """Get the name of the Action.
+
+        Returns:
+            str: The name of the Action.
+        """
+        return self['_name_']
 
 
 class State(AVLTree):
@@ -152,11 +145,7 @@ class State(AVLTree):
         self.update(kwargs)
 
     def __hash__(self):
-        return hash(tuple(self.items()))
-
-    def __lt__(self, other):
-        return tuple(self.items()) < tuple(other.items())
-
+        return self.contents_hash
 
 
 class GridWorld(Environment):
