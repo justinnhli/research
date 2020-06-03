@@ -1,6 +1,6 @@
 """Reinforcement learning environments."""
 
-from typing import Any, Iterable, Tuple, List
+from typing import Any, Tuple, List
 
 from .randommixin import RandomMixin
 from .data_structures import AVLTree
