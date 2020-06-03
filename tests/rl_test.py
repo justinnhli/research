@@ -117,7 +117,11 @@ def test_linear_agent():
             self.col = 0
 
         def get_state(self): # noqa: D102
-            return State(row=self.row, col=self.col)
+            # type: () -> State
+            return self._cache_state(
+                (self.row, self.col),
+                (lambda: State(row=self.row, col=self.col)),
+            )
 
         def get_actions(self): # noqa: D102
             if self.row == self.col == 0:

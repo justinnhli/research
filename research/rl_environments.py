@@ -194,7 +194,10 @@ class GridWorld(Environment):
 
     def get_state(self): # noqa: D102
         # type: () -> State
-        return State(row=self.row, col=self.col)
+        return self._cache_state(
+            (self.row, self.col),
+            (lambda: State(row=self.row, col=self.col)),
+        )
 
     def get_actions(self): # noqa: D102
         # type: () -> List[Action]
@@ -202,13 +205,13 @@ class GridWorld(Environment):
             return []
         actions = []
         if self.row > 0:
-            actions.append(Action('up'))
+            actions.append(self._cache_action('up', (lambda: Action('up'))))
         if self.row < self.height - 1:
-            actions.append(Action('down'))
+            actions.append(self._cache_action('down', (lambda: Action('down'))))
         if self.col > 0:
-            actions.append(Action('left'))
+            actions.append(self._cache_action('left', (lambda: Action('left'))))
         if self.col < self.width - 1:
-            actions.append(Action('right'))
+            actions.append(self._cache_action('right', (lambda: Action('right'))))
         return actions
 
     def reset(self): # noqa: D102
@@ -268,24 +271,35 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def get_state(self): # noqa: D102
         # type: () -> State
-        observation = self.get_observation()
-        return State(goal_x=self.goal_x, **observation)
+        if self.y == self.hint_pos:
+            symbol = self.goal_x
+        else:
+            symbol = 0
+        return self._cache_state(
+            (self.goal_x, self.x, self.y, symbol),
+            (lambda: State(goal_x=self.goal_x, x=self.x, y=self.y, symbol=symbol)),
+        )
 
     def get_observation(self): # noqa: D102
         # type: () -> State
         if self.y == self.hint_pos:
-            return State(x=self.x, y=self.y, symbol=self.goal_x)
-        return State(x=self.x, y=self.y, symbol=0)
+            symbol = self.goal_x
+        else:
+            symbol = 0
+        return self._cache_observation(
+            (self.x, self.y, symbol),
+            (lambda: State(x=self.x, y=self.y, symbol=symbol)),
+        )
 
     def get_actions(self): # noqa: D102
         # type: () -> List[Action]
         actions = []
         if self.x == 0:
             if self.y < self.length:
-                actions.append(Action('up'))
+                actions.append(self._cache_action('up', (lambda: Action('up'))))
             elif self.y == self.length:
-                actions.append(Action('left'))
-                actions.append(Action('right'))
+                actions.append(self._cache_action('left', (lambda: Action('left'))))
+                actions.append(self._cache_action('right', (lambda: Action('right'))))
         return actions
 
     def reset(self): # noqa: D102
