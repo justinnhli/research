@@ -231,28 +231,6 @@ class GridWorld(Environment):
         raise NotImplementedError
 
 
-def augment_state(state, memories, prefix):
-    # type: (State, Iterable[Any], str) -> State
-    """Add memory items to states and observations.
-
-    Note that we need to remove existing 'memory_' attributes because
-    super().get_state() could call the overridden get_observation().
-
-    Arguments:
-        state (State): The state to augment.
-        memories (List[Any]): The memories to augment with.
-        prefix (str): The prefix to use for memories.
-
-    Returns:
-        State: The state with memory items.
-    """
-    for key in list(state.keys()):
-        if key.startswith(prefix):
-            del state[key]
-    memories = {(prefix + '{}'.format(i)): value for i, value in enumerate(memories)}
-    return State(**memories, **state)
-
-
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
