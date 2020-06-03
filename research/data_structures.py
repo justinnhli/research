@@ -134,6 +134,7 @@ class AVLTree(Mapping[Any, Any]):
         self.factory = factory
         self.size = 0
         self.root = None # type: Optional[AVLTree.Node]
+        self._hash = None
 
     def __getattr__(self, name):
         # type: (str) -> Any
@@ -197,6 +198,19 @@ class AVLTree(Mapping[Any, Any]):
         # type: (Any) -> None
         self._del(key)
 
+    @property
+    def contents_hash(self):
+        """Get a hash of the contents.
+
+        Note: this hash will change if the contents of this AVLTree changes.
+
+        Returns:
+            int: A hash of the contents.
+        """
+        if self._hash is None:
+            self._hash = hash(tuple(self.items()))
+        return self._hash
+
     def _put(self, key, value):
         # type: (Any, Any) -> None
 
@@ -215,6 +229,7 @@ class AVLTree(Mapping[Any, Any]):
             return self._balance(node)
 
         self.root = _put_helper(self, self.root, key, value)
+        self._hash = None
 
     def _get_node(self, key):
         # type: (Any) -> AVLTree.Node
@@ -265,6 +280,7 @@ class AVLTree(Mapping[Any, Any]):
             return self._balance(node), value
 
         self.root, value = _del_helper(self, self.root, key)
+        self._hash = None
         return value
 
     def _nodes(self):
@@ -285,6 +301,7 @@ class AVLTree(Mapping[Any, Any]):
         """Remove all elements from the AVLTree."""
         self.size = 0
         self.root = None
+        self._hash = None
 
     def add(self, element):
         # type: (Any) -> None
