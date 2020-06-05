@@ -139,7 +139,7 @@ class Action(AVLTree):
     def __eq__(self, other):
         return (
             self is other
-            or (hash(self) == hash(other) and super(AVLTree, self).__eq__(other))
+            or (hash(self) == hash(other) and super().__eq__(other))
         )
 
     def __str__(self):
@@ -178,7 +178,7 @@ class State(AVLTree):
     def __eq__(self, other):
         return (
             self is other
-            or (hash(self) == hash(other) and super(AVLTree, self).__eq__(other))
+            or (hash(self) == hash(other) and super().__eq__(other))
         )
 
     def __str__(self):
