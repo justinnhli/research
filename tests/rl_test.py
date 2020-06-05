@@ -8,7 +8,7 @@ from research import train_and_evaluate
 from research import State, Action, Environment, RandomMixin
 from research import GridWorld, SimpleTMaze
 from research import TabularQLearningAgent, LinearQLearner
-from research import epsilon_greedy
+from research import epsilon_greedy, feature_transformed
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
@@ -165,18 +165,18 @@ def test_linear_agent():
         def visualize(self): # noqa: D102
             raise NotImplementedError
 
-    def feature_extractor(state, action=None): # pylint: disable = unused-argument
-        return {
-            'row': (0 if state['row'] == 0 else copysign(1, state['row'])),
-            'col': (0 if state['col'] == 0 else copysign(1, state['col'])),
-        }
+    def feature_fn(state):
+        return State(
+            row=(0 if state['row'] == 0 else copysign(1, state['row'])),
+            col=(0 if state['col'] == 0 else copysign(1, state['col'])),
+        )
 
     size = 1000
     env = InfiniteGridWorld(max_size=size)
-    agent = LinearQLearner(
+    agent = feature_transformed(LinearQLearner)(
+        feature_fn=feature_fn,
         learning_rate=0.1,
         discount_rate=0.9,
-        feature_extractor=feature_extractor,
     )
     # train the agent
     for _ in range(50):

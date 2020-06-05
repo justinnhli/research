@@ -8,7 +8,7 @@ from .rl_environments import Environment, Action, State
 from .rl_environments import GridWorld, SimpleTMaze
 
 from .rl_agents import Agent, TabularQLearningAgent, LinearQLearner
-from .rl_agents import epsilon_greedy, feature_function
+from .rl_agents import epsilon_greedy, feature_transformed
 
 from .knowledge_base import Value, KnowledgeSource, KnowledgeFile, SparqlEndpoint
 

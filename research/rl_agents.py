@@ -195,29 +195,26 @@ class TabularQLearningAgent(Agent):
 class LinearQLearner(Agent):
     """A Q learning with linear value function approximation."""
 
-    def __init__(self, learning_rate, discount_rate, feature_extractor, **kwargs):
+    def __init__(self, learning_rate, discount_rate, **kwargs):
         # type: (float, float, Callable[[State, Optional[Action]], Mapping[Hashable, float]], **Any) -> None
         """Initialize a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
-            feature_extractor (Callable[[State, Optional[Action]], Mapping[Hashable, float]]):
-                A function that extracts features from a state.
             **kwargs: Arbitrary keyword arguments.
         """
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
-        self.feature_extractor = feature_extractor
-        self.weights = defaultdict(lambda: defaultdict(float)) # type: Dict[Action, Dict[Hashable, float]]
         super().__init__(**kwargs)
+        self.weights = defaultdict(lambda: defaultdict(float)) # type: Dict[Action, Dict[Hashable, float]]
 
     def _get_value(self, observation, action): # noqa: D102
         # type: (State, Action) -> float
         weights = self.weights[action]
         return sum(
             weights[feature] * value for feature, value
-            in self.feature_extractor(observation, action=action).items()
+            in observation.items()
         )
 
     def _get_stored_actions(self, observation): # noqa: D102
@@ -231,8 +228,7 @@ class LinearQLearner(Agent):
         prev_value = self._get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self._get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
-        features = self.feature_extractor(self.prev_observation, action=self.prev_action)
-        for feature, value in features.items():
+        for feature, value in self.prev_observation.items():
             weight = self.weights[self.prev_action][feature]
             self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) * value
             if self.weights[self.prev_action][feature] == 0:
