@@ -169,6 +169,9 @@ class State(AVLTree):
     def __hash__(self):
         return self.contents_hash
 
+    def __str__(self):
+        return 'State(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+
 
 class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
