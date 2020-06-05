@@ -218,8 +218,6 @@ class LinearQLearner(Agent):
 
     def get_value(self, observation, action): # noqa: D102
         # type: (State, Action) -> float
-        if action not in self.weights:
-            return 0
         weights = self.weights[action]
         return sum(
             weights[feature] * value for feature, value
