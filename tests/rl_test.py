@@ -192,7 +192,9 @@ def test_linear_agent():
                 name += 'right'
             elif observation['col'] > 0:
                 name += 'left'
-            action = Action(name)
+            actions = [action for action in env.get_actions() if action.name == name]
+            assert len(actions) == 1
+            action = actions[0]
             action = agent.force_act(observation, action)
             reward = env.react(action)
             agent.observe_reward(env.get_observation(), reward)
