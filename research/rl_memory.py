@@ -197,7 +197,6 @@ def memory_architecture(cls):
         def react(self, action): # noqa: D102
             # pylint: disable = missing-docstring
             # handle internal actions and update internal buffers
-            assert action in self.get_actions(), f'{action} not in {self.get_actions()}'
             external_action = self._process_internal_actions(action)
             if external_action:
                 reward = super().react(action)

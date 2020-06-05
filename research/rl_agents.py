@@ -116,7 +116,6 @@ class Agent(RandomMixin):
                 best_value = value
         if best_action is None:
             best_action = self.rng.choice(actions)
-        assert best_action is None or best_action in actions
         return self.force_act(observation, best_action)
 
     def force_act(self, observation, action):

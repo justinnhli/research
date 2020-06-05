@@ -149,7 +149,6 @@ def test_linear_agent():
                 self.col = self.rng.randrange(-self.max_size, self.max_size + 1)
 
         def react(self, action=None): # noqa: D102
-            assert action in self.get_actions()
             if 'up' in action.name:
                 self.row -= 1
             if 'down' in action.name:

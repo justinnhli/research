@@ -229,7 +229,6 @@ class GridWorld(Environment):
 
     def react(self, action): # noqa: D102
         # type: (Action) -> float
-        assert action in self.get_actions()
         if action.name == 'up':
             self.row = max(0, self.row - 1)
         elif action.name == 'down':
@@ -321,7 +320,6 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def react(self, action): # noqa: D102
         # type: (Action) -> float
-        assert action in self.get_actions()
         if action.name == 'up':
             self.y += 1
         elif action.name == 'right':
