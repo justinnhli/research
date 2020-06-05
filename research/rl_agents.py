@@ -288,7 +288,7 @@ def epsilon_greedy(cls):
     return EpsilonGreedyMetaAgent
 
 
-def feature_function(cls):
+def feature_transformed(cls):
     # type: (Type[Agent]) -> Type[Agent]
     """Apply a feature transform before the value function.
 
@@ -300,33 +300,33 @@ def feature_function(cls):
     """
     assert issubclass(cls, Agent)
 
-    class FeatureMetaAgent(cls): # type: ignore
+    class FeatureTransformedMetaAgent(cls): # type: ignore
         """An Agent subclass that uses features."""
 
         def __init__(self, feature_fn, **kwargs):
-            # type: (Callable[[State], Hashable], **Any) -> None
+            # type: (Callable[[State], State], **Any) -> None
             """Initialize the feature agent.
 
             Arguments:
-                feature_fn (Callable[[State], Hashable]): The feature transformation function.
+                feature_fn (Callable[[State], State]): The feature transformation function.
                 **kwargs: Arbitrary keyword arguments.
             """
             self.feature_fn = feature_fn
             super().__init__(**kwargs)
 
-        def _get_value(self, observation, action): # noqa: D102
-            # type: (State, Action) -> float
+        def act(self, observation, actions):
+            # type: (State, Sequence[Action]) -> Action
             # pylint: disable = missing-docstring
-            return super()._get_value(self.feature_fn(observation), action)
+            return super().act(self.feature_fn(observation), actions)
 
-        def _get_stored_actions(self, observation): # noqa: D102
-            # type: (State) -> Iterable[Action]
+        def force_act(self, observation, action):
+            # type: (State, Action) -> Action
             # pylint: disable = missing-docstring
-            return super()._get_stored_actions(self.feature_fn(observation))
+            return super().force_act(self.feature_fn(observation), action)
 
         def observe_reward(self, observation, reward): # noqa: D102
             # type: (State, float) -> None
             # pylint: disable = missing-docstring
             return super().observe_reward(self.feature_fn(observation), reward)
 
-    return FeatureMetaAgent
+    return FeatureTransformedMetaAgent
