@@ -136,6 +136,12 @@ class Action(AVLTree):
         # type: () -> int
         return self.contents_hash
 
+    def __eq__(self, other):
+        return (
+            self is other
+            or (hash(self) == hash(other) and super(AVLTree, self).__eq__(other))
+        )
+
     def __str__(self):
         # type: () -> str
         return 'Action("{}", {})'.format(
@@ -168,6 +174,12 @@ class State(AVLTree):
 
     def __hash__(self):
         return self.contents_hash
+
+    def __eq__(self, other):
+        return (
+            self is other
+            or (hash(self) == hash(other) and super(AVLTree, self).__eq__(other))
+        )
 
     def __str__(self):
         return 'State(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
