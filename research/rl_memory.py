@@ -46,7 +46,7 @@ def memory_architecture(cls):
         def __init__(
                 self, ltm,
                 buf_ignore=None, internal_reward=-0.1, max_internal_actions=None,
-                *args, **kwargs,
+                **kwargs,
         ): # noqa: D102
             """Initialize a memory architecture.
 
@@ -55,7 +55,6 @@ def memory_architecture(cls):
                 buf_ignore (Iterable[str]): Buffers that should not be created.
                 internal_reward (float): Reward for internal actions. Defaults to -0.1.
                 max_internal_actions (int): Max number of consecutive internal actions. Defaults to None.
-                *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
             # pylint: disable = keyword-arg-before-vararg
@@ -72,7 +71,7 @@ def memory_architecture(cls):
             self.internal_action_count = 0
             # initialization
             self._clear_buffers()
-            super().__init__(*args, **kwargs)
+            super().__init__(**kwargs)
 
         @property
         def slots(self):

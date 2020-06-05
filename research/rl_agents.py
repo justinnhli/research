@@ -10,15 +10,14 @@ from .rl_environments import State, Action
 class Agent(RandomMixin):
     """A reinforcement learning agent."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         # type: (*Any, **Any) -> None
         """Initialize the Agent.
 
         Arguments:
-            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.prev_observation = None # type: Optional[State]
         self.prev_action = None # type: Optional[Action]
         self.start_new_episode()
@@ -145,20 +144,19 @@ class Agent(RandomMixin):
 class TabularQLearningAgent(Agent):
     """A tabular Q-learning reinforcement learning agent."""
 
-    def __init__(self, learning_rate, discount_rate, *args, **kwargs):
-        # type: (float, float, *Any, **Any) -> None
+    def __init__(self, learning_rate, discount_rate, **kwargs):
+        # type: (float, float, **Any) -> None
         """Initialize a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
-            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs)
         self.value_function = defaultdict((lambda: defaultdict(float))) # type: Dict[State, Dict[Action, float]]
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
+        super().__init__(**kwargs)
 
     def get_value(self, observation, action): # noqa: D102
         # type: (State, Action) -> float
@@ -198,8 +196,8 @@ class TabularQLearningAgent(Agent):
 class LinearQLearner(Agent):
     """A Q learning with linear value function approximation."""
 
-    def __init__(self, learning_rate, discount_rate, feature_extractor, *args, **kwargs):
-        # type: (float, float, Callable[[State, Optional[Action]], Mapping[Hashable, float]], *Any, **Any) -> None
+    def __init__(self, learning_rate, discount_rate, feature_extractor, **kwargs):
+        # type: (float, float, Callable[[State, Optional[Action]], Mapping[Hashable, float]], **Any) -> None
         """Initialize a tabular Q-learning agent.
 
         Arguments:
@@ -207,14 +205,13 @@ class LinearQLearner(Agent):
             discount_rate (float): The discount rate (gamma).
             feature_extractor (Callable[[State, Optional[Action]], Mapping[Hashable, float]]):
                 A function that extracts features from a state.
-            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs)
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
         self.feature_extractor = feature_extractor
         self.weights = defaultdict(lambda: defaultdict(float)) # type: Dict[Action, Dict[Hashable, float]]
+        super().__init__(**kwargs)
 
     def get_value(self, observation, action): # noqa: D102
         # type: (State, Action) -> float
@@ -270,17 +267,16 @@ def epsilon_greedy(cls):
     class EpsilonGreedyMetaAgent(cls): # type: ignore
         """An Agent subclass that behaves epsilon greedily."""
 
-        def __init__(self, exploration_rate, *args, **kwargs): # noqa: D102
-            # type: (float, *Any, **Any) -> None
+        def __init__(self, exploration_rate, **kwargs): # noqa: D102
+            # type: (float, **Any) -> None
             """Initialize the epsilon-greedy agent.
 
             Arguments:
                 exploration_rate (float): The probability of random action.
-                *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
-            super().__init__(*args, **kwargs)
             self.exploration_rate = exploration_rate
+            super().__init__(**kwargs)
 
         def act(self, observation, actions): # noqa: D102
             # type: (State, Sequence[Action]) -> Action
@@ -308,17 +304,16 @@ def feature_function(cls):
     class FeatureMetaAgent(cls): # type: ignore
         """An Agent subclass that uses features."""
 
-        def __init__(self, feature_fn, *args, **kwargs):
-            # type: (Callable[[State], Hashable], *Any, **Any) -> None
+        def __init__(self, feature_fn, **kwargs):
+            # type: (Callable[[State], Hashable], **Any) -> None
             """Initialize the feature agent.
 
             Arguments:
                 feature_fn (Callable[[State], Hashable]): The feature transformation function.
-                *args: Arbitrary positional arguments.
                 **kwargs: Arbitrary keyword arguments.
             """
-            super().__init__(*args, **kwargs)
             self.feature_fn = feature_fn
+            super().__init__(**kwargs)
 
         def get_value(self, observation, action): # noqa: D102
             # type: (State, Action) -> float
