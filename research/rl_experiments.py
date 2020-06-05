@@ -66,22 +66,13 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
                 agent (Agent): The underlying agent.
 
             """
-            self.episode_count = 0
-            self.step = 0
             self.agent = agent
             super().__init__()
-
-        def start_new_episode(self): # noqa: D102
-            # pylint: disable = missing-docstring
-            super().start_new_episode()
-            self.episode_count += 1
-            self.step = 0
 
         def act(self, observation, actions): # noqa: D102
             action = self.agent.best_act(observation, actions=actions)
             if action is None:
                 action = self.rng.choice(actions)
-            self.step += 1
             return action
 
     return run_episodes(
