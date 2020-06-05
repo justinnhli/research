@@ -149,6 +149,8 @@ class AVLTree(Mapping[Any, Any]):
 
     def __eq__(self, other):
         # type: (Any) -> bool
+        if self is other:
+            return True
         if type(self) is not type(other):
             return False
         if len(self) != len(other):
