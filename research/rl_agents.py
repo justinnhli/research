@@ -83,38 +83,45 @@ class Agent(RandomMixin):
         """
         return self._get_value(observation, self._get_best_stored_action(observation, actions=actions))
 
-    def act(self, observation, actions):
-        # type: (State, Sequence[Action]) -> Action
-        """Update the value function and decide on the next action.
+    def best_act(self, observation, actions=None):
+        # type: (State, Optional[Iterable[Action]]) -> Action
+        """Take the action with the highest value.
 
         Arguments:
             observation (State): The observation of the environment.
-            actions (Sequence[Action]): List of available actions.
+            actions (Optional[Iterable[Action]]): List of available actions.
 
         Returns:
-            Action: The action the agent takes.
+            Action: The best action.
         """
-        best_action = None
-        best_value = None
-        for action in actions:
-            value = self._get_value(observation, action)
-            if value is not None and (best_value is None or value > best_value):
-                best_action = action
-                best_value = value
+        best_action = self._get_best_stored_action(observation, actions=actions)
         if best_action is None:
             best_action = self.rng.choice(actions)
         return self.force_act(observation, best_action)
 
-    def force_act(self, observation, action):
-        # type: (State, Action) -> Action
-        """Update the value function and return a specific action.
+    def act(self, observation, actions):
+        # type: (State, Iterable[Action]) -> Action
+        """Take the appropriate action.
 
         Arguments:
             observation (State): The observation of the environment.
-            action (Action): The action to return.
+            actions (Iterable[Action]): List of available actions.
 
         Returns:
             Action: The action the agent takes.
+        """
+        return self.best_act(observation, actions=actions)
+
+    def force_act(self, observation, action):
+        # type: (State, Action) -> Action
+        """Take the specified action.
+
+        Arguments:
+            observation (State): The observation of the environment.
+            action (Action): The action to take.
+
+        Returns:
+            Action: The specified action.
         """
         self.prev_observation = observation
         if observation is None:
@@ -274,12 +281,12 @@ def epsilon_greedy(cls):
             super().__init__(**kwargs)
 
         def act(self, observation, actions): # noqa: D102
-            # type: (State, Sequence[Action]) -> Action
+            # type: (State, Iterable[Action]) -> Action
             # pylint: disable = missing-docstring
             if self.rng.random() < self.exploration_rate:
                 return super().force_act(observation, self.rng.choice(actions))
             else:
-                return super().act(observation, actions)
+                return super().best_act(observation, actions)
 
     return EpsilonGreedyMetaAgent
 
@@ -311,7 +318,7 @@ def feature_transformed(cls):
             super().__init__(**kwargs)
 
         def act(self, observation, actions):
-            # type: (State, Sequence[Action]) -> Action
+            # type: (State, Iterable[Action]) -> Action
             # pylint: disable = missing-docstring
             return super().act(self.feature_fn(observation), actions)
 

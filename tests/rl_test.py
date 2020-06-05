@@ -97,7 +97,7 @@ def test_agent():
     ))
     for row in range(3):
         for col in range(3):
-            best_action = agent.get_best_stored_action(State(row=row, col=col))
+            best_action = agent.best_act(State(row=row, col=col))
             assert best_action is None or best_action.name in ['down', 'right']
     # the optimal policy takes 8 steps for a 5x5 grid
     # -6 comes from 7 steps of -1 reward and 1 step of +1 reward

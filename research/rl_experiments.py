@@ -78,7 +78,7 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             self.step = 0
 
         def act(self, observation, actions): # noqa: D102
-            action = self.agent.get_best_stored_action(observation, actions=actions)
+            action = self.agent.best_act(observation, actions=actions)
             if action is None:
                 action = self.rng.choice(actions)
             self.step += 1
