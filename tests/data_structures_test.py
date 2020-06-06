@@ -67,3 +67,9 @@ def test_avltree():
     tree.clear()
     assert len(tree) == 0
     assert list(tree) == []
+    # bug discovered 2020-06-05
+    tree = AVLTree()
+    for i in [5, 2, 9, 1, 4, 7, 11, 0, 3, 6, 8, 10, 12]:
+        tree[i] = str(i)
+    del tree[5]
+    assert list(tree.keys()) == [*range(5), *range(6, 13)]

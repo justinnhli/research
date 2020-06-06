@@ -273,14 +273,20 @@ class AVLTree(Mapping[Any, Any]):
                     replacement = node.left
                     while replacement.right is not None:
                         replacement = replacement.right
+                    replacement_key = replacement.key
+                    replacement_value = replacement.value
                     node.left, value = _del_helper(self, node.left, replacement.key)
                 elif node.right is not None:
                     replacement = node.right
                     while replacement.left is not None:
                         replacement = replacement.left
+                    replacement_key = replacement.key
+                    replacement_value = replacement.value
                     node.right, value = _del_helper(self, node.right, replacement.key)
-                node.key = replacement.key
-                node.value = replacement.value
+                else:
+                    raise KeyError('this should not happen')
+                node.key = replacement_key
+                node.value = replacement_value
             return self._balance(node), value
 
         self.root, value = _del_helper(self, self.root, key)
