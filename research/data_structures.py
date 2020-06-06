@@ -136,13 +136,6 @@ class AVLTree(Mapping[Any, Any]):
         self.root = None # type: Optional[AVLTree.Node]
         self._hash = None
 
-    def __getattr__(self, name):
-        # type: (str) -> Any
-        node = self._get_node(name)
-        if node is None:
-            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
-        return node.value
-
     def __bool__(self):
         # type: () -> bool
         return self.size != 0

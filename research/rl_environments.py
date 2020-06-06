@@ -147,6 +147,13 @@ class Action(AVLTree):
             or (hash(self) == hash(other) and super().__eq__(other))
         )
 
+    def __getattr__(self, name):
+        # type: (str) -> Any
+        node = self._get_node(name)
+        if node is None:
+            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
+        return node.value
+
     def __str__(self):
         # type: () -> str
         return 'Action("{}", {})'.format(
