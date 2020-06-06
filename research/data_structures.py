@@ -195,6 +195,12 @@ class AVLTree(Mapping[Any, Any]):
         # type: (Any) -> None
         self._del(key)
 
+    def __repr__(self):
+        return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+
+    def __str__(self):
+        return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+
     @property
     def contents_hash(self):
         """Get a hash of the contents.
