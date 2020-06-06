@@ -1,6 +1,6 @@
 """Reinforcement learning environments."""
 
-from typing import Any, Iterable, Tuple, List
+from typing import Any, Tuple, List
 
 from .randommixin import RandomMixin
 from .data_structures import AVLTree
@@ -8,6 +8,13 @@ from .data_structures import AVLTree
 
 class Environment:
     """A reinforcement learning environment."""
+
+    def __init__(self):
+        """Initialize the Environment."""
+        self._state_cache = {}
+        self._observation_cache = {}
+        self._action_cache = {}
+        super().__init__()
 
     def get_state(self):
         # type: () -> State
@@ -23,6 +30,21 @@ class Environment:
             State: The state, or None if at the end of an episode
         """
         raise NotImplementedError()
+
+    def _cache_item(self, cache, key, callback):
+        # pylint: disable = no-self-use
+        if key not in cache:
+            cache[key] = callback()
+        return cache[key]
+
+    def _cache_state(self, key, callback):
+        return self._cache_item(self._state_cache, key, callback)
+
+    def _cache_observation(self, key, callback):
+        return self._cache_item(self._observation_cache, key, callback)
+
+    def _cache_action(self, key, callback):
+        return self._cache_item(self._action_cache, key, callback)
 
     def get_observation(self):
         # type: () -> State
@@ -108,27 +130,11 @@ class Action(AVLTree):
         """
         super().__init__()
         self.update(kwargs)
-        self.name = name
+        self['_name_'] = name
 
     def __hash__(self):
         # type: () -> int
-        return hash(tuple([self.name, *self.items()]))
-
-    def __lt__(self, other):
-        # type: (Any) -> bool
-        if self.name < other.name:
-            return True
-        elif self.name > other.name:
-            return False
-        else:
-            return tuple(self.items()) < tuple(other.items())
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        # pylint: disable = protected-access
-        if not isinstance(other, Action):
-            return False
-        return self.name == other.name and super().__eq__(other)
+        return self.contents_hash
 
     def __str__(self):
         # type: () -> str
@@ -136,6 +142,15 @@ class Action(AVLTree):
             self.name,
             ', '.join('{}={}'.format(k, v) for k, v in self.items()),
         )
+
+    @property
+    def name(self):
+        """Get the name of the Action.
+
+        Returns:
+            str: The name of the Action.
+        """
+        return self['_name_']
 
 
 class State(AVLTree):
@@ -152,11 +167,7 @@ class State(AVLTree):
         self.update(kwargs)
 
     def __hash__(self):
-        return hash(tuple(self.items()))
-
-    def __lt__(self, other):
-        return tuple(self.items()) < tuple(other.items())
-
+        return self.contents_hash
 
 
 class GridWorld(Environment):
@@ -184,7 +195,10 @@ class GridWorld(Environment):
 
     def get_state(self): # noqa: D102
         # type: () -> State
-        return State(row=self.row, col=self.col)
+        return self._cache_state(
+            (self.row, self.col),
+            (lambda: State(row=self.row, col=self.col)),
+        )
 
     def get_actions(self): # noqa: D102
         # type: () -> List[Action]
@@ -192,13 +206,13 @@ class GridWorld(Environment):
             return []
         actions = []
         if self.row > 0:
-            actions.append(Action('up'))
+            actions.append(self._cache_action('up', (lambda: Action('up'))))
         if self.row < self.height - 1:
-            actions.append(Action('down'))
+            actions.append(self._cache_action('down', (lambda: Action('down'))))
         if self.col > 0:
-            actions.append(Action('left'))
+            actions.append(self._cache_action('left', (lambda: Action('left'))))
         if self.col < self.width - 1:
-            actions.append(Action('right'))
+            actions.append(self._cache_action('right', (lambda: Action('right'))))
         return actions
 
     def reset(self): # noqa: D102
@@ -258,24 +272,35 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def get_state(self): # noqa: D102
         # type: () -> State
-        observation = self.get_observation()
-        return State(goal_x=self.goal_x, **observation)
+        if self.y == self.hint_pos:
+            symbol = self.goal_x
+        else:
+            symbol = 0
+        return self._cache_state(
+            (self.goal_x, self.x, self.y, symbol),
+            (lambda: State(goal_x=self.goal_x, x=self.x, y=self.y, symbol=symbol)),
+        )
 
     def get_observation(self): # noqa: D102
         # type: () -> State
         if self.y == self.hint_pos:
-            return State(x=self.x, y=self.y, symbol=self.goal_x)
-        return State(x=self.x, y=self.y, symbol=0)
+            symbol = self.goal_x
+        else:
+            symbol = 0
+        return self._cache_observation(
+            (self.x, self.y, symbol),
+            (lambda: State(x=self.x, y=self.y, symbol=symbol)),
+        )
 
     def get_actions(self): # noqa: D102
         # type: () -> List[Action]
         actions = []
         if self.x == 0:
             if self.y < self.length:
-                actions.append(Action('up'))
+                actions.append(self._cache_action('up', (lambda: Action('up'))))
             elif self.y == self.length:
-                actions.append(Action('left'))
-                actions.append(Action('right'))
+                actions.append(self._cache_action('left', (lambda: Action('left'))))
+                actions.append(self._cache_action('right', (lambda: Action('right'))))
         return actions
 
     def reset(self): # noqa: D102

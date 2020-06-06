@@ -18,3 +18,4 @@ class RandomMixin:
             random_seed = random()
         self.random_seed = random_seed
         self.rng = Random(self.random_seed)
+        super().__init__()

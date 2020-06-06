@@ -15,4 +15,4 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # go up once to the project root directory
 cd ..
 # run pylint
-"$pylint" *.py research/ tests/*.py
+"$pylint" --min-similarity-lines=8 *.py research/ tests/*.py
