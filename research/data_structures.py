@@ -149,6 +149,8 @@ class AVLTree(Mapping[Any, Any]):
 
     def __eq__(self, other):
         # type: (Any) -> bool
+        if self is other:
+            return True
         if type(self) is not type(other):
             return False
         if len(self) != len(other):
@@ -160,10 +162,12 @@ class AVLTree(Mapping[Any, Any]):
 
     def __lt__(self, other):
         # type: (Any) -> bool
-        return any(
-            pair1 < pair2 for pair1, pair2
-            in zip(self.items(), other.items())
-        )
+        for pair1, pair2 in zip(self.items(), other.items()):
+            if pair1 < pair2:
+                return True
+            if pair1 > pair2:
+                return False
+        return len(self) < len(other)
 
     def __len__(self):
         # type: () -> int

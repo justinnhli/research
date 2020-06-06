@@ -149,7 +149,6 @@ def test_linear_agent():
                 self.col = self.rng.randrange(-self.max_size, self.max_size + 1)
 
         def react(self, action=None): # noqa: D102
-            assert action in self.get_actions()
             if 'up' in action.name:
                 self.row -= 1
             if 'down' in action.name:
@@ -193,7 +192,9 @@ def test_linear_agent():
                 name += 'right'
             elif observation['col'] > 0:
                 name += 'left'
-            action = Action(name)
+            actions = [action for action in env.get_actions() if action.name == name]
+            assert len(actions) == 1
+            action = actions[0]
             action = agent.force_act(observation, action)
             reward = env.react(action)
             agent.observe_reward(env.get_observation(), reward)

@@ -1,11 +1,8 @@
 """Reinforcement learning experiment code."""
 
-import logging
 from statistics import mean
 
 from .rl_agents import Agent
-
-LOGGER = logging.getLogger(__name__)
 
 
 def run_episodes(env, agent, num_episodes, min_return=-500, update_agent=True, new_episode_hook=None):
@@ -79,20 +76,12 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
             super().start_new_episode()
             self.episode_count += 1
             self.step = 0
-            LOGGER.info(50 * '=')
-            LOGGER.info(str(self.episode_count))
 
         def act(self, observation, actions): # noqa: D102
             action = self.agent.get_best_stored_action(observation, actions=actions)
             if action is None:
                 action = self.rng.choice(actions)
             self.step += 1
-            LOGGER.info(str(self.step))
-            LOGGER.info(str(observation))
-            for poss_action in actions:
-                message = f'    {poss_action}: {self.agent.get_value(observation, poss_action)}'
-                LOGGER.info(message)
-            LOGGER.info(str(action))
             return action
 
     return run_episodes(
