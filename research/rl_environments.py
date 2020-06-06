@@ -9,8 +9,13 @@ from .data_structures import AVLTree
 class Environment:
     """A reinforcement learning environment."""
 
-    def __init__(self):
-        """Initialize the Environment."""
+    def __init__(self, **kwargs):
+        # pylint: disable = unused-argument
+        """Initialize the Environment.
+
+        Arguments:
+            **kwargs: Arbitrary keyword arguments.
+        """
         self._state_cache = {}
         self._observation_cache = {}
         self._action_cache = {}
