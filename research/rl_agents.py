@@ -317,6 +317,11 @@ def feature_transformed(cls):
             self.feature_fn = feature_fn
             super().__init__(**kwargs)
 
+        def best_act(self, observation, actions):
+            # type: (State, Iterable[Action]) -> Action
+            # pylint: disable = missing-docstring
+            return super().best_act(self.feature_fn(observation), actions)
+
         def act(self, observation, actions):
             # type: (State, Iterable[Action]) -> Action
             # pylint: disable = missing-docstring
@@ -327,9 +332,9 @@ def feature_transformed(cls):
             # pylint: disable = missing-docstring
             return super().force_act(self.feature_fn(observation), action)
 
-        def observe_reward(self, observation, reward): # noqa: D102
+        def observe_reward(self, observation, reward, actions=None): # noqa: D102
             # type: (State, float) -> None
             # pylint: disable = missing-docstring
-            return super().observe_reward(self.feature_fn(observation), reward)
+            return super().observe_reward(self.feature_fn(observation), reward, actions=actions)
 
     return FeatureTransformedMetaAgent
