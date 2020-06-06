@@ -188,8 +188,8 @@ class State(AVLTree):
 class GridWorld(Environment):
     """A simple, obstacle-free GridWorld environment."""
 
-    def __init__(self, width, height, start, goal, *args, **kwargs):
-        # type: (int, int, Tuple[int, int], Tuple[int, int], *Any, **Any) -> None
+    def __init__(self, width, height, start, goal, **kwargs):
+        # type: (int, int, Tuple[int, int], Tuple[int, int], **Any) -> None
         """Initialize a GridWorld.
 
         Arguments:
@@ -197,14 +197,13 @@ class GridWorld(Environment):
             height (int): The height of the grid.
             start (Tuple[int, int]): The starting location. Origin is top left.
             goal (Tuple[int, int]): The goal location. Origin is top left.
-            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs) # type: ignore
         self.width = width
         self.height = height
         self.start = list(start)
         self.goal = list(goal)
+        super().__init__(**kwargs) # type: ignore
         self.row = start[0]
         self.col = start[1]
 
@@ -262,8 +261,8 @@ class GridWorld(Environment):
 class SimpleTMaze(Environment, RandomMixin):
     """A T-maze environment, with hints on which direction to go."""
 
-    def __init__(self, length, hint_pos, goal_x=0, *args, **kwargs):
-        # type: (int, int, int, *Any, **Any) -> None
+    def __init__(self, length, hint_pos, goal_x=0, **kwargs):
+        # type: (int, int, int, **Any) -> None
         """Initialize the TMaze.
 
         Arguments:
@@ -271,14 +270,13 @@ class SimpleTMaze(Environment, RandomMixin):
             hint_pos (int): The location of the hint.
             goal_x (int): The location of the goal. Must be -1 or 1. If left
                 to default of 0, goal_x is chosen at random.
-            *args: Arbitrary positional arguments.
             **kwargs: Arbitrary keyword arguments.
         """
         # pylint: disable = keyword-arg-before-vararg
         assert 0 <= hint_pos < length
-        super().__init__(*args, **kwargs)
         self.length = length
         self.hint_pos = hint_pos
+        super().__init__(**kwargs)
         self.x = 0
         self.y = 0
         self.init_goal_x = goal_x

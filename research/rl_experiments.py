@@ -66,22 +66,13 @@ def evaluate_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=N
                 agent (Agent): The underlying agent.
 
             """
-            self.episode_count = 0
-            self.step = 0
             self.agent = agent
             super().__init__()
 
-        def start_new_episode(self): # noqa: D102
-            # pylint: disable = missing-docstring
-            super().start_new_episode()
-            self.episode_count += 1
-            self.step = 0
-
         def act(self, observation, actions): # noqa: D102
-            action = self.agent.get_best_stored_action(observation, actions=actions)
+            action = self.agent.best_act(observation, actions=actions)
             if action is None:
                 action = self.rng.choice(actions)
-            self.step += 1
             return action
 
     return run_episodes(
@@ -114,7 +105,12 @@ def train_agent(env, agent, num_episodes, min_return=-500, new_episode_hook=None
     )
 
 
-def train_and_evaluate(env, agent, num_episodes, **kwargs):
+def train_and_evaluate(
+        env, agent, num_episodes,
+        eval_frequency=10, eval_num_episodes=10,
+        min_return=-500,
+        new_episode_hook=None,
+):
     """Train an agent and evaluate it at regular intervals.
 
     Arguments:
@@ -130,14 +126,10 @@ def train_and_evaluate(env, agent, num_episodes, **kwargs):
         float: The mean return of each evaluation.
     """
     # pylint: disable = differing-param-doc, differing-type-doc, missing-param-doc
-    eval_frequency = kwargs.get('eval_frequency', 10)
-    eval_num_episodes = kwargs.get('eval_num_episodes', 10)
     if eval_frequency == 0:
         train_episodes = num_episodes
     else:
         train_episodes = eval_frequency
-    min_return = kwargs.get('min_return', -500)
-    new_episode_hook = kwargs.get('new_episode_hook', None)
     for episode_num in range(0, num_episodes, train_episodes):
         train_agent(env, agent, train_episodes, new_episode_hook=new_episode_hook)
         should_evaluate = (
