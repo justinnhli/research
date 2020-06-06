@@ -1,6 +1,7 @@
 """Memory architecture for reinforcement learning."""
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
+from copy import deepcopy
 
 from .data_structures import AVLTree
 from .rl_environments import State, Action, Environment
@@ -69,8 +70,10 @@ def memory_architecture(cls):
             # variables
             self.buffers = {}
             self.internal_action_count = 0
+            self._state = State()
+            self._buffer_changes = defaultdict(int)
             # initialization
-            self._clear_buffers()
+            self._clear_all_buffers()
             super().__init__(**kwargs)
 
         @property
@@ -90,32 +93,77 @@ def memory_architecture(cls):
 
         def get_state(self): # noqa: D102
             # pylint: disable = missing-docstring
-            return State(**self.to_dict())
+            if self._buffer_changes:
+                self._state = deepcopy(self._state)
+                for (buf, attr, val), count in self._buffer_changes.items():
+                    if count < 0:
+                        del self._state[buf + '_' + attr]
+                    elif count > 0:
+                        self._state[buf + '_' + attr] = val
+            self._buffer_changes = defaultdict(int)
+            return self._state
 
         def get_observation(self): # noqa: D102
             # pylint: disable = missing-docstring
-            return State(**self.to_dict())
+            return self.get_state()
 
         def reset(self): # noqa: D102
             # pylint: disable = missing-docstring
             super().reset()
-            self._clear_buffers()
+            self._clear_all_buffers()
 
-        def _clear_buffers(self):
+        def _track_adds(self, buf, attr, val):
+            key = (buf, attr, val)
+            if self._buffer_changes[key] == -1:
+                del self._buffer_changes[key]
+            else:
+                self._buffer_changes[key] += 1
+
+        def _track_dels(self, buf, attr, val):
+            key = (buf, attr, val)
+            if self._buffer_changes[key] == 1:
+                del self._buffer_changes[key]
+            else:
+                self._buffer_changes[key] -= 1
+
+        def _add_attr(self, buf, attr, val):
+            self.buffers[buf][attr] = val
+            self._track_adds(buf, attr, val)
+
+        def _set_buffer(self, buf, contents):
+            for attr, val in self.buffers[buf].items():
+                self._track_dels(buf, attr, val)
+            for attr, val in contents.items():
+                self._track_adds(buf, attr, val)
+            self.buffers[buf] = contents
+
+        def _del_attr(self, buf, attr):
+            val = self.buffers[buf][attr]
+            self._track_dels(buf, attr, val)
+            del self.buffers[buf][attr]
+
+        def _clear_buffer(self, buf):
+            for attr, val in self.buffers[buf].items():
+                self._track_dels(buf, attr, val)
+            self.buffers[buf].clear()
+
+        def _clear_all_buffers(self):
             self.buffers = {}
             for buf, _ in self.BUFFERS.items():
                 if buf in self.buf_ignore:
                     continue
                 self.buffers[buf] = AVLTree()
+            self._state = State()
+            self._buffer_changes = defaultdict(int)
 
         def _clear_ltm_buffers(self):
-            self.buffers['query'].clear()
-            self.buffers['retrieval'].clear()
+            self._clear_buffer('query')
+            self._clear_buffer('retrieval')
 
         def start_new_episode(self): # noqa: D102
             # pylint: disable = missing-docstring
             super().start_new_episode()
-            self._clear_buffers()
+            self._clear_all_buffers()
             self._sync_input_buffers()
             self.internal_action_count = 0
 
@@ -216,42 +264,45 @@ def memory_architecture(cls):
                 bool: Whether the action was external.
             """
             if action.name == 'copy':
-                val = self.buffers[action.src_buf][action.src_attr]
-                self.buffers[action.dst_buf][action.dst_attr] = val
+                self._add_attr(
+                    action.dst_buf,
+                    action.dst_attr,
+                    self.buffers[action.src_buf][action.src_attr],
+                )
                 if action.dst_buf == 'query':
                     self._query_ltm()
             elif action.name == 'delete':
-                del self.buffers[action.buf][action.attr]
+                self._del_attr(action.buf, action.attr)
                 if action.buf == 'query':
                     self._query_ltm()
             elif action.name == 'retrieve':
                 result = self.ltm.retrieve(self.buffers[action.buf][action.attr])
-                self.buffers['query'].clear()
+                self._clear_buffer('query')
                 if result is None:
-                    self.buffers['retrieval'].clear()
+                    self._clear_buffer('retrieval')
                 else:
-                    self.buffers['retrieval'] = result
+                    self._set_buffer('retrieval', result)
             elif action.name == 'prev-result':
-                self.buffers['retrieval'] = self.ltm.prev_result()
+                self._set_buffer('retrieval', self.ltm.prev_result())
             elif action.name == 'next-result':
-                self.buffers['retrieval'] = self.ltm.next_result()
+                self._set_buffer('retrieval', self.ltm.next_result())
             else:
                 return True
             return False
 
         def _query_ltm(self):
             if not self.buffers['query']:
-                self.buffers['retrieval'].clear()
+                self._clear_buffer('retrieval')
                 return
             result = self.ltm.query(self.buffers['query'])
             if result is None:
-                self.buffers['retrieval'].clear()
+                self._clear_buffer('retrieval')
             else:
-                self.buffers['retrieval'] = result
+                self._set_buffer('retrieval', result)
 
         def _sync_input_buffers(self):
             # update input buffers
-            self.buffers['perceptual'] = super().get_observation()
+            self._set_buffer('perceptual', super().get_observation())
 
         def add_to_ltm(self, **kwargs):
             """Add a memory element to long-term memory.
