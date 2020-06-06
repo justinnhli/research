@@ -70,7 +70,7 @@ def memory_architecture(cls):
             self.buffers = {}
             self.internal_action_count = 0
             # initialization
-            self._clear_buffers()
+            self._clear_all_buffers()
             super().__init__(**kwargs)
 
         @property
@@ -99,9 +99,9 @@ def memory_architecture(cls):
         def reset(self): # noqa: D102
             # pylint: disable = missing-docstring
             super().reset()
-            self._clear_buffers()
+            self._clear_all_buffers()
 
-        def _clear_buffers(self):
+        def _clear_all_buffers(self):
             self.buffers = {}
             for buf, _ in self.BUFFERS.items():
                 if buf in self.buf_ignore:
@@ -115,7 +115,7 @@ def memory_architecture(cls):
         def start_new_episode(self): # noqa: D102
             # pylint: disable = missing-docstring
             super().start_new_episode()
-            self._clear_buffers()
+            self._clear_all_buffers()
             self._sync_input_buffers()
             self.internal_action_count = 0
 
