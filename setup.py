@@ -32,13 +32,14 @@ def get_dependency(package, location):
 
 
 setup(
-    name='justinnhli-research',
+    name='research',
     version='',
     description="Justin Li's main research code repository.",
     license='MIT',
     author='Justin Li',
     author_email='justinnhli@oxy.edu',
     url='https://github.com/justinnhli/research',
+    packages=['research',],
     entry_points={
         'console_scripts': [
             'rdfsqlize = research.rdfsqlize:main',
