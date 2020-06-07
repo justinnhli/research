@@ -195,6 +195,19 @@ class AVLTree(Mapping[Any, Any]):
         # type: (Any) -> None
         self._del(key)
 
+    def __reversed__(self):
+        # type: () -> Generator[Any, None, None]
+
+        def _reversed_helper(node):
+            # type: (Optional[AVLTree.Node]) -> Generator[AVLTree.Node, None, None]
+            if node is None:
+                return
+            yield from _reversed_helper(node.right)
+            yield node.key
+            yield from _reversed_helper(node.left)
+
+        yield from _reversed_helper(self.root)
+
     def __repr__(self):
         return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
 
