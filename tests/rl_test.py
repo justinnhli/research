@@ -8,7 +8,7 @@ from research import train_and_evaluate
 from research import State, Action, Environment, RandomMixin
 from research import GridWorld, SimpleTMaze
 from research import TabularQLearningAgent, LinearQLearner
-from research import epsilon_greedy, feature_transformed
+from research import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 

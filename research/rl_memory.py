@@ -231,7 +231,7 @@ def memory_architecture(cls):
             for buf, buf_props in self.BUFFERS.items():
                 if buf in self.buf_ignore or not buf_props.copyable:
                     continue
-                for attr, val in self.buffers[buf].items():
+                for _, val in self.buffers[buf].items():
                     if self.ltm.retrievable(val):
                         actions.append(Action('retrieve', val=val))
             return actions
