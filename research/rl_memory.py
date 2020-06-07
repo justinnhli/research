@@ -4,8 +4,7 @@ from collections import namedtuple, defaultdict
 from copy import deepcopy
 
 from .data_structures import AVLTree
-from .rl_environments import State, Action, Environment
-from .long_term_memory import AttrValPair
+from .rl_environments import AttrVal, State, Action, Environment
 
 
 def memory_architecture(cls):
@@ -196,7 +195,7 @@ def memory_architecture(cls):
                             and dst_buf not in self.buf_ignore
                             and dst_prop.writable
                             and not (src_buf == 'perceptual' and dst_buf == 'scratch')
-                            and AttrValPair(attr, val) not in self.buffers[dst_buf]
+                            and AttrVal(attr, val) not in self.buffers[dst_buf]
                         )
                         if not copy_okay:
                             continue

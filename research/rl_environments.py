@@ -1,5 +1,6 @@
 """Reinforcement learning environments."""
 
+from collections import namedtuple
 from typing import Any, Tuple, List
 
 from .randommixin import RandomMixin
@@ -169,6 +170,9 @@ class Action(AVLTree):
             str: The name of the Action.
         """
         return self['_name_']
+
+
+AttrVal = namedtuple('AttrVal', ['attr', 'val'])
 
 
 class State(AVLTree):

@@ -7,8 +7,7 @@ from uuid import uuid4 as uuid
 from networkx import MultiDiGraph
 
 from .data_structures import AVLTree
-
-AttrValPair = namedtuple('AttrValPair', ['attr', 'val'])
+from .rl_environments import AttrVal
 
 
 class LongTermMemory:
@@ -116,7 +115,7 @@ class NaiveDictLTM(LongTermMemory):
     def store(self, mem_id=None, **kwargs): # noqa: D102
         self.knowledge[mem_id] = AVLTree()
         for attr, val in kwargs.items():
-            self.knowledge[mem_id].add(AttrValPair(attr, val))
+            self.knowledge[mem_id].add(AttrVal(attr, val))
         return True
 
     def retrieve(self, mem_id): # noqa: D102
@@ -206,7 +205,7 @@ class NetworkXLTM(LongTermMemory):
         self.activation_fn(self.graph, mem_id)
         result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
-            result.add(AttrValPair(data['attribute'], value))
+            result.add(AttrVal(data['attribute'], value))
         return result
 
     def retrieve(self, mem_id): # noqa: D102
@@ -343,7 +342,7 @@ class SparqlLTM(LongTermMemory):
         for binding in results:
             val = binding['value'].rdf_format
             if val not in self.BAD_VALUES:
-                result.add(AttrValPair(
+                result.add(AttrVal(
                     binding['attr'].rdf_format,
                     val,
                 ))
