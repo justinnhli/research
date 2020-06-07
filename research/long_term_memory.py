@@ -113,6 +113,8 @@ class NaiveDictLTM(LongTermMemory):
         self.query_matches = []
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
+        if mem_id is None:
+            mem_id = uuid()
         self.knowledge[mem_id] = AVLTree()
         for attr, val in kwargs.items():
             self.knowledge[mem_id].add(AttrVal(attr, val))
@@ -124,7 +126,7 @@ class NaiveDictLTM(LongTermMemory):
     def query(self, attr_vals): # noqa: D102
         candidates = []
         for candidate, cand_attr_vals in self.knowledge.items():
-            if cand_attr_val.is_superset(attr_vals):
+            if cand_attr_vals.is_superset(attr_vals):
                 candidates.append(candidate)
         if candidates:
             # if the current retrieved item still matches the new query

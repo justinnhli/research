@@ -95,11 +95,12 @@ def memory_architecture(cls):
             # pylint: disable = missing-docstring
             if self._buffer_changes:
                 self._state = deepcopy(self._state)
-                for (buf, attr, val), count in self._buffer_changes.items():
+                for (buf, attr_val), count in self._buffer_changes.items():
+                    attr, val = attr_val
                     if count < 0:
-                        del self._state[buf + '_' + attr]
+                        self._state.remove(AttrVal(buf + '_' + attr, val))
                     elif count > 0:
-                        self._state[buf + '_' + attr] = val
+                        self._state.add(AttrVal(buf + '_' + attr, val))
             self._buffer_changes = defaultdict(int)
             return self._state
 
@@ -112,38 +113,40 @@ def memory_architecture(cls):
             super().reset()
             self._clear_all_buffers()
 
-        def _track_adds(self, buf, attr, val):
-            key = (buf, attr, val)
+        def _track_adds(self, buf, attr_val):
+            key = (buf, attr_val)
             if self._buffer_changes[key] == -1:
                 del self._buffer_changes[key]
             else:
                 self._buffer_changes[key] += 1
 
-        def _track_dels(self, buf, attr, val):
-            key = (buf, attr, val)
+        def _track_dels(self, buf, attr_val):
+            key = (buf, attr_val)
             if self._buffer_changes[key] == 1:
                 del self._buffer_changes[key]
             else:
                 self._buffer_changes[key] -= 1
 
         def _add_attr(self, buf, attr, val):
-            self.buffers[buf][attr] = val
-            self._track_adds(buf, attr, val)
+            attr_val = AttrVal(attr, val)
+            self.buffers[buf].add(attr_val)
+            self._track_adds(buf, attr_val)
 
         def _set_buffer(self, buf, contents):
-            for attr, val in self.buffers[buf].items():
-                self._track_dels(buf, attr, val)
-            for attr, val in contents.items():
-                self._track_adds(buf, attr, val)
+            for attr_val in self.buffers[buf]:
+                self._track_dels(buf, attr_val)
+            for attr_val in contents:
+                self._track_adds(buf, attr_val)
             self.buffers[buf] = contents
 
         def _del_attr(self, buf, attr, val):
-            self._track_dels(buf, attr, val)
-            del self.buffers[buf][attr]
+            attr_val = AttrVal(attr, val)
+            self._track_dels(buf, attr_val)
+            self.buffers[buf].remove(attr_val)
 
         def _clear_buffer(self, buf):
-            for attr, val in self.buffers[buf].items():
-                self._track_dels(buf, attr, val)
+            for attr_val in self.buffers[buf]:
+                self._track_dels(buf, attr_val)
             self.buffers[buf].clear()
 
         def _clear_all_buffers(self):
