@@ -202,17 +202,20 @@ class TabularQLearningAgent(Agent):
 class LinearQLearner(Agent):
     """A Q learning with linear value function approximation."""
 
-    def __init__(self, learning_rate, discount_rate, **kwargs):
+    def __init__(self, learning_rate, discount_rate, feature_fn, **kwargs):
         # type: (float, float, Callable[[State, Optional[Action]], Mapping[Hashable, float]], **Any) -> None
         """Initialize a tabular Q-learning agent.
 
         Arguments:
             learning_rate (float): The learning rate (alpha).
             discount_rate (float): The discount rate (gamma).
+            feature_fn (Callable[[State], Mapping[Hashable, float]]):
+                A function that extracts features from a state.
             **kwargs: Arbitrary keyword arguments.
         """
         self.learning_rate = learning_rate
         self.discount_rate = discount_rate
+        self.feature_fn = feature_fn
         super().__init__(**kwargs)
         self.weights = defaultdict(lambda: defaultdict(float)) # type: Dict[Action, Dict[Hashable, float]]
 
@@ -221,7 +224,7 @@ class LinearQLearner(Agent):
         weights = self.weights[action]
         return sum(
             weights[feature] * value for feature, value
-            in observation.items()
+            in self.feature_fn(observation).items()
         )
 
     def _get_stored_actions(self, observation): # noqa: D102
@@ -235,7 +238,7 @@ class LinearQLearner(Agent):
         prev_value = self._get_value(self.prev_observation, self.prev_action)
         next_value = reward + self.discount_rate * self._get_best_stored_value(observation, actions=actions)
         diff = next_value - prev_value
-        for feature, value in self.prev_observation.items():
+        for feature, value in self.feature_fn(self.prev_observation).items():
             weight = self.weights[self.prev_action][feature]
             self.weights[self.prev_action][feature] = weight + (self.learning_rate * diff) * value
             if self.weights[self.prev_action][feature] == 0:

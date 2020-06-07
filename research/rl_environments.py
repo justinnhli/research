@@ -1,5 +1,6 @@
 """Reinforcement learning environments."""
 
+from collections import namedtuple
 from typing import Any, Tuple, List
 
 from .randommixin import RandomMixin
@@ -171,18 +172,23 @@ class Action(AVLTree):
         return self['_name_']
 
 
+AttrVal = namedtuple('AttrVal', ['attr', 'val'])
+
+
 class State(AVLTree):
     """A state or observation in a reinforcement learning environment."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         # type: (**Any) -> None
         """Initialize a State object.
 
         Arguments:
+            *args: Arbitrary key-value pairs
             **kwargs: Arbitrary key-value pairs
         """
         super().__init__()
-        self.update(kwargs)
+        self.union_update(AttrVal(attr, val) for attr, val in args)
+        self.union_update(AttrVal(attr, val) for attr, val in kwargs.items())
 
     def __hash__(self):
         return self.contents_hash

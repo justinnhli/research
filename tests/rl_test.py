@@ -8,7 +8,7 @@ from research import train_and_evaluate
 from research import State, Action, Environment, RandomMixin
 from research import GridWorld, SimpleTMaze
 from research import TabularQLearningAgent, LinearQLearner
-from research import epsilon_greedy, feature_transformed
+from research import epsilon_greedy
 
 RLTestStep = namedtuple('RLTestStep', ['observation', 'actions', 'action', 'reward'])
 
@@ -166,38 +166,39 @@ def test_linear_agent():
             raise NotImplementedError
 
     def feature_fn(state):
-        return State(
-            row=(0 if state['row'] == 0 else copysign(1, state['row'])),
-            col=(0 if state['col'] == 0 else copysign(1, state['col'])),
-        )
+        return {
+            attr: (0 if val == 0 else copysign(1, val))
+            for attr, val in state
+        }
 
     size = 1000
     env = InfiniteGridWorld(max_size=size)
-    agent = feature_transformed(LinearQLearner)(
-        feature_fn=feature_fn,
+    agent = LinearQLearner(
         learning_rate=0.1,
         discount_rate=0.9,
+        feature_fn=feature_fn,
     )
     # train the agent
     for _ in range(50):
         env.start_new_episode()
         while not env.end_of_episode():
             observation = env.get_observation()
+            obs_dict = dict([*observation])
             name = ''
-            if observation['row'] < 0:
+            if obs_dict['row'] < 0:
                 name += 'down'
-            elif observation['row'] > 0:
+            elif obs_dict['row'] > 0:
                 name += 'up'
-            if observation['col'] < 0:
+            if obs_dict['col'] < 0:
                 name += 'right'
-            elif observation['col'] > 0:
+            elif obs_dict['col'] > 0:
                 name += 'left'
             actions = [action for action in env.get_actions() if action.name == name]
             assert len(actions) == 1
             action = actions[0]
             action = agent.force_act(observation, action)
             reward = env.react(action)
-            agent.observe_reward(env.get_observation(), reward)
+            agent.observe_reward(observation, reward)
     # test that the agent can finish within `2 * size` steps
     for _ in range(50):
         env.start_new_episode()

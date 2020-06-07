@@ -4,7 +4,7 @@ from .data_structures import UnionFind, AVLTree
 
 from .randommixin import RandomMixin
 
-from .rl_environments import Environment, Action, State
+from .rl_environments import Environment, Action, AttrVal, State
 from .rl_environments import GridWorld, SimpleTMaze
 
 from .rl_agents import Agent, TabularQLearningAgent, LinearQLearner
