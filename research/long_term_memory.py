@@ -8,6 +8,9 @@ from networkx import MultiDiGraph
 
 from .data_structures import AVLTree
 
+AttrValPair = namedtuple('AttrValPair', ['attr', 'val'])
+
+
 class LongTermMemory:
     """Generic interface to a knowledge base."""
 
@@ -42,7 +45,7 @@ class LongTermMemory:
         """Query the LTM for elements with the given attributes.
 
         Arguments:
-            attr_vals (Mapping[str, Any]): Attributes and values of the desired element.
+            attr_vals (Set[Tuple[str, Any]]): Attributes and values of the desired element.
 
         Returns:
             AVLTree: A search result, or None.
@@ -101,17 +104,19 @@ class NaiveDictLTM(LongTermMemory):
 
     def __init__(self):
         """Initialize the NaiveDictLTM."""
-        self.knowledge = []
+        self.knowledge = {}
         self.query_index = None
         self.query_matches = []
 
     def clear(self): # noqa: D102
-        self.knowledge = []
+        self.knowledge = {}
         self.query_index = None
         self.query_matches = []
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
-        self.knowledge.append(AVLTree.from_dict(kwargs))
+        self.knowledge[mem_id] = AVLTree()
+        for attr, val in kwargs.items():
+            self.knowledge[mem_id].add(AttrValPair(attr, val))
         return True
 
     def retrieve(self, mem_id): # noqa: D102
@@ -119,12 +124,8 @@ class NaiveDictLTM(LongTermMemory):
 
     def query(self, attr_vals): # noqa: D102
         candidates = []
-        for candidate in self.knowledge:
-            match = all(
-                attr in candidate and candidate[attr] == val
-                for attr, val in attr_vals.items()
-            )
-            if match:
+        for candidate, cand_attr_vals in self.knowledge.items():
+            if cand_attr_val.is_superset(attr_vals):
                 candidates.append(candidate)
         if candidates:
             # if the current retrieved item still matches the new query
@@ -133,7 +134,7 @@ class NaiveDictLTM(LongTermMemory):
                 curr_retrieved = self.query_matches[self.query_index]
             else:
                 curr_retrieved = None
-            self.query_matches = sorted(candidates, key=(lambda candidate: tuple(candidate.items())))
+            self.query_matches = sorted(self.knowledge[candidate] for candidate in candidates)
             # use the ValueError from list.index() to determine if the query still matches
             try:
                 self.query_index = self.query_matches.index(curr_retrieved)
@@ -205,7 +206,7 @@ class NetworkXLTM(LongTermMemory):
         self.activation_fn(self.graph, mem_id)
         result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
-            result[data['attribute']] = value
+            result.add(AttrValPair(data['attribute'], value))
         return result
 
     def retrieve(self, mem_id): # noqa: D102
@@ -215,16 +216,17 @@ class NetworkXLTM(LongTermMemory):
 
     def query(self, attr_vals): # noqa: D102
         # first pass: get candidates with all the attributes
+        attrs = set(attr for attr, _ in attr_vals)
         candidates = set.intersection(*(
-            self.inverted_index[attribute] for attribute in attr_vals.keys()
+            self.inverted_index[attribute] for attribute in attrs
         ))
         # second pass: get candidates with the correct values
         candidates = set(
             candidate for candidate in candidates
             if all((
-                (candidate, value) in self.graph.edges
-                and self.graph.get_edge_data(candidate, value)[0]['attribute'] == attribute
-            ) for attribute, value in attr_vals.items())
+                (candidate, val) in self.graph.edges
+                and self.graph.get_edge_data(candidate, val)[0]['attribute'] == attr
+            ) for attr, val in attr_vals)
         )
         # quit early if there are no results
         if not candidates:
@@ -337,16 +339,18 @@ class SparqlLTM(LongTermMemory):
         results = self.source.query_sparql(query)
         # FIXME HACK to avoid dealing with multi-valued attributes,
         # we only return the "largest" value for each attribute
-        result = defaultdict(set)
+        result = AVLTree()
         for binding in results:
             val = binding['value'].rdf_format
-            if val in self.BAD_VALUES:
-                continue
-            result[binding['attr'].rdf_format].add(val)
-        return {attr: max(vals) for attr, vals in result.items()}
+            if val not in self.BAD_VALUES:
+                result.add(AttrValPair(
+                    binding['attr'].rdf_format,
+                    val,
+                ))
+        return result
 
     def query(self, attr_vals): # noqa: D102
-        query_terms = tuple((k, v) for k, v in sorted(attr_vals.items()))
+        query_terms = tuple([*attr_vals])
         if query_terms not in self.query_cache:
             mem_id = self._true_query(attr_vals)
             self.query_cache[query_terms] = mem_id
@@ -361,7 +365,7 @@ class SparqlLTM(LongTermMemory):
 
     def _true_query(self, attr_vals, offset=0):
         condition = ' ; '.join(
-            f'{attr} {val}' for attr, val in attr_vals.items()
+            f'{attr} {val}' for attr, val in attr_vals
         )
         query = f'''
         SELECT DISTINCT ?concept WHERE {{

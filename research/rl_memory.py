@@ -5,6 +5,7 @@ from copy import deepcopy
 
 from .data_structures import AVLTree
 from .rl_environments import State, Action, Environment
+from .long_term_memory import AttrValPair
 
 
 def memory_architecture(cls):
@@ -83,8 +84,8 @@ def memory_architecture(cls):
             Yields:
                 Tuple[str, str, Any]: A tuple of buffer, attribute, and value.
             """
-            for buf, attrs in sorted(self.buffers.items()):
-                for attr, val in attrs.items():
+            for buf, attrs in self.buffers.items():
+                for (attr, val) in attrs:
                     yield buf, attr, val
 
         def to_dict(self):
@@ -137,8 +138,7 @@ def memory_architecture(cls):
                 self._track_adds(buf, attr, val)
             self.buffers[buf] = contents
 
-        def _del_attr(self, buf, attr):
-            val = self.buffers[buf][attr]
+        def _del_attr(self, buf, attr, val):
             self._track_dels(buf, attr, val)
             del self.buffers[buf][attr]
 
@@ -189,16 +189,16 @@ def memory_architecture(cls):
             for src_buf, src_props in self.BUFFERS.items():
                 if src_buf in self.buf_ignore or not src_props.copyable:
                     continue
-                for attr in self.buffers[src_buf]:
+                for (attr, val) in self.buffers[src_buf]:
                     for dst_buf, dst_prop in self.BUFFERS.items():
-                        copyable = (
+                        copy_okay = (
                             src_buf != dst_buf
                             and dst_buf not in self.buf_ignore
                             and dst_prop.writable
                             and not (src_buf == 'perceptual' and dst_buf == 'scratch')
-                            and self.buffers[src_buf][attr] != self.buffers[dst_buf].get(attr, None)
+                            and AttrValPair(attr, val) not in self.buffers[dst_buf]
                         )
-                        if not copyable:
+                        if not copy_okay:
                             continue
                         actions.append(Action(
                             'copy',
@@ -206,6 +206,7 @@ def memory_architecture(cls):
                             src_attr=attr,
                             dst_buf=dst_buf,
                             dst_attr=attr,
+                            dst_val=val,
                         ))
             return actions
 
@@ -214,11 +215,12 @@ def memory_architecture(cls):
             for buf, prop in self.BUFFERS.items():
                 if buf in self.buf_ignore or not prop.writable:
                     continue
-                for attr in self.buffers[buf]:
+                for (attr, val) in self.buffers[buf]:
                     actions.append(Action(
                         'delete',
                         buf=buf,
                         attr=attr,
+                        val=val,
                     ))
             return actions
 
@@ -227,9 +229,9 @@ def memory_architecture(cls):
             for buf, buf_props in self.BUFFERS.items():
                 if buf in self.buf_ignore or not buf_props.copyable:
                     continue
-                for attr, value in self.buffers[buf].items():
-                    if self.ltm.retrievable(value):
-                        actions.append(Action('retrieve', buf=buf, attr=attr))
+                for attr, val in self.buffers[buf].items():
+                    if self.ltm.retrievable(val):
+                        actions.append(Action('retrieve', val=val))
             return actions
 
         def _generate_cursor_actions(self):
@@ -267,16 +269,16 @@ def memory_architecture(cls):
                 self._add_attr(
                     action.dst_buf,
                     action.dst_attr,
-                    self.buffers[action.src_buf][action.src_attr],
+                    action.dst_val,
                 )
                 if action.dst_buf == 'query':
                     self._query_ltm()
             elif action.name == 'delete':
-                self._del_attr(action.buf, action.attr)
+                self._del_attr(action.buf, action.attr, action.val)
                 if action.buf == 'query':
                     self._query_ltm()
             elif action.name == 'retrieve':
-                result = self.ltm.retrieve(self.buffers[action.buf][action.attr])
+                result = self.ltm.retrieve(action.val)
                 self._clear_buffer('query')
                 if result is None:
                     self._clear_buffer('retrieval')

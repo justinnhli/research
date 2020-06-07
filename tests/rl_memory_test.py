@@ -5,6 +5,7 @@ from research import SparqlEndpoint
 from research import State, Action, Environment
 from research import memory_architecture
 from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
+from research import AttrValPair
 
 
 def test_memory_architecture():
@@ -74,7 +75,7 @@ def test_memory_architecture():
     assert (
         set(env.get_actions()) == set([
             *(Action(str(i)) for i in range(-1, size * size)),
-            Action('copy', src_buf='perceptual', src_attr='index', dst_buf='query', dst_attr='index'),
+            Action('copy', src_buf='perceptual', src_attr='index', dst_buf='query', dst_attr='index', dst_val=0),
         ])
     ), set(env.get_actions())
     # test pass-through reaction
@@ -149,32 +150,32 @@ def test_networkxltm():
     ltm.store('mammal', has='vertebra', is_a='animal')
     # retrieval
     result = ltm.retrieve('whale')
-    assert sorted(result.items()) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
+    assert sorted(result) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
     # failed query
-    result = ltm.query({'has': 'vertebra', 'lives_in': 'water'})
+    result = ltm.query(set([('has', 'vertebra'), ('lives_in', 'water')]))
     assert result is None
     # unique query
-    result = ltm.query({'has': 'vertebra'})
-    assert sorted(result.items()) == [('has', 'vertebra'), ('is_a', 'animal')]
+    result = ltm.query(set([('has', 'vertebra')]))
+    assert sorted(result) == [AttrValPair('has', 'vertebra'), AttrValPair('is_a', 'animal')]
     # query traversal
     ltm.store('cat')
     # at this point, whale has been activated twice (from the store and the retrieve)
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
-    result = ltm.query({'is_a': 'mammal'})
-    assert result['name'] == 'whale'
+    result = ltm.query(set([('is_a', 'mammal')]))
+    assert AttrValPair('name', 'whale') in result
     assert ltm.has_next_result
     result = ltm.next_result()
-    assert result['name'] == 'cat'
+    assert AttrValPair('name', 'cat') in result
     assert ltm.has_next_result
     result = ltm.next_result()
-    assert result['name'] == 'bear'
+    assert AttrValPair('name', 'bear') in result
     assert not ltm.has_next_result
     assert ltm.has_prev_result
     result = ltm.prev_result()
     assert ltm.has_prev_result
     result = ltm.prev_result()
-    assert result['name'] == 'whale'
+    assert AttrValPair('name', 'whale') in result
     assert not ltm.has_prev_result
 
 
@@ -187,12 +188,12 @@ def test_sparqlltm():
     # test retrieve
     ltm = SparqlLTM(dbpedia)
     result = ltm.retrieve('<http://dbpedia.org/resource/The_Wall>')
-    assert release_date_attr in result, sorted(result.keys())
-    assert result[release_date_attr] == release_date_value, result[release_date_attr]
+    assert AttrValPair(release_date_attr, release_date_value) in result, result
     # test query
-    result = ltm.query({
-        '<http://dbpedia.org/ontology/releaseDate>': '"1979-11-30"^^xsd:date',
-        '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>': '<http://dbpedia.org/ontology/Album>',
-    })
-    assert release_date_attr in result, sorted(result.keys())
-    assert result[release_date_attr] == release_date_value, result[release_date_attr]
+    result = ltm.query(set([
+        ('<http://dbpedia.org/ontology/releaseDate>', '"1979-11-30"^^xsd:date'),
+        ('<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', '<http://dbpedia.org/ontology/Album>'),
+    ]))
+    for k, v in result.items():
+        print(k, v)
+    assert AttrValPair(release_date_attr, release_date_value) in result, result

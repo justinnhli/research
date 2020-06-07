@@ -13,6 +13,7 @@ from .rl_agents import epsilon_greedy, feature_transformed
 from .knowledge_base import Value, KnowledgeSource, KnowledgeFile, SparqlEndpoint
 
 from .long_term_memory import LongTermMemory, NaiveDictLTM, NetworkXLTM, SparqlLTM
+from .long_term_memory import AttrValPair
 
 from .rl_memory import memory_architecture
 
