@@ -33,6 +33,7 @@ def test_avltree():
             tree.add(element)
         assert len(tree) == size
         assert list(e for e in tree) == list(range(size))
+        assert list(reversed(tree)) == list(reversed(range(size)))
         for num in range(size):
             assert num in tree
         for num in range(size):

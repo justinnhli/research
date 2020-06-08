@@ -100,18 +100,26 @@ class AVLTree(Mapping[Any, Any]):
     class Node:
         """An AVL tree node."""
 
-        def __init__(self, key, value):
-            # type: (Any, Any) -> None
+        def __init__(self, key, value, prev_node=None, next_node=None):
+            # type: (Any, Any, AVLTree.Node, AVLTree.Node) -> None
             """Initialize the Node.
 
             Arguments:
                 key (Any): The key.
                 value (Any): The value.
+                prev_node (AVLTree.Node): The previous node in the tree.
+                next_node (AVLTree.Node): The next node in the tree.
             """
             self.key = key
             self.value = value
             self.left = None # type: Optional[AVLTree.Node]
             self.right = None # type: Optional[AVLTree.Node]
+            self.prev = prev_node # type: Optional[AVLTree.Node]
+            if self.prev is not None:
+                self.prev.next = self
+            self.next = next_node # type: Optional[AVLTree.Node]
+            if self.next is not None:
+                self.next.prev = self
             self.height = 1
             self.balance = 0
 
@@ -134,7 +142,9 @@ class AVLTree(Mapping[Any, Any]):
         self.factory = factory
         self.size = 0
         self.root = None # type: Optional[AVLTree.Node]
-        self._hash = None
+        self.head = None # type: Optional[AVLTree.Node]
+        self.tail = None # type: Optional[AVLTree.Node]
+        self._hash = None # type: Optional[int]
 
     def __bool__(self):
         # type: () -> bool
@@ -172,8 +182,10 @@ class AVLTree(Mapping[Any, Any]):
 
     def __iter__(self):
         # type: () -> Generator[Any, None, None]
-        for node in self._nodes():
+        node = self.head
+        while node is not None:
             yield node.key
+            node = node.next
 
     def __setitem__(self, key, value):
         # type: (Any, Any) -> None
@@ -197,25 +209,22 @@ class AVLTree(Mapping[Any, Any]):
 
     def __reversed__(self):
         # type: () -> Generator[Any, None, None]
-
-        def _reversed_helper(node):
-            # type: (Optional[AVLTree.Node]) -> Generator[AVLTree.Node, None, None]
-            if node is None:
-                return
-            yield from _reversed_helper(node.right)
+        node = self.tail
+        while node is not None:
             yield node.key
-            yield from _reversed_helper(node.left)
-
-        yield from _reversed_helper(self.root)
+            node = node.prev
 
     def __repr__(self):
+        # type: () -> str
         return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
 
     def __str__(self):
+        # type: () -> str
         return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
 
     @property
     def contents_hash(self):
+        # type: () -> int
         """Get a hash of the contents.
 
         Note: this hash will change if the contents of this AVLTree changes.
@@ -230,21 +239,26 @@ class AVLTree(Mapping[Any, Any]):
     def _put(self, key, value):
         # type: (Any, Any) -> None
 
-        def _put_helper(self, node, key, value):
-            # type: (AVLTree.Node, Any, Any) -> AVLTree.Node
+        def _put_helper(self, node, key, value, prev_node, next_node):
+            # type: (AVLTree.Node, Any, Any, AVLTree.Node, AVLTree.Node) -> AVLTree.Node
             if node is None:
                 self.size += 1
-                return self.Node(key, value)
+                new_node = self.Node(key, value, prev_node, next_node)
+                if self.head is None or key < self.head.key:
+                    self.head = new_node
+                if self.tail is None or key > self.tail.key:
+                    self.tail = new_node
+                return new_node
             elif key == node.key:
                 node.value = value
                 return node
             elif key < node.key:
-                node.left = _put_helper(self, node.left, key, value)
+                node.left = _put_helper(self, node.left, key, value, prev_node, node)
             else:
-                node.right = _put_helper(self, node.right, key, value)
+                node.right = _put_helper(self, node.right, key, value, node, next_node)
             return self._balance(node)
 
-        self.root = _put_helper(self, self.root, key, value)
+        self.root = _put_helper(self, self.root, key, value, None, None)
         self._hash = None
 
     def _get_node(self, key):
@@ -269,6 +283,7 @@ class AVLTree(Mapping[Any, Any]):
 
         def _del_helper(self, node, key):
             # type: (AVLTree.Node, Any) -> Tuple[AVLTree.Node, Any]
+            # pylint: disable = too-many-branches
             value = None
             if node is None:
                 raise KeyError(key)
@@ -279,6 +294,14 @@ class AVLTree(Mapping[Any, Any]):
             else:
                 if node.left is None and node.right is None:
                     self.size -= 1
+                    if node.prev is not None:
+                        node.prev.next = node.next
+                    else:
+                        self.head = node.next
+                    if node.next is not None:
+                        node.next.prev = node.prev
+                    else:
+                        self.tail = node.prev
                     return None, node.value
                 replacement = node
                 if node.left is not None:
@@ -307,22 +330,18 @@ class AVLTree(Mapping[Any, Any]):
 
     def _nodes(self):
         # type: () -> Generator[AVLTree.Node, None, None]
-
-        def _nodes_helper(node):
-            # type: (Optional[AVLTree.Node]) -> Generator[AVLTree.Node, None, None]
-            if node is None:
-                return
-            yield from _nodes_helper(node.left)
+        node = self.head
+        while node is not None:
             yield node
-            yield from _nodes_helper(node.right)
-
-        yield from _nodes_helper(self.root)
+            node = node.next
 
     def clear(self):
         # type: () -> None
         """Remove all elements from the AVLTree."""
         self.size = 0
         self.root = None
+        self.head = None
+        self.tail = None
         self._hash = None
 
     def add(self, element):
@@ -555,8 +574,10 @@ class AVLTree(Mapping[Any, Any]):
         Yields:
             Any: The keys.
         """
-        for node in self._nodes():
+        node = self.head
+        while node is not None:
             yield node.key
+            node = node.next
 
     def values(self):
         # type: () -> ValuesView[Any]
@@ -565,8 +586,10 @@ class AVLTree(Mapping[Any, Any]):
         Yields:
             Any: The values.
         """
-        for node in self._nodes():
+        node = self.head
+        while node is not None:
             yield node.value
+            node = node.next
 
     def items(self):
         # type: () -> AbstractSet[Tuple[Any, Any]]
@@ -575,8 +598,10 @@ class AVLTree(Mapping[Any, Any]):
         Yields:
             Tuple[Any, Any]: The key-value pairs.
         """
-        for node in self._nodes():
+        node = self.head
+        while node is not None:
             yield node.key, node.value
+            node = node.next
 
     def to_set(self):
         # type: () -> Set[Any]
