@@ -1,6 +1,6 @@
 """Memory architecture for reinforcement learning."""
 
-from collections import namedtuple, defaultdict
+from collections import OrderedDict, namedtuple, defaultdict
 from copy import deepcopy
 
 from .data_structures import AVLTree
@@ -13,24 +13,24 @@ BufferProperties = namedtuple('BufferProperties', ['copyable', 'writable'])
 class MemoryArchitectureMetaEnvironment(Environment):
     """A subclass to add a long-term memory to an Environment."""
 
-    BUFFERS = {
-        'perceptual': BufferProperties(
+    BUFFERS = OrderedDict(
+        perceptual=BufferProperties(
             copyable=True,
             writable=False,
         ),
-        'query': BufferProperties(
+        query=BufferProperties(
             copyable=False,
             writable=True,
         ),
-        'retrieval': BufferProperties(
+        retrieval=BufferProperties(
             copyable=True,
             writable=False,
         ),
-        'scratch': BufferProperties(
+        scratch=BufferProperties(
             copyable=True,
             writable=True,
         ),
-    }
+    )
 
     def __init__(
             self, env, ltm,
@@ -295,7 +295,6 @@ class MemoryArchitectureMetaEnvironment(Environment):
             self._set_buffer('retrieval', result)
 
     def _sync_input_buffers(self):
-        # update input buffers
         self._set_buffer('perceptual', self.env.get_observation())
 
     def add_to_ltm(self, **kwargs):
@@ -305,3 +304,10 @@ class MemoryArchitectureMetaEnvironment(Environment):
             **kwargs: The key-value pairs of the memory element.
         """
         self.ltm.store(**kwargs)
+
+    def visualize(self): # noqa: D102
+        # pylint: disable = missing-docstring
+        for buf, attr_vals in self.buffers:
+            print(f'{buf} buffer:')
+            for attr, val in sorted(attr_vals):
+                print(f'    {attr}: {val}')
