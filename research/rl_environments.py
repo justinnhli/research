@@ -20,7 +20,7 @@ class Environment:
         self._state_cache = {}
         self._observation_cache = {}
         self._action_cache = {}
-        super().__init__()
+        super().__init__(**kwargs)
 
     def get_state(self):
         # type: () -> State

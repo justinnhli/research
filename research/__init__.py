@@ -14,7 +14,7 @@ from .knowledge_base import Value, KnowledgeSource, KnowledgeFile, SparqlEndpoin
 
 from .long_term_memory import LongTermMemory, NaiveDictLTM, NetworkXLTM, SparqlLTM
 
-from .rl_memory import memory_architecture
+from .memarch import MemoryArchitectureMetaEnvironment
 
 from .rl_experiments import run_episodes, evaluate_agent, train_agent, train_and_evaluate
 
