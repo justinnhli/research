@@ -3,7 +3,7 @@
 
 from research import SparqlEndpoint
 from research import State, Action, Environment
-from research import memory_architecture
+from research import MemoryArchitectureMetaEnvironment
 from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
 from research import AttrVal
 
@@ -57,12 +57,12 @@ def test_memory_architecture():
             pass
 
     size = 5
-    env = memory_architecture(TestEnv)(
-        # memory architecture
+    env = MemoryArchitectureMetaEnvironment(
+        env=TestEnv(
+            size=size,
+            index=0,
+        ),
         ltm=NaiveDictLTM(),
-        # TestEnv
-        size=size,
-        index=0,
     )
     env.start_new_episode()
     for i in range(size * size):
