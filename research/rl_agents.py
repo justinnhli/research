@@ -246,9 +246,9 @@ class LinearQLearner(Agent):
 
     def print_value_function(self): # noqa: D102
         # type: () -> None
-        for action, weights in self.weights.items():
+        for action, weights in sorted(self.weights.items(), key=(lambda pair: pair[0].name)):
             print(action)
-            for feature, weight in weights.items():
+            for feature, weight in sorted(weights.items(), key=(lambda pair: pair[1]), reverse=True):
                 print('   ', feature, weight)
 
 
