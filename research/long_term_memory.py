@@ -164,7 +164,7 @@ class NaiveDictLTM(LongTermMemory):
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
-        return False
+        return mem_id is not None and isinstance(mem_id, Hashable)
 
 
 class NetworkXLTM(LongTermMemory):
@@ -267,7 +267,7 @@ class NetworkXLTM(LongTermMemory):
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
-        return isinstance(mem_id, Hashable)
+        return mem_id is not None and isinstance(mem_id, Hashable)
 
 
 class SparqlLTM(LongTermMemory):
