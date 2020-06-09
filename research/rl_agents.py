@@ -81,7 +81,10 @@ class Agent(RandomMixin):
         Returns:
             float: The value of the best action for the given observation.
         """
-        return self._get_value(observation, self._get_best_stored_action(observation, actions=actions))
+        best_action = self._get_best_stored_action(observation, actions=actions)
+        if best_action is None:
+            return 0
+        return self._get_value(observation, best_action)
 
     def best_act(self, observation, actions=None):
         # type: (State, Optional[Iterable[Action]]) -> Action
