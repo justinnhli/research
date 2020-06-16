@@ -1,6 +1,6 @@
 """Tests for knowledge_base.py."""
 
-from os.path import dirname, realpath, join as join_path
+from pathlib import Path
 from shutil import copy
 from tempfile import TemporaryDirectory
 
@@ -13,7 +13,7 @@ def test_rdfsqlize():
     with TemporaryDirectory() as temp_dir:
         print(temp_dir)
 
-        nt_file = copy(join_path(dirname(realpath(__file__)), 'states.nt'), temp_dir)
+        nt_file = copy(Path(__file__).resolve().parent / 'states.nt', temp_dir)
 
         output_file = sqlize(nt_file, 'states')
 
