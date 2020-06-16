@@ -3,8 +3,6 @@
 
 from ast import literal_eval
 
-import pytest
-
 from research import Value, SparqlEndpoint
 
 
@@ -23,12 +21,21 @@ def test_value():
         assert val.prefix == 'http://dbpedia.org/resource/'
         assert val.fragment == 'California'
         assert str(val) == val.rdf_format == f'<{uri}>'
-        with pytest.raises(ValueError):
+        try:
             print(val.literal_value)
-        with pytest.raises(ValueError):
+            assert False, 'should raise ValueError'
+        except ValueError:
+            pass
+        try:
             print(val.lang)
-        with pytest.raises(ValueError):
+            assert False, 'should raise ValueError'
+        except ValueError:
+            pass
+        try:
             print(val.datatype)
+            assert False, 'should raise ValueError'
+        except ValueError:
+            pass
     literal = '"xyz"@en^^<http://example.org/ns/userDatatype>'
     val = Value.from_literal(literal)
     assert val.literal_value == 'xyz'
