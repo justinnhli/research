@@ -1,0 +1,124 @@
+EPISODE 1
+
+Timestep 1
+
+    observation:
+        col=0; row=0
+
+    available actions:
+        1: down
+        2: right
+
+        Which action should the agent take?
+        Please pick an integer between 1 and 2 (inclusive)
+
+        Which action should the agent take?
+        Please pick an integer between 1 and 2 (inclusive)
+
+        Which action should the agent take?
+        Please pick an integer between 1 and 2 (inclusive)
+
+        Which action should the agent take?
+
+    action:
+        down
+
+    reward:
+        -1
+
+Timestep 2
+
+    observation:
+        col=0; row=1
+
+    available actions:
+        1: up
+        2: down
+        3: right
+
+        Which action should the agent take?
+
+    action:
+        right
+
+    reward:
+        -1
+
+Timestep 3
+
+    observation:
+        col=1; row=1
+
+    available actions:
+        1: up
+        2: down
+        3: left
+
+        Which action should the agent take?
+
+    action:
+        left
+
+    reward:
+        -1
+
+Timestep 4
+
+    observation:
+        col=0; row=1
+
+    available actions:
+        1: up
+        2: down
+        3: right
+
+        Which action should the agent take?
+
+    action:
+        down
+
+    reward:
+        1
+
+END OF EPISODE (press enter)
+------------------------------
+
+EPISODE 2
+
+Timestep 1
+
+    observation:
+        col=0; row=0
+
+    available actions:
+        1: down
+        2: right
+
+        Which action should the agent take?
+
+    action:
+        down
+
+    reward:
+        -1
+
+Timestep 2
+
+    observation:
+        col=0; row=1
+
+    available actions:
+        1: up
+        2: down
+        3: right
+
+        Which action should the agent take?
+
+    action:
+        down
+
+    reward:
+        1
+
+END OF EPISODE (press enter)
+------------------------------

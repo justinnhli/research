@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Tests for basic reinforcement learning code."""
 
+import re
+import sys
 from collections import namedtuple
+from contextlib import contextmanager, redirect_stdout
+from io import StringIO
 from math import copysign
+from pathlib import Path
 
-from research import train_and_evaluate
+from research import train_and_evaluate, interact
 from research import State, Action, Environment, RandomMixin
 from research import GridWorld, SimpleTMaze
 from research import TabularQLearningAgent, LinearQLearner
@@ -71,6 +76,48 @@ def test_simpletmaze():
         if expected.action is not None:
             reward = env.react(expected.action)
             assert reward == expected.reward
+
+
+def test_interact():
+    """Test interactive run method."""
+    @contextmanager
+    def replace_stdin(text):
+        orig = sys.stdin
+        sys.stdin = StringIO(text)
+        yield
+        sys.stdin = orig
+
+    env = GridWorld(
+        width=2,
+        height=3,
+        start=[0, 0],
+        goal=[2, 0],
+    )
+    inputs = [
+        # episode 1
+        '0',
+        '3',
+        'asdf',
+        '1',
+        '3',
+        '3',
+        '2',
+        # episode 2
+        '2',
+        '1',
+        '2',
+        '2',
+    ]
+    with (Path(__file__).resolve().parent / 'interact.output').open() as fd:
+        output = fd.read().strip()
+    output = re.sub(' +', ' ', output.replace('\n', ' '))
+    with StringIO() as buf:
+        with redirect_stdout(buf):
+            with replace_stdin('\n'.join(inputs)):
+                interact(env, num_episodes=2)
+        stdout = buf.getvalue().strip()
+        stdout = re.sub(' +', ' ', stdout.replace('\n', ' '))
+        assert stdout == output
 
 
 def test_agent():
