@@ -155,12 +155,19 @@ class Action(AVLTree):
             raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
         return node.value
 
-    def __str__(self):
+    def __repr__(self):
         # type: () -> str
         return 'Action("{}", {})'.format(
             self.name,
             ', '.join('{}={}'.format(k, v) for k, v in self.items()),
         )
+
+    def __str__(self):
+        # type: () -> str
+        if len(self) == 1:
+            return self.name
+        else:
+            return self.name + ' (' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
 
     @property
     def name(self):
@@ -199,8 +206,11 @@ class State(AVLTree):
             or (hash(self) == hash(other) and super().__eq__(other))
         )
 
-    def __str__(self):
+    def __repr__(self):
         return 'State(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+
+    def __str__(self):
+        return '; '.join(f'{k}={v}' for k, v in self.keys())
 
 
 class GridWorld(Environment):
