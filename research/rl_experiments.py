@@ -126,7 +126,6 @@ def train_and_evaluate(
     Yields:
         float: The mean return of each evaluation.
     """
-    # pylint: disable = differing-param-doc, differing-type-doc, missing-param-doc
     if eval_frequency == 0:
         train_episodes = num_episodes
     else:

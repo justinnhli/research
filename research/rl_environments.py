@@ -198,18 +198,22 @@ class State(AVLTree):
         self.union_update(AttrVal(attr, val) for attr, val in kwargs.items())
 
     def __hash__(self):
+        # type: () -> int
         return self.contents_hash
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         return (
             self is other
             or (hash(self) == hash(other) and super().__eq__(other))
         )
 
     def __repr__(self):
+        # type: () -> str
         return 'State(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
 
     def __str__(self):
+        # type: () -> str
         return '; '.join(f'{k}={v}' for k, v in self.keys())
 
 
@@ -300,7 +304,6 @@ class SimpleTMaze(Environment, RandomMixin):
                 to default of 0, goal_x is chosen at random.
             **kwargs: Arbitrary keyword arguments.
         """
-        # pylint: disable = keyword-arg-before-vararg
         assert 0 <= hint_pos < length
         self.length = length
         self.hint_pos = hint_pos
