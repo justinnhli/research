@@ -16,7 +16,7 @@ from .long_term_memory import LongTermMemory, NaiveDictLTM, NetworkXLTM, SparqlL
 
 from .memarch import MemoryArchitectureMetaEnvironment
 
-from .rl_experiments import run_episodes, evaluate_agent, train_agent, train_and_evaluate
+from .rl_experiments import run_episodes, evaluate_agent, train_agent, train_and_evaluate, interact
 
 from .pipeline import PipelineError, PipelineStep
 

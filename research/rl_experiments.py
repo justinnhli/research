@@ -2,6 +2,7 @@
 
 from itertools import count
 from statistics import mean
+from textwrap import indent, dedent
 
 from .rl_agents import Agent
 
@@ -154,11 +155,11 @@ def interact(env):
     Parameters:
         env (Environment): The environment.
     """
-    def iprint(message='', indent=0):
-        print(indent * '    ' + str(message))
+    def iprint(message='', indent_level=0):
+        print(indent(dedent(str(message)).rstrip('\n'), indent_level * '    '))
 
-    def iinput(message='', indent=0):
-        return input(indent * '    ' + str(message))
+    def iinput(message='', indent_level=0):
+        return input(indent(dedent(str(message)).rstrip('\n'), indent_level * '    '))
 
     for episode in count(1):
         env.start_new_episode()
@@ -168,12 +169,11 @@ def interact(env):
             iprint(f'Timestep {step}')
             iprint()
             # observe the environment
-            observation = env.get_observation()
             iprint('observation:', 1)
             try:
-                env.visualize()
+                iprint(env.visualize(), 2)
             except NotImplementedError:
-                iprint(observation, 2)
+                iprint(env.get_observation(), 2)
             iprint()
             # decide which action to take
             actions = list(env.get_actions())
@@ -189,12 +189,15 @@ def interact(env):
                 iprint()
                 # select an action
                 action_choice = -1
-                while not 0 <= action_choice < len(actions):
+                while True:
                     try:
                         action_choice = int(iinput('Which action should the agent take? ', 2))
                     except ValueError:
-                        iprint(f'Please pick a number between 1 and {len(actions) - 1} (inclusive)', 2)
-                        action_choice = -1
+                        pass
+                    if 0 < action_choice <= len(actions):
+                        break
+                    iprint(f'Please pick an integer between 1 and {len(actions)} (inclusive)', 2)
+                    action_choice = -1
                     iprint()
                 action = actions[action_choice - 1]
             # take the action
@@ -208,7 +211,7 @@ def interact(env):
             iprint()
             if env.end_of_episode():
                 break
-        iinput('END OF EPISODE (press enter)', 0)
+        iinput('END OF EPISODE (press enter)')
         iprint()
         iprint(30 * '-')
         iprint()
