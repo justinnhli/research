@@ -1,5 +1,6 @@
 """Reinforcement learning experiment code."""
 
+from itertools import count
 from statistics import mean
 
 from .rl_agents import Agent
@@ -145,3 +146,70 @@ def train_and_evaluate(
                 new_episode_hook=new_episode_hook
             )
             yield mean_return
+
+
+def interact(env):
+    # type: (Environment) -> None
+    """Test run an Environment interactively.
+
+    Parameters:
+        env (Environment): The environment.
+    """
+    def iprint(message='', indent=0):
+        print(indent * '    ' + str(message))
+
+    def iinput(message='', indent=0):
+        return input(indent * '    ' + str(message))
+
+    for episode in count(1):
+        env.start_new_episode()
+        iprint(f'EPISODE {episode}')
+        iprint()
+        for step in count(1):
+            iprint(f'Timestep {step}')
+            iprint()
+            # observe the environment
+            observation = env.get_observation()
+            iprint('observation:', 1)
+            try:
+                env.visualize()
+            except NotImplementedError:
+                iprint(observation, 2)
+            iprint()
+            # decide which action to take
+            actions = list(env.get_actions())
+            action = None
+            if not actions:
+                iinput('no available actions (press enter)', 1)
+                iprint()
+            else:
+                # list the actions
+                iprint('available actions:', 1)
+                for index, option in enumerate(actions, start=1):
+                    iprint(f'{index}: {option}', 2)
+                iprint()
+                # select an action
+                action_choice = -1
+                while not 0 <= action_choice < len(actions):
+                    try:
+                        action_choice = int(iinput('Which action should the agent take? ', 2))
+                    except ValueError:
+                        iprint(f'Please pick a number between 1 and {len(actions) - 1} (inclusive)', 2)
+                        action_choice = -1
+                    iprint()
+                action = actions[action_choice - 1]
+            # take the action
+            iprint('action:', 1)
+            iprint(action, 2)
+            iprint()
+            # observe the reward
+            reward = env.react(action)
+            iprint('reward:', 1)
+            iprint(reward, 2)
+            iprint()
+            if env.end_of_episode():
+                break
+        iinput('END OF EPISODE (press enter)', 0)
+        iprint()
+        iprint(30 * '-')
+        iprint()
