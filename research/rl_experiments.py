@@ -148,12 +148,13 @@ def train_and_evaluate(
             yield mean_return
 
 
-def interact(env):
-    # type: (Environment) -> None
+def interact(env, num_episodes=-1):
+    # type: (Environment, int) -> None
     """Test run an Environment interactively.
 
     Parameters:
         env (Environment): The environment.
+        num_episodes (int): The number of episodes to run. Defaults to -1 (infinite).
     """
     def iprint(message='', indent_level=0):
         print(indent(dedent(str(message)).rstrip('\n'), indent_level * '    '))
@@ -215,3 +216,5 @@ def interact(env):
         iprint()
         iprint(30 * '-')
         iprint()
+        if episode == num_episodes:
+            return
