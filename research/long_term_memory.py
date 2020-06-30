@@ -226,7 +226,10 @@ class NetworkXLTM(LongTermMemory):
             candidate for candidate in candidates
             if all((
                 (candidate, val) in self.graph.edges
-                and self.graph.get_edge_data(candidate, val)[0]['attribute'] == attr
+                and any(
+                    attr_dict['attribute'] == attr
+                    for attr_dict in self.graph.get_edge_data(candidate, val).values()
+                )
             ) for attr, val in attr_vals)
         )
         # quit early if there are no results
