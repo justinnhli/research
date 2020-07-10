@@ -12,11 +12,15 @@ def _test_ltm(ltm):
     ltm.store('bear', is_a='mammal', has='fur', name='bear')
     ltm.store('whale', is_a='mammal', lives_in='water')
     ltm.store('whale', name='whale') # this activates whale
-    ltm.store('fish', is_a='animal', lives_in='water')
+    ltm.store('fish', is_a='animal', lives_in='water', has='scale')
+    ltm.store('fish', has='gill')
     ltm.store('mammal', has='vertebra', is_a='animal')
     # retrieval
     result = ltm.retrieve('whale')
     assert sorted(result) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
+    # multi-valued retrieval
+    result = ltm.retrieve('fish')
+    assert sorted(result) == [('has', 'gill'), ('has', 'scale'), ('is_a', 'animal'), ('lives_in', 'water')]
     # failed query
     result = ltm.query(set([('has', 'vertebra'), ('lives_in', 'water')]))
     assert result is None
