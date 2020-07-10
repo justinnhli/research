@@ -307,7 +307,9 @@ class MemoryArchitectureMetaEnvironment(Environment):
 
     def visualize(self): # noqa: D102
         # pylint: disable = missing-docstring
-        for buf, attr_vals in self.buffers:
-            print(f'{buf} buffer:')
+        lines = []
+        for buf, attr_vals in sorted(self.buffers.items()):
+            lines.append(f'{buf} buffer:')
             for attr, val in sorted(attr_vals):
-                print(f'    {attr}: {val}')
+                lines.append(f'    {attr}: {val}')
+        return '\n'.join(lines)
