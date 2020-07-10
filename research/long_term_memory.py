@@ -17,11 +17,12 @@ class LongTermMemory:
         """Remove all knowledge from the LTM."""
         raise NotImplementedError()
 
-    def store(self, mem_id=None, **kwargs):
+    def store(self, mem_id=None, time=0, **kwargs):
         """Add knowledge to the LTM.
 
         Arguments:
             mem_id (any): The ID of the element. Defaults to None.
+            time (int): The time of storage (for activation). Optional.
             **kwargs: Attributes and values of the element to add.
 
         Returns:
@@ -29,22 +30,24 @@ class LongTermMemory:
         """
         raise NotImplementedError()
 
-    def retrieve(self, mem_id):
+    def retrieve(self, mem_id, time=0):
         """Retrieve the element with the given ID.
 
         Arguments:
             mem_id (any): The ID of the desired element.
+            time (int): The time of retrieval (for activation). Optional.
 
         Returns:
             AVLTree: The desired element, or None.
         """
         raise NotImplementedError()
 
-    def query(self, attr_vals):
+    def query(self, attr_vals, time=0):
         """Query the LTM for elements with the given attributes.
 
         Arguments:
             attr_vals (Set[Tuple[str, Any]]): Attributes and values of the desired element.
+            time (int): The time of query (for activation). Optional.
 
         Returns:
             AVLTree: A search result, or None.
@@ -60,8 +63,11 @@ class LongTermMemory:
         """
         raise NotImplementedError()
 
-    def prev_result(self):
+    def prev_result(self, time=0):
         """Get the prev element that matches the most recent search.
+
+        Parameters:
+            time (int): The time of getting the previous result (for activation). Optional.
 
         Returns:
             AVLTree: A search result, or None.
@@ -77,8 +83,11 @@ class LongTermMemory:
         """
         raise NotImplementedError()
 
-    def next_result(self):
+    def next_result(self, time=0):
         """Get the next element that matches the most recent search.
+
+        Parameters:
+            time (int): The time of getting the next result (for activation). Optional.
 
         Returns:
             AVLTree: A search result, or None.
@@ -112,7 +121,7 @@ class NaiveDictLTM(LongTermMemory):
         self.query_index = None
         self.query_matches = []
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         self.knowledge[mem_id] = AVLTree()
@@ -120,10 +129,10 @@ class NaiveDictLTM(LongTermMemory):
             self.knowledge[mem_id].add(AttrVal(attr, val))
         return True
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, mem_id, time=0): # noqa: D102
         raise NotImplementedError()
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, attr_vals, time=0): # noqa: D102
         candidates = []
         for candidate, cand_attr_vals in self.knowledge.items():
             if cand_attr_vals.is_superset(attr_vals):
@@ -150,7 +159,7 @@ class NaiveDictLTM(LongTermMemory):
     def has_prev_result(self): # noqa: D102
         return self.query_index > 0
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, time=0): # noqa: D102
         self.query_index = (self.query_index - 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
 
@@ -158,7 +167,7 @@ class NaiveDictLTM(LongTermMemory):
     def has_next_result(self): # noqa: D102
         return self.query_index < len(self.query_matches) - 1
 
-    def next_result(self): # noqa: D102
+    def next_result(self, time=0): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
         return self.query_matches[self.query_index]
 
@@ -174,7 +183,7 @@ class NetworkXLTM(LongTermMemory):
         """Initialize the NetworkXLTM."""
         # parameters
         if activation_fn is None:
-            activation_fn = (lambda graph, mem_id: None)
+            activation_fn = (lambda ltm, mem_id, time: None)
         self.activation_fn = activation_fn
         # variables
         self.graph = MultiDiGraph()
@@ -189,13 +198,13 @@ class NetworkXLTM(LongTermMemory):
         self.query_results = None
         self.result_index = None
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph:
             self.graph.add_node(mem_id, activation=0)
         else:
-            self.activation_fn(self.graph, mem_id)
+            self.activation_fn(self, mem_id, time)
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=0)
@@ -203,19 +212,19 @@ class NetworkXLTM(LongTermMemory):
             self.inverted_index[attribute].add(mem_id)
         return True
 
-    def _activate_and_return(self, mem_id):
-        self.activation_fn(self.graph, mem_id)
+    def _activate_and_return(self, mem_id, time):
+        self.activation_fn(self, mem_id, time)
         result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(AttrVal(data['attribute'], value))
         return result
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, mem_id, time=0): # noqa: D102
         if mem_id not in self.graph:
             return None
-        return self._activate_and_return(mem_id)
+        return self._activate_and_return(mem_id, time=time)
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, attr_vals, time=0): # noqa: D102
         # first pass: get candidates with all the attributes
         attrs = set(attr for attr, _ in attr_vals)
         candidates = set.intersection(*(
@@ -244,7 +253,7 @@ class NetworkXLTM(LongTermMemory):
             reverse=True,
         )
         self.result_index = 0
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index], time=time)
 
     @property
     def has_prev_result(self): # noqa: D102
@@ -253,9 +262,9 @@ class NetworkXLTM(LongTermMemory):
             and self.result_index > 0
         )
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, time=0): # noqa: D102
         self.result_index -= 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index], time=time)
 
     @property
     def has_next_result(self): # noqa: D102
@@ -264,9 +273,9 @@ class NetworkXLTM(LongTermMemory):
             and self.result_index < len(self.query_results) - 1
         )
 
-    def next_result(self): # noqa: D102
+    def next_result(self, time=0): # noqa: D102
         self.result_index += 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(self.query_results[self.result_index], time=time)
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
@@ -306,10 +315,10 @@ class SparqlLTM(LongTermMemory):
     def clear(self): # noqa: D102
         raise NotImplementedError()
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         raise NotImplementedError()
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, mem_id, time=0): # noqa: D102
         valid_mem_id = (
             isinstance(mem_id, str)
             and mem_id.startswith('<http')
@@ -353,7 +362,7 @@ class SparqlLTM(LongTermMemory):
                 ))
         return result
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, attr_vals, time=0): # noqa: D102
         query_terms = tuple([*attr_vals])
         if query_terms not in self.query_cache:
             mem_id = self._true_query(attr_vals)
@@ -365,7 +374,7 @@ class SparqlLTM(LongTermMemory):
             return AVLTree()
         else:
             self.prev_query = attr_vals
-            return self.retrieve(mem_id)
+            return self.retrieve(mem_id, time=time)
 
     def _true_query(self, attr_vals, offset=0):
         condition = ' ; '.join(
@@ -387,7 +396,7 @@ class SparqlLTM(LongTermMemory):
     def has_prev_result(self): # noqa: D102
         return self.prev_query is not None and self.query_offset > 0
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, time=0): # noqa: D102
         if not self.has_prev_result:
             return None
         self.query_offset -= 1
@@ -397,7 +406,7 @@ class SparqlLTM(LongTermMemory):
     def has_next_result(self): # noqa: D102
         return self.prev_query is not None
 
-    def next_result(self): # noqa: D102
+    def next_result(self, time=0): # noqa: D102
         if not self.has_next_result:
             return None
         self.query_offset += 1
