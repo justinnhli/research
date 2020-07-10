@@ -6,14 +6,8 @@ from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
 from research import AttrVal
 
 
-def test_networkxltm():
-    """Test the NetworkX LTM."""
-
-    def activation_fn(ltm, mem_id, time):
-        # pylint: disable = unused-argument
-        ltm.graph.nodes[mem_id]['activation'] += 1
-
-    ltm = NetworkXLTM(activation_fn=activation_fn)
+def _test_ltm(ltm):
+    """Test an LTM."""
     ltm.store('cat', is_a='mammal', has='fur', name='cat')
     ltm.store('bear', is_a='mammal', has='fur', name='bear')
     ltm.store('whale', is_a='mammal', lives_in='water')
@@ -49,6 +43,16 @@ def test_networkxltm():
     result = ltm.prev_result()
     assert AttrVal('name', 'whale') in result
     assert not ltm.has_prev_result
+
+
+def test_networkxltm():
+    """Test the NetworkX LTM."""
+
+    def activation_fn(ltm, mem_id, time):
+        # pylint: disable = unused-argument
+        ltm.graph.nodes[mem_id]['activation'] += 1
+
+    _test_ltm(NetworkXLTM(activation_fn=activation_fn))
 
 
 def test_sparqlltm():
