@@ -344,6 +344,10 @@ class SimpleTMaze(Environment, RandomMixin):
             elif self.y == self.length:
                 actions.append(self._cache_action('left', (lambda: Action('left'))))
                 actions.append(self._cache_action('right', (lambda: Action('right'))))
+        elif self.goal_x - self.x > 0:
+            actions.append(self._cache_action('right', (lambda: Action('right'))))
+        elif self.goal_x - self.x < 0:
+            actions.append(self._cache_action('left', (lambda: Action('left'))))
         return actions
 
     def reset(self): # noqa: D102
