@@ -374,10 +374,6 @@ class SimpleTMaze(Environment, RandomMixin):
                 return -10
             else:
                 return -1
-        elif action.name == 'gate':
-            return -0.050
-        else:
-            return -1
 
     def visualize(self): # noqa: D102
         # type: () -> str
