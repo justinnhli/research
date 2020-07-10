@@ -32,7 +32,7 @@ class LongTermMemory:
         """Add knowledge to the LTM.
 
         Parameters:
-            mem_id (any): The ID of the element. Defaults to None.
+            mem_id (Hashable): The ID of the element. Defaults to None.
             time (int): The time of storage (for activation). Optional.
             **kwargs: Attributes and values of the element to add.
 
@@ -136,9 +136,10 @@ class NaiveDictLTM(LongTermMemory):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(**kwargs)
-        self.knowledge = {} # type: Dict[Hashable, Any]
+        self.knowledge = {} # type: Dict[Hashable, AbstractSet[AttrVal]]
         self.query_index = -1
-        self.query_matches = [] # type: List[AVLTree]
+        self.query_matches = [] # type: List[Hashable]
+        self.activations = defaultdict(float) # type: Dict[Hashable, float]
 
     def clear(self): # noqa: D102
         # type: () -> None
@@ -146,18 +147,41 @@ class NaiveDictLTM(LongTermMemory):
         self.query_index = -1
         self.query_matches = []
 
+    def get_activation(self, mem_id):
+        # type: (Hashable) -> float
+        """Get the activation of a memory element.
+
+        Parameters:
+            mem_id (Hashable): The ID of the element.
+
+        Returns:
+            float: The activation of the element.
+        """
+        return self.activations[mem_id]
+
     def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         # type: (Hashable, int, **Any) -> bool
         if mem_id is None:
             mem_id = uuid()
-        self.knowledge[mem_id] = AVLTree()
+        if mem_id not in self.knowledge:
+            self.knowledge[mem_id] = AVLTree()
+        else:
+            self.activation_fn(self, mem_id, time)
         for attr, val in kwargs.items():
+            if val not in self.knowledge:
+                self.knowledge[val] = AVLTree()
             self.knowledge[mem_id].add(AttrVal(attr, val))
         return True
 
+    def _activate_and_return(self, mem_id, time):
+        self.activation_fn(self, mem_id, time)
+        return self.knowledge[mem_id]
+
     def retrieve(self, mem_id, time=0): # noqa: D102
         # type: (Hashable, int) -> Optional[AVLTree]
-        raise NotImplementedError()
+        if mem_id not in self.knowledge:
+            return None
+        return self._activate_and_return(mem_id, time=time)
 
     def query(self, attr_vals, time=0): # noqa: D102
         # type: (AbstractSet[AttrVal], int) -> Optional[AVLTree]
@@ -172,13 +196,17 @@ class NaiveDictLTM(LongTermMemory):
                 curr_retrieved = self.query_matches[self.query_index]
             else:
                 curr_retrieved = None
-            self.query_matches = sorted(self.knowledge[candidate] for candidate in candidates)
+            self.query_matches = sorted(
+                candidates,
+                key=(lambda candidate: self.activations[candidate]),
+                reverse=True,
+            )
             # use the ValueError from list.index() to determine if the query still matches
             try:
                 self.query_index = self.query_matches.index(curr_retrieved)
             except ValueError:
                 self.query_index = 0
-            return self.query_matches[self.query_index]
+            return self._activate_and_return(self.query_matches[self.query_index], time=time)
         self.query_index = -1
         self.query_matches = []
         return None
@@ -191,7 +219,7 @@ class NaiveDictLTM(LongTermMemory):
     def prev_result(self, time=0): # noqa: D102
         # type: (int) -> Optional[AVLTree]
         self.query_index = (self.query_index - 1) % len(self.query_matches)
-        return self.query_matches[self.query_index]
+        return self._activate_and_return(self.query_matches[self.query_index], time=time)
 
     @property
     def has_next_result(self): # noqa: D102
@@ -201,7 +229,7 @@ class NaiveDictLTM(LongTermMemory):
     def next_result(self, time=0): # noqa: D102
         # type: (int) -> Optional[AVLTree]
         self.query_index = (self.query_index + 1) % len(self.query_matches)
-        return self.query_matches[self.query_index]
+        return self._activate_and_return(self.query_matches[self.query_index], time=time)
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
@@ -232,6 +260,18 @@ class NetworkXLTM(LongTermMemory):
         self.inverted_index.clear()
         self.query_results = []
         self.result_index = -1
+
+    def get_activation(self, mem_id):
+        # type: (Hashable) -> float
+        """Get the activation of a memory element.
+
+        Parameters:
+            mem_id (Hashable): The ID of the element.
+
+        Returns:
+            float: The activation of the element.
+        """
+        return self.graph.nodes[mem_id]['activation']
 
     def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         # type: (Hashable, int, **Any) -> bool
