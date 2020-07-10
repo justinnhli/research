@@ -49,6 +49,16 @@ def _test_ltm(ltm):
     assert not ltm.has_prev_result
 
 
+def test_naivedictltm():
+    """Test the dict LTM."""
+
+    def activation_fn(ltm, mem_id, time):
+        # pylint: disable = unused-argument
+        ltm.activations[mem_id] += 1
+
+    _test_ltm(NaiveDictLTM(activation_fn=activation_fn))
+
+
 def test_networkxltm():
     """Test the NetworkX LTM."""
 
