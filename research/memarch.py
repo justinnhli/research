@@ -137,7 +137,7 @@ class MemoryArchitectureMetaEnvironment(Environment):
     def _clear_buffer(self, buf):
         for attr_val in self.buffers[buf]:
             self._track_dels(buf, attr_val)
-        self.buffers[buf].clear()
+        self.buffers[buf] = AVLTree()
 
     def _clear_all_buffers(self):
         self.buffers = {}
