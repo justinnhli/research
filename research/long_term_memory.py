@@ -16,7 +16,14 @@ class LongTermMemory:
     """Generic interface to a knowledge base."""
 
     def __init__(self, activation_fn=None, **kwargs):
-        """Initialize the LongTermMemory."""
+        # type: (Callable[[LongTermMemory, Hashable, int], None], **kwargs) -> None
+        """Initialize the LongTermMemory.
+
+        Parameters:
+            activation_fn (Callable[[LongTermMemory, Hashable, int], None]):
+                The activation function to call when storing/retrieving. Optional.
+            **kwargs (Any): Arbitrary keyword arguments.
+        """
         super().__init__(**kwargs)
         if activation_fn is None:
             activation_fn = (lambda ltm, mem_id, time: None)
