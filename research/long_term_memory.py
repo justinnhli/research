@@ -148,7 +148,7 @@ class NaiveDictLTM(LongTermMemory):
 
     @property
     def has_prev_result(self): # noqa: D102
-        return True
+        return self.query_index > 0
 
     def prev_result(self): # noqa: D102
         self.query_index = (self.query_index - 1) % len(self.query_matches)
@@ -156,7 +156,7 @@ class NaiveDictLTM(LongTermMemory):
 
     @property
     def has_next_result(self): # noqa: D102
-        return True
+        return self.query_index < len(self.query_matches) - 1
 
     def next_result(self): # noqa: D102
         self.query_index = (self.query_index + 1) % len(self.query_matches)
