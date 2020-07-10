@@ -15,6 +15,13 @@ from .knowledge_base import KnowledgeSource
 class LongTermMemory:
     """Generic interface to a knowledge base."""
 
+    def __init__(self, activation_fn=None, **kwargs):
+        """Initialize the LongTermMemory."""
+        super().__init__(**kwargs)
+        if activation_fn is None:
+            activation_fn = (lambda ltm, mem_id, time: None)
+        self.activation_fn = activation_fn
+
     def clear(self):
         # type: () -> None
         """Remove all knowledge from the LTM."""
@@ -121,9 +128,14 @@ class LongTermMemory:
 class NaiveDictLTM(LongTermMemory):
     """A list-of-dictionary implementation of LTM."""
 
-    def __init__(self):
-        # type: () -> None
-        """Initialize the NaiveDictLTM."""
+    def __init__(self, **kwargs):
+        # type: (**Any) -> None
+        """Initialize the NaiveDictLTM.
+
+        Parameters:
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(**kwargs)
         self.knowledge = {} # type: Dict[Hashable, Any]
         self.query_index = -1
         self.query_matches = [] # type: List[AVLTree]
@@ -200,14 +212,14 @@ class NaiveDictLTM(LongTermMemory):
 class NetworkXLTM(LongTermMemory):
     """A NetworkX implementation of LTM."""
 
-    def __init__(self, activation_fn=None):
-        # type: (Callable[[LongTermMemory, Hashable, int], None]) -> None
-        """Initialize the NetworkXLTM."""
-        # parameters
-        if activation_fn is None:
-            activation_fn = (lambda ltm, mem_id, time: None)
-        self.activation_fn = activation_fn
-        # variables
+    def __init__(self, **kwargs):
+        # type: (**Any) -> None
+        """Initialize the NetworkXLTM.
+
+        Parameters:
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(**kwargs)
         self.graph = MultiDiGraph()
         self.inverted_index = defaultdict(set) # type: Dict[Hashable, Set[Hashable]]
         self.query_results = [] # type: List[Hashable]
@@ -319,14 +331,16 @@ class SparqlLTM(LongTermMemory):
         '"NAN"^^<http://www.w3.org/2001/XMLSchema#float>',
     ])
 
-    def __init__(self, knowledge_source, augments=None):
-        # type: (KnowledgeSource, Sequence[Augment]) -> None
+    def __init__(self, knowledge_source, augments=None, **kwargs):
+        # type: (KnowledgeSource, Sequence[Augment], **Any) -> None
         """Initialize a SparqlLTM.
 
         Parameters:
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
             augments (Sequence[Augment]): Additional values to add to results.
+            **kwargs: Arbitrary keyword arguments.
         """
+        super().__init__(**kwargs)
         # parameters
         self.source = knowledge_source
         if augments is None:

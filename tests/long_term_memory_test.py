@@ -9,9 +9,9 @@ from research import AttrVal
 def test_networkxltm():
     """Test the NetworkX LTM."""
 
-    def activation_fn(graph, mem_id, time):
+    def activation_fn(ltm, mem_id, time):
         # pylint: disable = unused-argument
-        graph.nodes[mem_id]['activation'] += 1
+        ltm.graph.nodes[mem_id]['activation'] += 1
 
     ltm = NetworkXLTM(activation_fn=activation_fn)
     ltm.store('cat', is_a='mammal', has='fur', name='cat')
