@@ -299,12 +299,12 @@ class SimpleTMaze(Environment, RandomMixin):
 
         Arguments:
             length (int): The length of the hallway before the choice point.
-            hint_pos (int): The location of the hint.
+            hint_pos (int): The location of the hint, or -1 if no hint.
             goal_x (int): The location of the goal. Must be -1 or 1. If left
                 to default of 0, goal_x is chosen at random.
             **kwargs: Arbitrary keyword arguments.
         """
-        assert 0 <= hint_pos < length
+        assert -1 <= hint_pos < length
         self.length = length
         self.hint_pos = hint_pos
         super().__init__(**kwargs)
@@ -383,5 +383,6 @@ class SimpleTMaze(Environment, RandomMixin):
         lines[0][1 + self.goal_x] = '$'
         lines[0][1 - self.goal_x] = '#'
         lines[self.length - self.y][1] = '*'
-        lines[self.length - self.hint_pos][1] = '!'
+        if self.hint_pos != -1:
+            lines[self.length - self.hint_pos][1] = '!'
         return '\n'.join(''.join(line) for line in lines)
