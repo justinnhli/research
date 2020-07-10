@@ -1,5 +1,6 @@
 """Utility data structures."""
 
+from collections import abc
 from typing import Any, Optional, Union
 from typing import Callable, Generator, Collection, Iterable, Mapping, Iterator, AbstractSet, Hashable
 from typing import Tuple, Set, Dict, ValuesView
@@ -526,7 +527,7 @@ class AVLTree(Mapping[Any, Any]):
             *mappings (Mapping[Any, Any]): The key-value pairs to be added or updated.
         """
         for mapping in mappings:
-            if isinstance(mapping, Mapping):
+            if isinstance(mapping, abc.Mapping):
                 for key, value in mapping.items():
                     self._put(key, value)
             else:
