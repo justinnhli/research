@@ -48,7 +48,7 @@ def test_simpletmaze():
     """Test the SimpleTMaze environment."""
     env = SimpleTMaze(2, 1, -1)
     env.start_new_episode()
-    assert env.get_state() == State(x=0, y=0, symbol=0, goal_x=-1)
+    assert env.get_state() == State(x=0, y=0, goal_x=-1)
     expected_steps = [
         RLTestStep(
             State(x=0, y=0, symbol=0),

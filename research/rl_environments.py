@@ -315,17 +315,18 @@ class SimpleTMaze(Environment, RandomMixin):
 
     def get_state(self): # noqa: D102
         # type: () -> State
-        if self.y == self.hint_pos:
-            symbol = self.goal_x
-        else:
-            symbol = 0
         return self._cache_state(
-            (self.goal_x, self.x, self.y, symbol),
-            (lambda: State(goal_x=self.goal_x, x=self.x, y=self.y, symbol=symbol)),
+            (self.goal_x, self.x, self.y),
+            (lambda: State(goal_x=self.goal_x, x=self.x, y=self.y)),
         )
 
     def get_observation(self): # noqa: D102
         # type: () -> State
+        if self.hint_pos == -1:
+            return self._cache_observation(
+                (self.x, self.y),
+                (lambda: State(x=self.x, y=self.y)),
+            )
         if self.y == self.hint_pos:
             symbol = self.goal_x
         else:
