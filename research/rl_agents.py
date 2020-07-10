@@ -1,7 +1,7 @@
 """Reinforcement learning agents."""
 
 from collections import defaultdict
-from typing import Any, Optional, Type, Iterable, Mapping, Callable, Hashable, Dict
+from typing import Any, Optional, Type, Callable, Iterable, Mapping, Dict, Hashable
 
 from .randommixin import RandomMixin
 from .rl_environments import State, Action

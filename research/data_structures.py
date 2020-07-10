@@ -1,7 +1,7 @@
 """Utility data structures."""
 
 from typing import Any, Optional, Union
-from typing import Iterable, Iterator, Generator, Mapping, Hashable, Callable, Collection, AbstractSet
+from typing import Callable, Generator, Collection, Iterable, Mapping, Iterator, AbstractSet, Hashable
 from typing import Tuple, Set, Dict, ValuesView
 
 
