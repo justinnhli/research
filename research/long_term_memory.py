@@ -20,7 +20,7 @@ class LongTermMemory:
     def store(self, mem_id=None, time=0, **kwargs):
         """Add knowledge to the LTM.
 
-        Arguments:
+        Parameters:
             mem_id (any): The ID of the element. Defaults to None.
             time (int): The time of storage (for activation). Optional.
             **kwargs: Attributes and values of the element to add.
@@ -33,7 +33,7 @@ class LongTermMemory:
     def retrieve(self, mem_id, time=0):
         """Retrieve the element with the given ID.
 
-        Arguments:
+        Parameters:
             mem_id (any): The ID of the desired element.
             time (int): The time of retrieval (for activation). Optional.
 
@@ -45,7 +45,7 @@ class LongTermMemory:
     def query(self, attr_vals, time=0):
         """Query the LTM for elements with the given attributes.
 
-        Arguments:
+        Parameters:
             attr_vals (Set[Tuple[str, Any]]): Attributes and values of the desired element.
             time (int): The time of query (for activation). Optional.
 
@@ -98,7 +98,7 @@ class LongTermMemory:
     def retrievable(mem_id):
         """Determine if an object is a retrievable memory ID.
 
-        Arguments:
+        Parameters:
             mem_id (any): The object to check.
 
         Returns:
@@ -296,7 +296,7 @@ class SparqlLTM(LongTermMemory):
     def __init__(self, knowledge_source, augments=None):
         """Initialize a SparqlLTM.
 
-        Arguments:
+        Parameters:
             knowledge_source (KnowledgeSource): A SPARQL knowledge source.
             augments (Sequence[Augment]): Additional values to add to results.
         """
@@ -363,7 +363,7 @@ class SparqlLTM(LongTermMemory):
         return result
 
     def query(self, attr_vals, time=0): # noqa: D102
-        query_terms = tuple([*attr_vals])
+        query_terms = tuple(sorted(attr_vals))
         if query_terms not in self.query_cache:
             mem_id = self._true_query(attr_vals)
             self.query_cache[query_terms] = mem_id
@@ -371,7 +371,7 @@ class SparqlLTM(LongTermMemory):
         self.query_offset = 0
         if mem_id is None:
             self.prev_query = None
-            return AVLTree()
+            return None
         else:
             self.prev_query = attr_vals
             return self.retrieve(mem_id, time=time)
@@ -400,7 +400,11 @@ class SparqlLTM(LongTermMemory):
         if not self.has_prev_result:
             return None
         self.query_offset -= 1
-        return self._true_query(self.prev_query, offset=self.query_offset)
+        mem_id = self._true_query(self.prev_query, offset=self.query_offset)
+        if mem_id is None:
+            return None
+        else:
+            return self.retrieve(mem_id, time=time)
 
     @property
     def has_next_result(self): # noqa: D102
@@ -410,7 +414,11 @@ class SparqlLTM(LongTermMemory):
         if not self.has_next_result:
             return None
         self.query_offset += 1
-        return self._true_query(self.prev_query, offset=self.query_offset)
+        mem_id = self._true_query(self.prev_query, offset=self.query_offset)
+        if mem_id is None:
+            return None
+        else:
+            return self.retrieve(mem_id, time=time)
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
