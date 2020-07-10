@@ -148,13 +148,14 @@ def train_and_evaluate(
             yield mean_return
 
 
-def interact(env, num_episodes=-1):
+def interact(env, num_episodes=-1, new_episode_hook=None):
     # type: (Environment, int) -> None
     """Test run an Environment interactively.
 
     Parameters:
         env (Environment): The environment.
         num_episodes (int): The number of episodes to run. Defaults to -1 (infinite).
+        new_episode_hook (Callable[[Environment, Agent], None]): A hook at each new episode.
     """
     def iprint(message='', indent_level=0):
         print(indent(dedent(str(message)).rstrip('\n'), indent_level * '    '))
@@ -164,6 +165,8 @@ def interact(env, num_episodes=-1):
 
     for episode in count(1):
         env.start_new_episode()
+        if new_episode_hook is not None:
+            new_episode_hook(env, None)
         iprint(f'EPISODE {episode}')
         iprint()
         for step in count(1):
