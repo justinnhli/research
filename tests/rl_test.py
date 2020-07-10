@@ -66,7 +66,7 @@ def test_simpletmaze():
             State(x=0, y=2, symbol=0),
             [Action('left'), Action('right')],
             Action('left'),
-            10,
+            0,
         ),
         RLTestStep(State(x=-1, y=2, symbol=0), [], None, None),
     ]

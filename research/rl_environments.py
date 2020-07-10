@@ -372,13 +372,10 @@ class SimpleTMaze(Environment, RandomMixin):
             self.x += 1
         elif action.name == 'left':
             self.x -= 1
-        if self.y == self.length:
-            if self.x == self.goal_x:
-                return 10
-            elif self.x == -self.goal_x:
-                return -10
-            else:
-                return -1
+        if self.y == self.length and self.x == self.goal_x:
+            return 0
+        else:
+            return -1
 
     def visualize(self): # noqa: D102
         # type: () -> str
