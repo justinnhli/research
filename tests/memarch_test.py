@@ -2,12 +2,15 @@
 """Tests for RL memory code."""
 
 from research import State, Action, Environment
-from research import MemoryArchitectureMetaEnvironment
+from research import SimpleTMaze
+from research import TabularQLearningAgent, epsilon_greedy
 from research import NaiveDictLTM
+from research import MemoryArchitectureMetaEnvironment
+from research import train_and_evaluate
 
 
-def test_memory_architecture():
-    """Test the memory architecture meta-environment."""
+def test_memory_architecture_unit():
+    """Do unit tests on the memory architecture meta-environment."""
 
     class TestEnv(Environment):
         """A simple environment with a single string state."""
@@ -132,3 +135,36 @@ def test_memory_architecture():
     reward = env.react(Action('-1'))
     assert env.end_of_episode()
     assert reward == 100, reward
+
+
+def test_memory_architecture_integration():
+    """Do integration tests on the memory architecture meta-environment."""
+
+    def reset_memory(mem_env, _):
+        mem_env.ltm.clear()
+        mem_env.ltm.store(y=mem_env.env.length, goal=mem_env.env.goal_x)
+
+    tmaze = SimpleTMaze(1, hint_pos=-1, random_seed=8675309)
+    mem_env = MemoryArchitectureMetaEnvironment(
+        tmaze,
+        ltm=NaiveDictLTM(),
+        internal_reward=-.1,
+        max_internal_actions=1,
+        buf_ignore=['scratch'],
+    )
+    agent = epsilon_greedy(TabularQLearningAgent)(
+        exploration_rate=0.05,
+        learning_rate=0.1,
+        discount_rate=0.9,
+        random_seed=8675309,
+    )
+    returns = list(train_and_evaluate(
+        mem_env,
+        agent,
+        num_episodes=500,
+        eval_frequency=50,
+        eval_num_episodes=5,
+        min_return=-200,
+        new_episode_hook=reset_memory,
+    ))
+    assert returns[-1] > -2
