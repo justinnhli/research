@@ -1,82 +1,84 @@
-"""Setup for Justin's research code."""
+"""Setup for package."""
+
+import re
+from collections import namedtuple
+from urllib.parse import urlsplit
+from typing import Tuple, List, Dict
 
 from setuptools import setup
 
-DEPENDENCIES = {
-    'pydictionary': 'https://github.com/justinnhli/PyDictionary.git',
-    'permspace': 'https://github.com/justinnhli/permspace.git',
-    'clusterun': 'https://github.com/justinnhli/clusterun.git',
-}
+GitRequirement = namedtuple('GitRequirement', 'url, name')
 
 
-def get_dependency(package, location):
-    # type: (str, str) -> str
-    """Generate the depdenency line for setup().
-
-    Parameters:
-        package (str): The package dependency.
-        location (str): Either 'install' or 'link'.
+def read_requirements():
+    # type: () -> Tuple[List[str], Dict[str, GitRequirement]]
+    """Read the requirements.txt for this project.
 
     Returns:
-        str: The appropriate line for setup().
+        List[str]: The PyPI requirements.
+        Dict[str, GitRequirement]: The git requirements.
 
     Raises:
-        ValueError: If the location is invalid.
+        ValueError: If parsing the requirements.txt causes an error.
     """
-    if location == 'install':
-        return f'{package} @ git+{DEPENDENCIES[package]}'
-    elif location == 'link':
-        return f'{DEPENDENCIES[package]}#egg={package}'
-    else:
-        raise ValueError(f'Unknown location: {location}')
+    with open('requirements.txt') as fd:
+        requirements = fd.read().splitlines()
+    pypi_requirements = []
+    git_requirements = {}
+    for requirement in requirements:
+        requirement = requirement.strip()
+        if requirement.startswith('#'):
+            continue
+        requirement = re.sub(r'\s+#.*', '', requirement)
+        if requirement.startswith('git+'):
+            match = re.fullmatch(r'git\+(?P<url>[^#]*)(#egg=(?P<name>.*))?', requirement)
+            if not match:
+                raise ValueError(f'unable to parse requirement: {requirement}')
+            match_dict = match.groupdict()
+            if 'name' in match_dict:
+                name = urlsplit(match.group('url')).path.split('/')[-1]
+                if name.endswith('.git'):
+                    name = name[:-4]
+                match_dict['name'] = name
+            git_requirements[match_dict['name']] = GitRequirement(**match_dict)
+        else:
+            pypi_requirements.append(requirement)
+    return pypi_requirements, git_requirements
 
 
-setup(
-    name='research',
-    version='',
-    description="Justin Li's main research code repository.",
-    license='MIT',
-    author='Justin Li',
-    author_email='justinnhli@oxy.edu',
-    url='https://github.com/justinnhli/research',
-    packages=['research',],
-    entry_points={
-        'console_scripts': [
-            'rdfsqlize = research.rdfsqlize:main',
+def main():
+    # type: () -> None
+    """Install the package."""
+    pypi_requirements, git_requirements = read_requirements()
+    setup(
+        name='research',
+        version='',
+        description="Justin Li's main research code repository.",
+        license='MIT',
+        author='Justin Li',
+        author_email='justinnhli@oxy.edu',
+        url='https://github.com/justinnhli/research',
+        packages=['research',],
+        entry_points={
+            'console_scripts': [
+                'rdfsqlize = research.rdfsqlize:main',
+            ],
+        },
+        install_requires=[
+            *pypi_requirements,
+            *(
+                f'{requirement.name} @ git+{requirement.url}'
+                for requirement in git_requirements.values()
+            ),
         ],
-    },
-    install_requires=[
-        # knowledge base packages
-        'rdflib==4.2.2',
-        'rdflib-sqlalchemy==0.4.0',
-        'SPARQLWrapper==1.8.4',
-        # word embedding packages
-        'gensim==3.8.1',
-        # NLP packages
-        'spacy==2.2.3',
-        'nltk==3.4.5',
-        get_dependency('pydictionary', location='install'), # a less chatty fork of pydictionary
-        # jupyter notebook packages
-        'jupyter==1.0.0',
-        'bokeh==1.4.0',
-        'pandas==0.25.3',
-        'numpy==1.17.4',
-        # utility packages
-        'SQLAlchemy==1.3.11',
-        'requests==2.22.0',
-        'networkx==2.4',
-        # experiment packages
-        get_dependency('permspace', location='install'),
-        get_dependency('clusterun', location='install'),
-        # code quality packages
-        'pylint==2.4.4',
-        'pydocstyle==4.0.1',
-        'pytest-cov==2.8.1',
-        'coveralls==2.0.0',
-    ],
-    dependency_links=[
-        get_dependency('pydictionary', location='link'),
-        get_dependency('permspace', location='link'),
-        get_dependency('clusterun', location='link'),
-    ],
-)
+        dependency_links=[
+            *(
+                f'{requirement.url}#egg={requirement.name}'
+                for requirement in git_requirements.values()
+            ),
+        ],
+    )
+
+
+if __name__ == '__main__':
+    main()
