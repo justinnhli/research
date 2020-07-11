@@ -2,8 +2,9 @@
 """Tests for RL memory code."""
 
 from research import State, Action, Environment
-from research import NaiveDictLTM
+from research import SimpleTMaze
 from research import TabularQLearningAgent, epsilon_greedy
+from research import NaiveDictLTM
 from research import MemoryArchitectureMetaEnvironment
 from research import train_and_evaluate
 
@@ -143,7 +144,7 @@ def test_memory_architecture_integration():
         mem_env.ltm.clear()
         mem_env.ltm.store(y=mem_env.env.length, goal=mem_env.env.goal_x)
 
-    tmaze = SimpleTMaze(100, hint_pos=-1, random_seed=8675309)
+    tmaze = SimpleTMaze(1, hint_pos=-1, random_seed=8675309)
     mem_env = MemoryArchitectureMetaEnvironment(
         tmaze,
         ltm=NaiveDictLTM(),
@@ -157,17 +158,13 @@ def test_memory_architecture_integration():
         discount_rate=0.9,
         random_seed=8675309,
     )
-    returns = train_and_evaluate(
+    returns = list(train_and_evaluate(
         mem_env,
         agent,
-        num_episodes=20000,
+        num_episodes=500,
         eval_frequency=50,
         eval_num_episodes=5,
         min_return=-200,
         new_episode_hook=reset_memory,
-    )
-    print()
-    for i, total_reward in enumerate(returns, start=1):
-        print(i, total_reward)
-    print()
-    agent.print_value_function()
+    ))
+    assert returns[-1] > -2
