@@ -186,7 +186,7 @@ def interact(env, num_episodes=-1, new_episode_hook=None):
                 iprint(env.get_observation(), 2)
             iprint()
             # decide which action to take
-            actions = list(env.get_actions())
+            actions = sorted(env.get_actions())
             action = None
             if not actions:
                 iinput('no available actions (press enter)', 1)
