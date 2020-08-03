@@ -32,9 +32,9 @@ Timestep 2
         col=0; row=1
 
     available actions:
-        1: up
-        2: down
-        3: right
+        1: down
+        2: right
+        3: up
 
         Which action should the agent take?
 
@@ -50,9 +50,9 @@ Timestep 3
         col=1; row=1
 
     available actions:
-        1: up
-        2: down
-        3: left
+        1: down
+        2: left
+        3: up
 
         Which action should the agent take?
 
@@ -68,9 +68,9 @@ Timestep 4
         col=0; row=1
 
     available actions:
-        1: up
-        2: down
-        3: right
+        1: down
+        2: right
+        3: up
 
         Which action should the agent take?
 
@@ -108,9 +108,9 @@ Timestep 2
         col=0; row=1
 
     available actions:
-        1: up
-        2: down
-        3: right
+        1: down
+        2: right
+        3: up
 
         Which action should the agent take?
 

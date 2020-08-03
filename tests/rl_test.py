@@ -99,14 +99,15 @@ def test_interact():
         '3',
         'asdf',
         '1',
-        '3',
-        '3',
         '2',
-        # episode 2
         '2',
         '1',
-        '2',
-        '2',
+        '',
+        # episode 2
+        '1',
+        '1',
+        '',
+        '',
     ]
     with (Path(__file__).resolve().parent / 'interact.output').open() as fd:
         output = fd.read().strip()
