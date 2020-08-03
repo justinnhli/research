@@ -423,11 +423,12 @@ class SparqlLTM(LongTermMemory):
         if mem_id not in self.retrieve_cache:
             result = self._true_retrieve(mem_id)
             for augment in self.augments:
-                if all(attr in result for attr in augment.old_attrs):
-                    new_prop_val = augment.transform(result)
+                attr_dict = dict(result)
+                if all(attr in attr_dict for attr in augment.old_attrs):
+                    new_prop_val = augment.transform(attr_dict)
                     if new_prop_val is not None:
                         new_prop, new_val = new_prop_val
-                        result[new_prop] = new_val
+                        result.add(AttrVal(new_prop, new_val))
             self.retrieve_cache[mem_id] = AVLTree.from_dict(result)
         result = self.retrieve_cache[mem_id]
         self.prev_query = None
