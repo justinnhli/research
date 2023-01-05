@@ -38,7 +38,7 @@ class PipelineStep:
             return self.get_outfile()
         raise PipelineError('Outfile not specified implicitly or explicitly')
 
-    def get_outfile(self): # pylint: disable = no-self-use
+    def get_outfile(self):
         """Get the outfile name, if determined dynamically.
 
         Returns:

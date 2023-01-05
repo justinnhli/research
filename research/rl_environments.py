@@ -38,7 +38,6 @@ class Environment:
         raise NotImplementedError()
 
     def _cache_item(self, cache, key, callback):
-        # pylint: disable = no-self-use
         if key not in cache:
             cache[key] = callback()
         return cache[key]
