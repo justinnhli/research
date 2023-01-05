@@ -412,7 +412,7 @@ class KnowledgeFile(KnowledgeSource):
                     for prefix, url in Value.NAMESPACES.items()
                     if url != '_'
                 )
-            with open(source) as fd:
+            with open(source, encoding='utf-8') as fd:
                 data = fd.read()
             if preamble:
                 data = preamble + '\n' + data

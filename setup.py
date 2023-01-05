@@ -21,7 +21,7 @@ def read_requirements():
     Raises:
         ValueError: If parsing the requirements.txt causes an error.
     """
-    with open('requirements.txt') as fd:
+    with open('requirements.txt', encoding='utf-8') as fd:
         requirements = fd.read().splitlines()
     pypi_requirements = []
     git_requirements = {}

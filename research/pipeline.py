@@ -89,9 +89,9 @@ class PipelineStep:
             if self.infile is None:
                 data = self.deserialize(None)
             else:
-                with open(self.infile) as fd:
+                with open(self.infile, encoding='utf-8') as fd:
                     data = self.deserialize(fd)
-            with open(self.outfile, 'w') as fd:
+            with open(self.outfile, 'w', encoding='utf-8') as fd:
                 for line in self.serialize(self.process(data)):
                     fd.write(line)
                     fd.write('\n')

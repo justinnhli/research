@@ -51,11 +51,11 @@ def test_pipeline_correctness():
         square_file = join_path(temp_dir, 'square.txt')
         RangeStep(count=1000, infile=None, outfile=count_file).run()
         SquareStep(infile=count_file, outfile=square_file).run()
-        with open(count_file) as fd:
+        with open(count_file, encoding='utf-8') as fd:
             test = all(int(line.strip()) == i for i, line in enumerate(fd.readlines()))
             message = 'Cached data is different from raw data for Count'
             assert test, message
-        with open(square_file) as fd:
+        with open(square_file, encoding='utf-8') as fd:
             test = all(int(line.strip()) == i**2 for i, line in enumerate(fd.readlines()))
             message = 'Cached data is different from raw data for Square'
             assert test, message
