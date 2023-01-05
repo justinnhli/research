@@ -105,10 +105,7 @@ def generate_interned_id(identifier):
     Returns:
         str: A short hash of the identifier.
     """
-    return "{prefix}{identifier_hash}".format(
-        prefix=INTERNED_PREFIX,
-        identifier_hash=sha1(identifier.encode('utf8')).hexdigest()[:10],
-    )
+    return f'{INTERNED_PREFIX}{sha1(identifier.encode("utf8")).hexdigest()[:10]}'
 
 
 def standardize_uri(uri):

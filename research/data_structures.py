@@ -217,11 +217,11 @@ class AVLTree(Mapping[Any, Any]):
 
     def __repr__(self):
         # type: () -> str
-        return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+        return 'AVLTree(' + ', '.join(f'{k}={v}' for k, v in self.items()) + ')'
 
     def __str__(self):
         # type: () -> str
-        return 'AVLTree(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+        return 'AVLTree(' + ', '.join(f'{k}={v}' for k, v in self.items()) + ')'
 
     @property
     def contents_hash(self):

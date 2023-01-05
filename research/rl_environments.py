@@ -152,22 +152,19 @@ class Action(AVLTree):
         # type: (str) -> Any
         node = self._get_node(name)
         if node is None:
-            raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
+            raise AttributeError(f'class {type(self).__name__} has no attribute {name}')
         return node.value
 
     def __repr__(self):
         # type: () -> str
-        return 'Action("{}", {})'.format(
-            self.name,
-            ', '.join('{}={}'.format(k, v) for k, v in self.items()),
-        )
+        return f'Action("{self.name}", ' + ', '.join(f'{k}={v}' for k, v in self.items()) + ')'
 
     def __str__(self):
         # type: () -> str
         if len(self) == 1:
             return self.name
         else:
-            return self.name + ' (' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+            return self.name + ' (' + ', '.join(f'{k}={v}' for k, v in self.items()) + ')'
 
     @property
     def name(self):
@@ -210,7 +207,7 @@ class State(AVLTree):
 
     def __repr__(self):
         # type: () -> str
-        return 'State(' + ', '.join('{}={}'.format(k, v) for k, v in self.items()) + ')'
+        return 'State(' + ', '.join(f'{k}={v}' for k, v in self.items()) + ')'
 
     def __str__(self):
         # type: () -> str

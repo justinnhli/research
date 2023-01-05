@@ -191,7 +191,7 @@ class TabularQLearningAgent(Agent):
         for observation, values in sorted(self.value_function.items(), key=(lambda kv: str(kv[0]))):
             print(observation)
             for action, value in sorted(values.items(), key=(lambda kv: kv[1]), reverse=True):
-                print('    {}: {:.3f}'.format(action, value))
+                print(f'    {action}: {value:.3f}')
 
     def print_policy(self):
         # type: () -> None
@@ -199,7 +199,7 @@ class TabularQLearningAgent(Agent):
         for observation in sorted(self.value_function.keys(), key=str):
             print(observation)
             best_action = self._get_best_stored_action(observation)
-            print('    {}: {:.3f}'.format(best_action, self._get_value(observation, best_action)))
+            print(f'    {best_action}: {self._get_value(observation, best_action):.3f}')
 
 
 class LinearQLearner(Agent):

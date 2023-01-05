@@ -426,7 +426,7 @@ class KnowledgeFile(KnowledgeSource):
             sql_uri = 'sqlite:///' + source
             self.graph.open(Literal(sql_uri))
         else:
-            raise ValueError('Cannot determine format of {}'.format(source))
+            raise ValueError(f'Cannot determine format of {source}')
 
     def __del__(self):
         self.graph.commit()

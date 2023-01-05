@@ -70,17 +70,12 @@ def test_sparql_endpoint():
     dbr_us = Value.from_uri(Value.NAMESPACES['dbr'] + 'United_States')
     dct_subject = Value.from_uri('http://purl.org/dc/terms/subject')
     dbc_us = Value.from_uri('http://dbpedia.org/resource/Category:States_of_the_United_States')
-    query = '''
+    query = f'''
         SELECT DISTINCT ?state WHERE {{
-            ?state {dbo_country} {dbr_us} .
-            ?state {dct_subject} {dbc_us} .
+            ?state {dbo_country} {dbr_us.namespace_fragment} .
+            ?state {dct_subject} {dbc_us.namespace_fragment} .
         }} LIMIT 100
-    '''.format(
-        dbo_country=str(dbo_country),
-        dbr_us=dbr_us.namespace_fragment,
-        dct_subject=str(dct_subject),
-        dbc_us=dbc_us.namespace_fragment,
-    ).strip()
+    '''.strip()
     assert query == '''
         SELECT DISTINCT ?state WHERE {
             ?state <http://dbpedia.org/ontology/country> dbr:United_States .
