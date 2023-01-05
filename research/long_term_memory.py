@@ -26,8 +26,9 @@ class LongTermMemory:
         """
         super().__init__(**kwargs)
         if activation_fn is None:
-            activation_fn = (lambda ltm, mem_id, time: None)
-        self.activation_fn = activation_fn
+            self.activation_fn = (lambda ltm, mem_id, time: None)
+        else:
+            self.activation_fn = activation_fn
 
     def clear(self):
         # type: () -> None
