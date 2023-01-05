@@ -22,6 +22,7 @@ def test_unionfind():
 
 def test_avltree():
     """Test AVLTree."""
+    # pylint: disable = use-implicit-booleaness-not-comparison
     tree = AVLTree()
     assert 0 not in tree
     assert list(tree) == list(tree.keys()) == list(tree.values()) == list(tree.items()) == []
