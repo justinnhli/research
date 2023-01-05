@@ -71,7 +71,7 @@ def test_networkxltm():
 
 def test_sparqlltm():
     """Test the SPARQL endpoint LTM."""
-    release_date_attr = '<http://dbpedia.org/ontology/releaseDate>'
+    release_date_attr = '<http://dbpedia.org/property/released>'
     release_date_value = '"1979-11-30"^^<http://www.w3.org/2001/XMLSchema#date>'
     # connect to DBpedia
     dbpedia = SparqlEndpoint('https://dbpedia.org/sparql')

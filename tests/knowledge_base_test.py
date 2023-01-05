@@ -117,7 +117,7 @@ def test_sparql_endpoint():
         'http://dbpedia.org/resource/New_Hampshire',
         'http://dbpedia.org/resource/New_Jersey',
         'http://dbpedia.org/resource/New_Mexico',
-        'http://dbpedia.org/resource/New_York',
+        'http://dbpedia.org/resource/New_York_(state)',
         'http://dbpedia.org/resource/North_Carolina',
         'http://dbpedia.org/resource/North_Dakota',
         'http://dbpedia.org/resource/Ohio',
