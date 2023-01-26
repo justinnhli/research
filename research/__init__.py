@@ -12,6 +12,7 @@ from .rl_agents import epsilon_greedy, feature_transformed
 
 from .knowledge_base import Value, KnowledgeSource, KnowledgeFile, SparqlEndpoint
 
+from .long_term_memory import ActivationDynamics, FrequencyActivation, RecencyActivation
 from .long_term_memory import LongTermMemory, NaiveDictLTM, NetworkXLTM, SparqlLTM
 
 from .memarch import MemoryArchitectureMetaEnvironment

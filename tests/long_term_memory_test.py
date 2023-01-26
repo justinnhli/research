@@ -4,6 +4,7 @@
 from research import SparqlEndpoint
 from research import NaiveDictLTM, NetworkXLTM, SparqlLTM
 from research import AttrVal
+from research import FrequencyActivation
 
 
 def _test_ltm(ltm):
@@ -51,22 +52,12 @@ def _test_ltm(ltm):
 
 def test_naivedictltm():
     """Test the dict LTM."""
-
-    def activation_fn(ltm, mem_id, time):
-        # pylint: disable = unused-argument
-        ltm.activations[mem_id] += 1
-
-    _test_ltm(NaiveDictLTM(activation_fn=activation_fn))
+    _test_ltm(NaiveDictLTM(activation_cls=FrequencyActivation))
 
 
 def test_networkxltm():
     """Test the NetworkX LTM."""
-
-    def activation_fn(ltm, mem_id, time):
-        # pylint: disable = unused-argument
-        ltm.graph.nodes[mem_id]['activation'] += 1
-
-    _test_ltm(NetworkXLTM(activation_fn=activation_fn))
+    _test_ltm(NetworkXLTM(activation_cls=FrequencyActivation))
 
 
 def test_sparqlltm():

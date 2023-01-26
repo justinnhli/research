@@ -2,7 +2,7 @@
 
 from collections import namedtuple, defaultdict
 from collections.abc import Hashable
-from typing import Any, Optional, Callable, Sequence, AbstractSet, Tuple, List, Set, Dict
+from typing import Any, Optional, Sequence, AbstractSet, Tuple, List, Set, Dict
 from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
@@ -12,23 +12,90 @@ from .rl_environments import AttrVal
 from .knowledge_base import KnowledgeSource
 
 
+class ActivationDynamics:
+    """Generic interface for activation functions."""
+
+    def __init__(self, ltm, **kwargs):
+        # type: (LongTermMemory) -> None
+        """Initialize the ActivationDynamics.
+
+        Parameters:
+            ltm (LongTermMemory): The LongTermMemory that will be using this activation.
+        """
+        super().__init__(**kwargs)
+        self.ltm = ltm
+
+    def activate(self, mem_id, time):
+        # type: (Hashable, int) -> None
+        # pylint: disable = unused-argument
+        """Activation the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the element to activate.
+            time (int): The time of activation. Optional.
+        """
+        return
+
+    def get_activation(self, mem_id, time):
+        # type: (Hashable, int) -> float
+        # pylint: disable = unused-argument
+        """Get the activation of the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the desired element.
+            time (int): The time of activation. Optional.
+
+        Returns:
+            float: The activation of the element.
+        """
+        return 0
+
+
+class FrequencyActivation(ActivationDynamics):
+    """Activation functions that only care about the frequency of activations."""
+
+    def __init__(self, ltm, **kwargs):
+        super().__init__(ltm, **kwargs)
+        self.activations = defaultdict(int)
+
+    def activate(self, mem_id, time):
+        self.activations[mem_id] += 1
+
+    def get_activation(self, mem_id, time):
+        return self.activations[mem_id]
+
+
+class RecencyActivation(ActivationDynamics):
+    """Activation functions that only care about the recency of activations."""
+
+    def __init__(self, ltm, **kwargs):
+        super().__init__(ltm, **kwargs)
+        self.activations = defaultdict(int)
+
+    def activate(self, mem_id, time):
+        self.activations[mem_id] = time
+
+    def get_activation(self, mem_id, time):
+        return self.activations[mem_id]
+
+
 class LongTermMemory:
     """Generic interface to a knowledge base."""
 
-    def __init__(self, activation_fn=None, **kwargs):
-        # type: (Callable[[LongTermMemory, Hashable, int], None], **kwargs) -> None
+    def __init__(self, activation_cls=None, **kwargs):
+        # type: (type[ActivationDynamics], **kwargs) -> None
         """Initialize the LongTermMemory.
 
         Parameters:
-            activation_fn (Callable[[LongTermMemory, Hashable, int], None]):
+            activation_cls (ActivationDynamics):
                 The activation function to call when storing/retrieving. Optional.
             **kwargs (Any): Arbitrary keyword arguments.
         """
         super().__init__(**kwargs)
-        if activation_fn is None:
-            self.activation_fn = (lambda ltm, mem_id, time: None)
+        if activation_cls is None:
+            self.activation_dynamics = ActivationDynamics(self)
         else:
-            self.activation_fn = activation_fn
+            self.activation_dynamics = activation_cls(self)
 
     def clear(self):
         # type: () -> None
@@ -48,6 +115,29 @@ class LongTermMemory:
             bool: True if the add was successful.
         """
         raise NotImplementedError()
+
+    def activate(self, mem_id, time=0):
+        # type: (Hashable, int) -> Optional[AVLTree]
+        """Activation the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the element to activate.
+            time (int): The time of activation. Optional.
+        """
+        self.activation_dynamics.activate(mem_id, time)
+
+    def get_activation(self, mem_id, time=0):
+        # type: (Hashable, int) -> float
+        """Get the activation of the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the desired element.
+            time (int): The time of activation. Optional.
+
+        Returns:
+            float: The activation of the element.
+        """
+        return self.activation_dynamics.get_activation(mem_id, time)
 
     def retrieve(self, mem_id, time=0):
         # type: (Hashable, int) -> Optional[AVLTree]
@@ -147,25 +237,12 @@ class NaiveDictLTM(LongTermMemory):
         self.knowledge = {} # type: Dict[Hashable, AbstractSet[AttrVal]]
         self.query_index = -1
         self.query_matches = [] # type: List[Hashable]
-        self.activations = defaultdict(float) # type: Dict[Hashable, float]
 
     def clear(self): # noqa: D102
         # type: () -> None
         self.knowledge = {}
         self.query_index = -1
         self.query_matches = []
-
-    def get_activation(self, mem_id):
-        # type: (Hashable) -> float
-        """Get the activation of a memory element.
-
-        Parameters:
-            mem_id (Hashable): The ID of the element.
-
-        Returns:
-            float: The activation of the element.
-        """
-        return self.activations[mem_id]
 
     def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         # type: (Hashable, int, **Any) -> bool
@@ -174,7 +251,7 @@ class NaiveDictLTM(LongTermMemory):
         if mem_id not in self.knowledge:
             self.knowledge[mem_id] = AVLTree()
         else:
-            self.activation_fn(self, mem_id, time)
+            self.activate(mem_id, time)
         for attr, val in kwargs.items():
             if val not in self.knowledge:
                 self.knowledge[val] = AVLTree()
@@ -182,7 +259,7 @@ class NaiveDictLTM(LongTermMemory):
         return True
 
     def _activate_and_return(self, mem_id, time):
-        self.activation_fn(self, mem_id, time)
+        self.activate(mem_id, time)
         return self.knowledge[mem_id]
 
     def retrieve(self, mem_id, time=0): # noqa: D102
@@ -206,7 +283,7 @@ class NaiveDictLTM(LongTermMemory):
                 curr_retrieved = None
             self.query_matches = sorted(
                 candidates,
-                key=(lambda candidate: self.activations[candidate]),
+                key=self.get_activation,
                 reverse=True,
             )
             # use the ValueError from list.index() to determine if the query still matches
@@ -269,18 +346,6 @@ class NetworkXLTM(LongTermMemory):
         self.query_results = []
         self.result_index = -1
 
-    def get_activation(self, mem_id):
-        # type: (Hashable) -> float
-        """Get the activation of a memory element.
-
-        Parameters:
-            mem_id (Hashable): The ID of the element.
-
-        Returns:
-            float: The activation of the element.
-        """
-        return self.graph.nodes[mem_id]['activation']
-
     def store(self, mem_id=None, time=0, **kwargs): # noqa: D102
         # type: (Hashable, int, **Any) -> bool
         if mem_id is None:
@@ -288,7 +353,7 @@ class NetworkXLTM(LongTermMemory):
         if mem_id not in self.graph:
             self.graph.add_node(mem_id, activation=0)
         else:
-            self.activation_fn(self, mem_id, time)
+            self.activate(mem_id, time)
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=0)
@@ -298,7 +363,7 @@ class NetworkXLTM(LongTermMemory):
 
     def _activate_and_return(self, mem_id, time):
         # type: (Hashable, int) -> AVLTree
-        self.activation_fn(self, mem_id, time)
+        self.activate(mem_id, time)
         result = AVLTree()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(AttrVal(data['attribute'], value))
@@ -336,7 +401,7 @@ class NetworkXLTM(LongTermMemory):
         # final pass: sort results by activation
         self.query_results = sorted(
             candidates,
-            key=(lambda mem_id: self.graph.nodes[mem_id]['activation']),
+            key=self.get_activation,
             reverse=True,
         )
         self.result_index = 0
