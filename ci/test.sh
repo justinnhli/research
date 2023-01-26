@@ -15,7 +15,7 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # go up once to the project root directory
 cd ..
 # run pytest
-"$pytest" --verbose --cov=research/ --cov-branch --cov-report=html:htmlcov tests
+PYTHONPATH=. "$pytest" --verbose --cov=research/ --cov-branch --cov-report=html:htmlcov tests
 # submit coverage to coveralls
 if [ "$TRAVIS" == "true" ]; then
     coveralls
