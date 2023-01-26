@@ -55,13 +55,33 @@ class FrequencyActivation(ActivationDynamics):
     """Activation functions that only care about the frequency of activations."""
 
     def __init__(self, ltm, **kwargs):
+        """Initialize the ActivationDynamics.
+
+        Parameters:
+            ltm (LongTermMemory): The LongTermMemory that will be using this activation.
+        """
         super().__init__(ltm, **kwargs)
         self.activations = defaultdict(int)
 
     def activate(self, mem_id, time):
+        """Activation the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the element to activate.
+            time (int): The time of activation. Optional.
+        """
         self.activations[mem_id] += 1
 
     def get_activation(self, mem_id, time):
+        """Get the activation of the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the desired element.
+            time (int): The time of activation. Optional.
+
+        Returns:
+            float: The activation of the element.
+        """
         return self.activations[mem_id]
 
 
@@ -69,13 +89,33 @@ class RecencyActivation(ActivationDynamics):
     """Activation functions that only care about the recency of activations."""
 
     def __init__(self, ltm, **kwargs):
+        """Initialize the ActivationDynamics.
+
+        Parameters:
+            ltm (LongTermMemory): The LongTermMemory that will be using this activation.
+        """
         super().__init__(ltm, **kwargs)
         self.activations = defaultdict(int)
 
     def activate(self, mem_id, time):
+        """Activation the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the element to activate.
+            time (int): The time of activation. Optional.
+        """
         self.activations[mem_id] = time
 
     def get_activation(self, mem_id, time):
+        """Get the activation of the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the desired element.
+            time (int): The time of activation. Optional.
+
+        Returns:
+            float: The activation of the element.
+        """
         return self.activations[mem_id]
 
 
