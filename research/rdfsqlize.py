@@ -162,8 +162,8 @@ class RDFSQLizer:
         self._reset()
         self.kb_id = kb_id
         self.interned_id = generate_interned_id(self.kb_id)
-        with open(sql_file, 'w', encoding='uft-8') as out_fd:
-            with open(filepath, encoding='uft-8') as in_fd:
+        with open(sql_file, 'w', encoding='utf-8') as out_fd:
+            with open(filepath, encoding='utf-8') as in_fd:
                 out_fd.write(TRANSACTION_SQL_HEADER + '\n')
                 out_fd.write('\n')
                 out_fd.write(CREATE_TABLES_SQL.format(interned_id=self.interned_id) + '\n')
