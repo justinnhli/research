@@ -16,7 +16,3 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ..
 # run pytest
 PYTHONPATH=. "$pytest" --verbose --cov=research/ --cov-branch --cov-report=html:htmlcov tests
-# submit coverage to coveralls
-if [ "$TRAVIS" == "true" ]; then
-    coveralls
-fi

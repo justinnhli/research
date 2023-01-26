@@ -24,4 +24,3 @@ git+https://github.com/justinnhli/clusterun.git#egg=clusterun
 pylint==2.15.9
 pydocstyle==6.2.2
 pytest-cov==4.0.0
-coveralls==3.3.1
