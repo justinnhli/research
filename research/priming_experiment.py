@@ -21,7 +21,7 @@ def activation_fn(sem_network, mem_id, time):
 
 
 def create_word_list(cooccur_1_freq, cooccur_2_freq, target_freq, num_word_pairs):
-    """Creates the list of 100 word pairs. Assumes occ_comparison + occ_target < 1.00.
+    """Creates the list of 100 word pairs.
     Parameters:
         cooccur_1_freq (float): The frequency from 0 to 1 of cooccur_1.
         cooccur_2_freq (float): The frequency from 0 to 1 of cooccur_2.

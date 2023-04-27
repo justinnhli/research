@@ -1,0 +1,59 @@
+from priming_experiment import *
+import statistics
+import numpy as np
+
+
+def get_cooccur_distance_mtx(constant_offset, decay_parameter, activation_base, num_trials, target_freq, num_word_pairs,
+                             auto_storage=True):
+    """Creates the matrices for with target distance on the "x-axis" and the frequency of cooccur_1 on the y-axis,
+        increasing as you move down the axis.
+        Parameters:
+            constant_offset (float): A parameter in the activation equation.
+            decay_parameter (float): A parameter in the activation equation.
+            activation_base (float): A parameter in the activation equation.
+            num_trials (int): The number of trials the experiment is to be run for.
+            target_freq (float): The frequency from 0 to 1 of the target word.
+            num_word_pairs (int): The number of word pairs in the list.
+        Returns:
+            list: The list of word pairs.
+                """
+    target_distances = list(range(1, 16))
+    cooccur_freqs = [0.01 * x for x in list(range(0, 100, 5))]
+    semantic_act_mtx = np.empty(shape=[len(cooccur_freqs), len(target_distances)])
+    control_act_mtx = np.empty(shape=[len(cooccur_freqs), len(target_distances)])
+    cooccur_act_mtx = np.empty(shape=[len(cooccur_freqs), len(target_distances)])
+    cooccur2_act_mtx = np.empty(shape=[len(cooccur_freqs), len(target_distances)])
+
+    for i in range(len(cooccur_freqs)):
+        for j in range(len(target_distances)):
+            semantic_target_acts = run_experiment(constant_offset, decay_parameter,
+                                                  activation_base, target_distances[j], num_trials, cooccur_freqs[i],
+                                                  1 - cooccur_freqs[i], target_freq, num_word_pairs, True, False,
+                                                  auto_storage=auto_storage)
+            semantic_act_mtx[i][j] = statistics.mean(semantic_target_acts)
+
+            control_target_acts = run_experiment(constant_offset, decay_parameter, activation_base, target_distances[j],
+                                                 num_trials, cooccur_freqs[i], 1 - cooccur_freqs[i], target_freq,
+                                                 num_word_pairs, False, False, auto_storage=auto_storage)
+            control_act_mtx[i][j] = statistics.mean(control_target_acts)
+
+            cooccur_target_acts = run_experiment(constant_offset, decay_parameter, activation_base, target_distances[j],
+                                                 num_trials, cooccur_freqs[i], 1 - cooccur_freqs[i], target_freq,
+                                                 num_word_pairs, False, True, 1, auto_storage=auto_storage)
+            cooccur_act_mtx[i][j] = statistics.mean(cooccur_target_acts)
+
+            cooccur2_target_acts = run_experiment(constant_offset, decay_parameter, activation_base,
+                                                  target_distances[j],
+                                                  num_trials, cooccur_freqs[i], 1 - cooccur_freqs[i], target_freq,
+                                                  num_word_pairs, False, True, 2, auto_storage=auto_storage)
+            cooccur2_act_mtx[i][j] = statistics.mean(cooccur2_target_acts)
+
+    return semantic_act_mtx, cooccur_act_mtx, control_act_mtx, cooccur2_act_mtx
+
+
+matrices = get_cooccur_distance_mtx(0, 0.05, 2, 300, 0.5, 100, False)
+# Saves the matrices (manually).
+np.savetxt("/Users/lilygebhart/Downloads/Li Research Matrices/semantic_act_mtx_paircooc_time.csv", matrices[0], delimiter=",")
+np.savetxt("/Users/lilygebhart/Downloads/Li Research Matrices/cooccur_act_mtx_paircooc_time.csv", matrices[1], delimiter=",")
+np.savetxt("/Users/lilygebhart/Downloads/Li Research Matrices/control_act_mtx_paircooc_time.csv", matrices[2], delimiter=",")
+np.savetxt("/Users/lilygebhart/Downloads/Li Research Matrices/coccur2_act_mtx_paircooc_time.csv", matrices[3], delimiter=",")
