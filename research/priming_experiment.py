@@ -126,6 +126,8 @@ def run_trial(word_pair_list, sem_network, semantic, cooccurrence, cooccur_num=1
         timer += 1
     sem_network.retrieve(mem_id=first_word_presented, time=timer)
     sem_network.retrieve(mem_id="target", time=timer + 0.5)
+    sem_network.get_activation("target", time=timer + 1)
+    print(sem_network.knowledge)
     target_activation = sem_network.get_activation("target", time=timer + 1)
     return target_activation
 
@@ -166,3 +168,5 @@ def run_experiment(constant_offset, decay_parameter, activation_base, target_dis
         result = run_trial(shuffle_word_pair_list, sem_network, semantic, cooccurrence, cooccur_num)
         target_act_list.append(result)
     return target_act_list
+
+run_experiment(0, 0.05, 2, 1, 1, 0.5, 0.5, 0.5, 100, False, True, cooccur_num=1, auto_storage=True)

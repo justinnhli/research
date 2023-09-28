@@ -19,8 +19,6 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
         self.last_activated_element = ["", 0]
         self.cooccurrent_elements = {}
 
-
-
     def activate(self, mem_id, time):
         """Activate the element with the given ID using spreading activation.
         Parameters:
@@ -42,7 +40,6 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
         else:
             element_pair_ratio = 1
 
-        element_pair_ratio = element_pair_ratio * (1 + math.exp(time-self.last_activated_element[1]))
 
         self.activations[mem_id].append([time, 1, element_pair_ratio])
         self.last_activated_element = [mem_id, time]
@@ -91,3 +88,4 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
 
         base_level_activation = self.constant_offset + math.log(base_act_sum_term)
         return base_level_activation
+
