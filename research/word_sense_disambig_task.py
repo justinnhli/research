@@ -2,32 +2,17 @@ import os
 import random
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
+from nltk.corpus import wordnet
 
-
-# FIXME Fix this function!! Probably want to separate it into naive_guess_word() functions and this function...
-def run_word_sense_disambig(directory_list, num_trials, activation_base, decay_parameter, constant_offset):
+def run_word_sense_disambig(directory_list, activation_base, decay_parameter, constant_offset):
     sent_list_sense_dict = extract_sentences(directory_list)
     sentence_list = sent_list_sense_dict[0]
     word_sense_dict = sent_list_sense_dict[1]
-    print(sentence_list)
+    #print(sentence_list)
     sem_network = create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset)
-    print(sem_network.knowledge)
-    overall_accuracy_list = []
-    for trial in range(num_trials):
-        for sentence in sentence_list:
-            for word in sentence:
-                adjusted_sentence = sentence
-                adjusted_sentence.remove(word)
-                word = word[0: word.rfind(".")]
-                print("word = " + word)
-                guessed_sense = sem_network.guess_word_sense(word, adjusted_sentence)
-                print("guessed sense = "+ guessed_sense)
-                print(word[word.rfind(".") + 1: len(word)])
-                if guessed_sense == word[word.rfind(".") + 1: len(word)]:
-                    overall_accuracy_list.append(True)
-                else:
-                    overall_accuracy_list.append(False)
-    return overall_accuracy_list.count(True)/len(overall_accuracy_list)
+    #print(sem_network.knowledge)
+    guess_list = naive_predict_word_sense(sem_network, sentence_list, word_sense_dict)
+    return guess_list.count(True) / len(guess_list)
 
 
 def extract_sentences(directory_list):
@@ -43,24 +28,25 @@ def extract_sentences(directory_list):
     for directory in directory_list:
         for corpus_file in os.listdir(directory):
             if (corpus_file != ".DS_Store"):
-                f = open(directory+corpus_file, "rt")
+                f = open(directory + corpus_file, "rt")
                 corpus_words = f.readlines()
                 sentence_word_list = []
                 for line in range(len(corpus_words)):
                     if (corpus_words[line].find("snum=") != -1):
-                        if sentence_word_list != []:
-                            sentence_list.append(sentence_word_list)
+                        if len(sentence_word_list) > 1:
+                            if len(set(sentence_word_list)) > 1:
+                                sentence_list.append(sentence_word_list)
                         sentence_word_list = []
                     elif corpus_words[line].find("cmd=done") > 0 \
-                            and corpus_words[line].find("pos=") > 0\
+                            and corpus_words[line].find("pos=") > 0 \
                             and corpus_words[line].find("lemma=") > 0 \
                             and corpus_words[line].find("lexsn=") > 0:
                         word_index1 = corpus_words[line].find("lemma=")
                         word_index2 = corpus_words[line].find("wnsn=")
-                        word = corpus_words[line][word_index1 + 6: word_index2-1]
+                        word = corpus_words[line][word_index1 + 6: word_index2 - 1]
                         sense_index2 = corpus_words[line].find(" lexsn")
                         word_sense = corpus_words[line][word_index2 + 5: sense_index2]
-                        if ~word.isnumeric():
+                        if ~word.isnumeric() and len(wordnet.synsets(word)) != 0:
                             word_senses = word_sense.split(";")
                             for sense in word_senses:
                                 sentence_word_list.append((word, int(sense)))
@@ -76,29 +62,19 @@ def extract_sentences(directory_list):
 def create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset):
     network = sentenceLTM(
         activation_cls=(lambda ltm:
-            SentenceCooccurrenceActivation(
-                ltm,
-                activation_base=activation_base,
-                constant_offset=constant_offset,
-                decay_parameter=decay_parameter,
-    )))
+                        SentenceCooccurrenceActivation(
+                            ltm,
+                            activation_base=activation_base,
+                            constant_offset=constant_offset,
+                            decay_parameter=decay_parameter
+                        )))
     for sentence in sentence_list:
-        for word_index1 in range(len(sentence) - 1):
-            network.store(sentence[word_index1], time=0)
-            for word_index2 in range(word_index1 + 1, len(sentence)):
-                network.store(sentence[word_index2], time=0)
-                if sentence[word_index1] > sentence[word_index2]:
-                    pair_id = (sentence[word_index1], sentence[word_index2])
-                else:
-                    pair_id = (sentence[word_index2], sentence[word_index1])
-                network.store(mem_id=pair_id,
-                              time=0,
-                              word_1=sentence[word_index1],
-                              word_2=sentence[word_index1])
-                # FIXME Change this.
-                network.activate_sentence(sentence)
-    return network
+        for word1_index in range(len(sentence)):
+            for word2_index in range(word1_index + 1, len(sentence)):
 
+                network.activate_cooccur_pair(sentence[word1_index],
+                                              sentence[word2_index])
+    return network
 
 
 def dummy_predict_word_sense(sentence_list):
@@ -113,7 +89,7 @@ def dummy_predict_word_sense(sentence_list):
     """
     accuracy_list = []
     for word in sentence_list:
-        guess_sense = random.randint(1,3)
+        guess_sense = random.randint(1, 3)
         if guess_sense == int(word[2]):
             accuracy_list.append(True)
         else:
@@ -121,16 +97,91 @@ def dummy_predict_word_sense(sentence_list):
     return accuracy_list
 
 
+def naive_predict_word_sense(sem_network, sentence_list, word_sense_dict):
+    guess_list = []
+    time = 1
+    for sentence in sentence_list:
+        for word in sentence:
+            sense_cooccurrence_dict = {}
+            for sense in word_sense_dict[word[0]]:
+                for cooccur_word in sentence:
+                    if cooccur_word != word:
+                        word_guess = (word[0], sense)
+                        if sense in sense_cooccurrence_dict:
+                            sense_cooccurrence_dict[sense] = sense_cooccurrence_dict[sense] + \
+                                                         sem_network.get_cooccurrence(word_guess, cooccur_word)
+                        else:
+                            sense_cooccurrence_dict[sense] = sem_network.get_cooccurrence(word_guess, cooccur_word)
+            word_sense_guess = max(zip(sense_cooccurrence_dict.values(), sense_cooccurrence_dict.keys()))[1]
+            for cooccur_word in sentence:
+                if cooccur_word != word:
+                    sem_network.activate_cooccur_pair((word[0], word_sense_guess), cooccur_word)
+            time += 1
+            if word_sense_guess == word[1]:
+                guess_list.append(True)
+            else:
+                guess_list.append(False)
+    return guess_list
+
+def get_corpus_stats(directory_list):
+    sent_list_sense_dict = extract_sentences(directory_list)
+    sentence_list = sent_list_sense_dict[0]
+    word_sense_dict = sent_list_sense_dict[1]
+    absolute_word_counts = {}
+    absolute_sense_counts = {}
+    word_pair_counts = {}
+    sense_pair_counts = {}
+    for sentence in sentence_list:
+        for word1_index in range(len(sentence)):
+            word1 = sentence[word1_index]
+            if word1 in absolute_sense_counts:
+                absolute_sense_counts[word1] = absolute_sense_counts[word1] + 1
+            else:
+                absolute_sense_counts[word1] = 1
+            if word1[0] in absolute_word_counts:
+                absolute_word_counts[word1[0]] = absolute_word_counts[word1[0]] + 1
+            else:
+                absolute_word_counts[word1[0]] = 1
+            for word2_index in range(word1_index + 1, len(sentence)):
+                word2 = sentence[word2_index]
+                if word1[0] < word2[0] or (word1[0] == word2[0] and word1[1] < word2[1]):
+                    sense_key = (word1, word2)
+                    word_key = (word1[0], word2[0])
+                else:
+                    sense_key = (word2, word1)
+                    word_key = (word1[0], word2[0])
+                if sense_key in sense_pair_counts:
+                    sense_pair_counts[sense_key] = sense_pair_counts[sense_key] + 1
+                else:
+                    sense_pair_counts[sense_key] = 1
+                if word_key in word_pair_counts:
+                    word_pair_counts[word_key] = word_pair_counts[word_key] + 1
+                else:
+                    word_pair_counts[word_key] = 1
+    return absolute_word_counts, absolute_sense_counts, word_pair_counts, sense_pair_counts
+
+
+
+
+
+
 
 # Testing...
-#print(extract_sentences(["/Users/lilygebhart/Downloads/Li_Research_Test_Corpus/"]))
+# print(extract_sentences(["/Users/lilygebhart/Downloads/Li_Research_Test_Corpus/"]))
 
-print(extract_sentences(["/Users/lilygebhart/Downloads/semcor3.0/brown1/tagfiles/",
-                    "/Users/lilygebhart/Downloads/semcor3.0/brown2/tagfiles/",
-                    "/Users/lilygebhart/Downloads/semcor3.0/brownv/tagfiles/"])[1])
+# print(extract_sentences(["/Users/lilygebhart/Downloads/semcor3.0/brown1/tagfiles/",
+# "/Users/lilygebhart/Downloads/semcor3.0/brown2/tagfiles/",
+# "/Users/lilygebhart/Downloads/semcor3.0/brownv/tagfiles/"])[1])
 
-#run_word_sense_disambig(["/Users/lilygebhart/Downloads/Li_Research_Test_Corpus/"], 1, 2, 0, 0.05)
+#print(run_word_sense_disambig(["/Users/lilygebhart/Downloads/Li_Research_Test_Corpus/"], 1, 2, 0, 0.05))
 
-#run_word_sense_disambig(["/Users/lilygebhart/Downloads/semcor3.0/brown1/tagfiles/",
-                    #"/Users/lilygebhart/Downloads/semcor3.0/brown2/tagfiles/",
-                    #"/Users/lilygebhart/Downloads/semcor3.0/brownv/tagfiles/"], 1, 2, 0, 0.05)
+#print(run_word_sense_disambig(["/Users/lilygebhart/Downloads/semcor3.0/brown1/tagfiles/",
+#"/Users/lilygebhart/Downloads/semcor3.0/brown2/tagfiles/",
+#"/Users/lilygebhart/Downloads/semcor3.0/brownv/tagfiles/"], 3, 2, 0, 0.05))
+
+#print(get_corpus_stats(["/Users/lilygebhart/Downloads/semcor3.0/brown1/tagfiles/",
+# "/Users/lilygebhart/Downloads/semcor3.0/brown2/tagfiles/",
+# "/Users/lilygebhart/Downloads/semcor3.0/brownv/tagfiles/"]))
+
+
+
