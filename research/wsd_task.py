@@ -6,7 +6,7 @@ from nltk.corpus import wordnet
 from nltk.corpus import semcor
 
 
-def run_wsd(activation_base, decay_parameter, constant_offset):
+def run_wsd(activation_base=2, decay_parameter=0.05, constant_offset=0, predict_word_sense="naive", iterations=1):
     """
     Runs the word sense disambiguation task over the Semcor corpus.
     Parameters:
@@ -17,9 +17,28 @@ def run_wsd(activation_base, decay_parameter, constant_offset):
         (float): The raw percent accuracy of the guesses of naive_predict_word_sense.
     """
     sentence_list, word_sense_dict = extract_sentences()
-    sem_network = create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset)
-    guess_list = naive_predict_word_sense(sem_network, sentence_list, word_sense_dict)
-    return guess_list.count(True) / len(guess_list)
+    if predict_word_sense == "naive":
+        guess_list = naive_predict_word_sense(sentence_list, word_sense_dict)
+    elif predict_word_sense == "frequency":
+        guess_list = frequency_predict_word_sense(sentence_list, word_sense_dict)
+    elif predict_word_sense == "senseless":
+        #sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
+                                         #decay_parameter=decay_parameter, constant_offset=constant_offset)
+        guess_list = senseless_predict_word_sense(sentence_list, word_sense_dict)
+    elif predict_word_sense == "naive_sem":
+        sem_network = create_sem_network(sentence_list, spreading=False, time=True, activation_base=activation_base,
+                                         decay_parameter=decay_parameter, constant_offset=constant_offset)
+        guess_list = naive_semantic_predict_word_sense(sem_network[0], sentence_list, word_sense_dict, iterations,
+                                                       sem_network[1])
+    elif predict_word_sense == "naive_sem_spreading":
+        sem_network = create_sem_network(sentence_list, spreading=True, time=True, activation_base=activation_base,
+                                         decay_parameter=decay_parameter, constant_offset=constant_offset)
+        guess_list = naive_semantic_predict_word_sense(sem_network[0], sentence_list, word_sense_dict, iterations,
+                                                       sem_network[1])
+    else:
+        return False
+    raw_truths = sum(guess_list.values(), [])
+    return raw_truths.count(True) / len(raw_truths)
 
 
 def extract_sentences():
@@ -53,7 +72,8 @@ def extract_sentences():
     return sentence_list, word_sense_dict
 
 
-def create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset):
+def create_sem_network(sentence_list, spreading=True, time=False, activation_base=2, decay_parameter=0.05,
+                       constant_offset=0):
     """
     Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms, hyponyms,
         holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos.
@@ -74,46 +94,74 @@ def create_sem_network(sentence_list, activation_base, decay_parameter, constant
                             constant_offset=constant_offset,
                             decay_parameter=decay_parameter
                         )))
+    timer = 1
     semcor_words = sum(sentence_list, [])
-    for word in semcor_words:
-        if not network.retrievable(word):
-            syn = word[1]
-            lemma = word[0]
-            synonyms = [synon for synon in syn.lemmas() if synon in semcor_words and synon != lemma]
-            hypernyms = [hyper for hyper in syn.hypernyms() if hyper in semcor_words and hyper != lemma]
-            hyponyms = [hypo for hypo in syn.hyponyms() if hypo in semcor_words and hypo != lemma]
-            holonyms = [holo for holo in syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms() if
-                    holo in semcor_words and holo != lemma]
-            meronyms = [mero for mero in syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms() if
-                    mero in semcor_words and mero != lemma]
-            attributes = [attr for attr in syn.attributes() if attr in semcor_words and attr != lemma]
-            entailments = [entail for entail in syn.entailments() if entail in semcor_words and entail != lemma]
-            causes = [cause for cause in syn.causes() if cause in semcor_words and cause != lemma]
-            also_sees = [also_see for also_see in syn.also_sees() if also_see in semcor_words and also_see != lemma]
-            verb_groups = [verb for verb in syn.verb_groups() if verb in semcor_words and verb != lemma]
-            similar_tos = [sim for sim in syn.similar_tos() if sim in semcor_words and sim != lemma]
-            # word_relations = synonyms + hypernyms + hyponyms + holonyms + meronyms + attributes + entailments + causes + also_sees + verb_groups + similar_tos
-            network.store(mem_id=word,
-                      time=0,
-                      synonyms=synonyms,
-                      hypernyms=hypernyms,
-                      hyponyms=hyponyms,
-                      holynyms=holonyms,
-                      meronyms=meronyms,
-                      attributes=attributes,
-                      entailments=entailments,
-                      causes=causes,
-                      also_sees=also_sees,
-                      verb_groups=verb_groups,
-                      similar_tos=similar_tos)
-    for sentence in sentence_list:
-        for index1 in range(len(sentence)):
-            for index2 in range(index1 + 1, len(sentence)):
-                network.activate_cooccur_pair(sentence[index1], sentence[index2])
-    return network
+    if spreading:
+        for sentence in sentence_list:
+            for word in sentence:
+                # if not network.retrievable(word):
+                syn = word[1]
+                lemma = word[0]
+                synonyms = [(synon, syn) for synon in syn.lemmas() if (synon, syn) in semcor_words and synon != lemma]
+                # These are all synsets.
+                synset_relations = [syn.hypernyms(), syn.hyponyms(),
+                                  syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms(),
+                                  syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms(),
+                                  syn.attributes(), syn.entailments(), syn.causes(), syn.also_sees(), syn.verb_groups(),
+                                  syn.similar_tos()]
+                lemma_relations = []
+                for ii in range(len(synset_relations)):
+                    lemma_relations.append([])
+                    for jj in range(len(synset_relations[ii])):
+                        syn_lemmas = synset_relations[ii][jj].lemmas()
+                        for lemma in syn_lemmas:
+                            lemma_relations[ii].append((lemma, synset_relations[ii][jj]))
+                for ii in range(len(lemma_relations)):
+                    lemma_relations[ii] = [word_tuple for word_tuple in set(lemma_relations[ii]) if word_tuple in
+                                           semcor_words and word_tuple != word]
+                print(lemma_relations)
+                # Get lemmas out of synsets
+                # hypernyms = [hyper for hyper in syn.hypernyms() if (hyper, hyper.label().synset()) in semcor_words and hyper != lemma]
+                # hyponyms = [hypo for hypo in syn.hyponyms() if (hypo, hypo.label().synset()) in semcor_words and hypo != lemma]
+                # holonyms = [holo for holo in syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms()
+                #             if
+                #             (holo, holo.label().synset()) in semcor_words and holo != lemma]
+                # meronyms = [mero for mero in syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms()
+                #             if
+                #             (mero, mero.label().synset()) in semcor_words and mero != lemma]
+                # attributes = [attr for attr in syn.attributes() if (attr, attr.label().synset()) in semcor_words and attr != lemma]
+                # entailments = [entail for entail in syn.entailments() if (entail, entail.label().synset()) in semcor_words and entail != lemma]
+                # causes = [cause for cause in syn.causes() if (cause, cause.label().synset()) in semcor_words and cause != lemma]
+                # also_sees = [also_see for also_see in syn.also_sees() if
+                #              (also_see, also_see.label().synset()) in semcor_words and also_see != lemma]
+                # verb_groups = [verb for verb in syn.verb_groups() if (verb, verb.label().synset()) in semcor_words and verb != lemma]
+                # similar_tos = [sim for sim in syn.similar_tos() if (sim, sim.label().synset())  in semcor_words and sim != lemma]
+                network.store(mem_id=word,
+                              time=timer,
+                              synonyms=synonyms,
+                              hypernyms=lemma_relations[0],
+                              hyponyms=lemma_relations[1],
+                              holynyms=lemma_relations[2],
+                              meronyms=lemma_relations[3],
+                              attributes=lemma_relations[4],
+                              entailments=lemma_relations[5],
+                              causes=lemma_relations[6],
+                              also_sees=lemma_relations[7],
+                              verb_groups=lemma_relations[8],
+                              similar_tos=lemma_relations[9])
+                timer += 1
+    else:
+        for sentence in sentence_list:
+            for word in sentence:
+                network.store(mem_id=word, time=timer)
+            timer += 1
+    if time:
+        return network, timer
+    else:
+        return network
 
 
-def naive_predict_word_sense(sem_network, sentence_list, word_sense_dict):
+def naive_predict_word_sense(sentence_list, word_sense_dict):
     """
     Predicts the correct word sense for a word in a sentence based on how frequently it occurs with the other words in
         the sentence compared to other possible senses of the word.
@@ -129,6 +177,21 @@ def naive_predict_word_sense(sem_network, sentence_list, word_sense_dict):
     """
     guess_list = {}
     time = 1
+    # Getting sense-pair counts
+    sense_pair_counts = {}
+    for sentence in sentence_list:
+        for word1_index in range(len(sentence)):
+            for word2_index in range(word1_index + 1, len(sentence)):
+                word1 = sentence[word1_index]
+                word2 = sentence[word2_index]
+                if word1[0] < word2[0] or (word1[0] == word2[0] and word1[1] <= word2[1]):
+                    sense_key = (word1, word2)
+                else:
+                    sense_key = (word2, word1)
+                if sense_key not in sense_pair_counts.keys():
+                    sense_pair_counts[sense_key] = 0
+                sense_pair_counts[sense_key] += 1
+
     for sentence in sentence_list:
         for word in sentence:
             sense_cooccurrence_dict = {}
@@ -137,69 +200,116 @@ def naive_predict_word_sense(sem_network, sentence_list, word_sense_dict):
                     if cooccur_word != word:
                         if lemma not in sense_cooccurrence_dict.keys():
                             sense_cooccurrence_dict[lemma] = 0
-                        sense_cooccurrence_dict[lemma] += sem_network.get_cooccurrence(lemma, cooccur_word)
+                        if lemma[0] < cooccur_word[0] or (lemma[0] == cooccur_word[0] and lemma[1] <= cooccur_word[1]):
+                            sense_pair = (lemma, cooccur_word)
+                        else:
+                            sense_pair = (cooccur_word, lemma)
+                        #sense_cooccurrence_dict[lemma] += sem_network.get_cooccurrence(lemma, cooccur_word)
+                        if sense_pair in sense_pair_counts.keys():
+                            sense_cooccurrence_dict[lemma] += sense_pair_counts[sense_pair]
             word_sense_guess = max(zip(sense_cooccurrence_dict.values(), sense_cooccurrence_dict.keys()))[1]
-            # for cooccur_word in sentence:
-            # if cooccur_word != word:
-            # sem_network.activate_cooccur_pair(word_sense_dict[word_sense_guess][0], cooccur_word)
             time += 1
             if word not in guess_list.keys():
                 guess_list[word] = []
             if word_sense_guess == word:
-                guess_list[word] += True
+                guess_list[word].append(True)
             else:
-                guess_list[word] += False
+                guess_list[word].append(False)
     return guess_list
 
 
-def get_corpus_stats():
-    """
-    Function to return the absolute counts of each word and each word sense, and the counts of cooccurrence between words
-    and word senses
-    Returns:
-        absolute_word_counts (dict): A dictionary with keys the name of every lemma of the same word and values the
-            number of times the word appears in the Semcor corpus.
-        absolute_sense_counts (dict): A dictionary with keys a tuple with the lemma and synset of each word (tracking
-            the sense of each word) and keys the number of times the tuple appears in the Semcor corpus.
-        word_pair_counts (dict): A dictionary with keys a tuple of words appearing together and values the number of times
-            the words appear together in the same sentence in the Semcor corpus.
-        sense_pair_counts (dict): A dictionary with keys a tuple of two tuples each containing a lemma and its corresponding
-            synset (tracking the sense of each word) representing two words of a certain sense occurrring together, and
-            values the number of times the senses occur together in the same sentence in the Semcor corpus.
-    """
-    sentence_list = extract_sentences()[0]
-    absolute_word_counts = {}
-    absolute_sense_counts = {}
-    word_pair_counts = {}
+def naive_semantic_predict_word_sense(sem_network, sentence_list, word_sense_dict, iterations, time):
+    timer = time
+    guess_list = {}
+    for iter in range(iterations):
+        for sentence in sentence_list:
+            for word in sentence:
+                # senses = sem_network.sense_query(word=word[0], time=timer)
+                senses = word_sense_dict[word[0].name()]
+                max_act = -1
+                for sense in senses:
+                    sense_act = sem_network.get_activation(mem_id=sense, time=timer)
+                    if sense_act > max_act:
+                        max_act = sense_act
+                        sense_guess = sense
+                if word not in guess_list.keys():
+                    guess_list[word] = []
+                if sense_guess == word:
+                    guess_list[word].append(True)
+                else:
+                    guess_list[word].append(False)
+                sem_network.store(mem_id=word, time=timer)
+                sem_network.store(mem_id=sense_guess, time=timer)
+                timer += 1
+    return guess_list
+
+
+def senseless_predict_word_sense(sentence_list, word_sense_dict):
+    guess_list = {}
     sense_pair_counts = {}
     for sentence in sentence_list:
         for word1_index in range(len(sentence)):
-            word1 = sentence[word1_index]
-            if word1 in absolute_sense_counts.keys():
-                absolute_sense_counts[word1] = absolute_sense_counts[word1] + 1
-            else:
-                absolute_sense_counts[word1] = 1
-            if word1[0].name() in absolute_word_counts.keys():
-                absolute_word_counts[word1[0].name()] = absolute_word_counts[word1[0].name()] + 1
-            else:
-                absolute_word_counts[word1[0].name()] = 1
             for word2_index in range(word1_index + 1, len(sentence)):
+                word1 = sentence[word1_index]
                 word2 = sentence[word2_index]
                 if word1[0] < word2[0] or (word1[0] == word2[0] and word1[1] <= word2[1]):
                     sense_key = (word1, word2)
-                    word_key = (word1[0].name(), word2[0].name())
                 else:
                     sense_key = (word2, word1)
-                    word_key = (word2[0].name(), word1[0].name())
-                if sense_key in sense_pair_counts.keys():
-                    sense_pair_counts[sense_key] = sense_pair_counts[sense_key] + 1
-                else:
-                    sense_pair_counts[sense_key] = 1
-                if word_key in word_pair_counts.keys():
-                    word_pair_counts[word_key] = word_pair_counts[word_key] + 1
-                else:
-                    word_pair_counts[word_key] = 1
-    return absolute_word_counts, absolute_sense_counts, word_pair_counts, sense_pair_counts
+                if sense_key not in sense_pair_counts.keys():
+                    sense_pair_counts[sense_key] = 0
+                sense_pair_counts[sense_key] += 1
+
+    for sentence in sentence_list:
+        for word in sentence:
+            sense_cooccurrence_dict = {}
+            for word_sense in word_sense_dict[word[0].name()]:
+                for cooccur_word in sentence:
+                    if cooccur_word != word:
+                        for cooccur_sense in word_sense_dict[cooccur_word[0].name()]:
+                            if word_sense[0] < cooccur_sense[0] or (word_sense[0] == cooccur_sense[0] and word_sense[1] <= cooccur_sense[1]):
+                                sense_key = (word_sense, cooccur_sense)
+                            else:
+                                sense_key = (cooccur_sense, word_sense)
+                            if word_sense not in sense_cooccurrence_dict.keys():
+                                sense_cooccurrence_dict[word_sense] = 0
+                            if sense_key in sense_pair_counts.keys():
+                                sense_cooccurrence_dict[word_sense] += sense_pair_counts[sense_key]
+                            #sense_cooccurrence_dict[word_sense] += sem_network.get_cooccurrence(word_sense,
+                                                                                                #cooccur_sense)
+            word_sense_guess = max(zip(sense_cooccurrence_dict.values(), sense_cooccurrence_dict.keys()))[1]
+            if word not in guess_list.keys():
+                guess_list[word] = []
+            if word_sense_guess == word:
+                guess_list[word].append(True)
+            else:
+                guess_list[word].append(False)
+    return guess_list
+
+
+def frequency_predict_word_sense(sentence_list, word_sense_dict):
+    absolute_sense_counts = {}
+    for sentence in sentence_list:
+        for word in sentence:
+            if word not in absolute_sense_counts.keys():
+                absolute_sense_counts[word] = 0
+            absolute_sense_counts[word] += 1
+    guess_list = {}
+    for sentence in sentence_list:
+        for word in sentence:
+            senses = word_sense_dict[word[0].name()]
+            max_sense_count = 0
+            for sense in senses:
+                if absolute_sense_counts[sense] > max_sense_count:
+                    max_sense = sense
+                    max_sense_count = absolute_sense_counts[sense]
+            if word not in guess_list.keys():
+                guess_list[word] = []
+            if max_sense == word:
+                guess_list[word].append(True)
+            else:
+                guess_list[word].append(False)
+    return guess_list
 
 
 def dummy_predict_word_sense(sentence_list):
@@ -223,7 +333,9 @@ def dummy_predict_word_sense(sentence_list):
 
 
 # Testing...
-#print(extract_sentences()[1])
-#print(create_sem_network(extract_sentences()[0], 2, 0.05, 0))
-#print(run_wsd(2, 0.05, 0))
-#print(get_corpus_stats())
+# print(extract_sentences()[1])
+# print(create_sem_network(extract_sentences()[0], 2, 0.05, 0))
+# print(run_wsd(2, 0.05, 0, predict_word_sense="senseless"))
+# print(get_corpus_stats())
+#print(run_wsd(predict_word_sense="naive_sem_spreading"))
+#print(run_wsd(predict_word_sense="naive"))

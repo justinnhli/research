@@ -39,8 +39,6 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
                 element_pair_ratio = 1 + (1 / (len(self.activations[mem_id]) + 1))
         else:
             element_pair_ratio = 1
-
-
         self.activations[mem_id].append([time, 1, element_pair_ratio])
         self.last_activated_element = [mem_id, time]
         curr_act_candidates = list(self.ltm.knowledge.get(mem_id))
@@ -77,15 +75,13 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
         act_times_list = self.activations[mem_id]
         if act_times_list == [] or (len(act_times_list) == 1 and act_times_list[0][0] == 0):
             return None
-
         time_since_last_act_list = [[time - time_spreading_pair[0], time_spreading_pair[1]] for time_spreading_pair
                                     in act_times_list]
         base_act_sum_term = 0
         for retrieval_pair in range(len(time_since_last_act_list)):
             if (act_times_list[retrieval_pair][0] > 0):
                 base_act_sum_term = act_times_list[retrieval_pair][2] * (time_since_last_act_list[retrieval_pair][1] * (
-                        time_since_last_act_list[retrieval_pair][0] ** (-self.decay_parameter))) + base_act_sum_term
-
+                    time_since_last_act_list[retrieval_pair][0] ** (-self.decay_parameter))) + base_act_sum_term
         base_level_activation = self.constant_offset + math.log(base_act_sum_term)
         return base_level_activation
 

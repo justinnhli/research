@@ -1,4 +1,5 @@
 import math
+import nltk
 from research import NaiveDictLTM
 from uuid import uuid4 as uuid
 from research.data_structures import AVLTree
@@ -19,6 +20,7 @@ class sentenceLTM(NaiveDictLTM):
         self.activation = activation_cls(self)
         self.cooccurrent_elements = {}
         self.knowledge = {}
+
 
     def get_cooccurrence(self, word1, word2):
         """
@@ -83,8 +85,6 @@ class sentenceLTM(NaiveDictLTM):
             mem_id = uuid()
         if mem_id not in self.knowledge:
             self.knowledge[mem_id] = AVLTree()
-        else:
-            self.activation.simple_activate(mem_id, time, element_pair_ratio)
         for attr, val in kwargs.items():
             if isinstance(val, list):
                 for v in val:
@@ -94,5 +94,21 @@ class sentenceLTM(NaiveDictLTM):
             elif val not in self.knowledge:
                 self.knowledge[val] = AVLTree()
                 self.knowledge[mem_id].add(AttrVal(attr, val))
+        self.activation.simple_activate(mem_id=mem_id, time=time, element_pair_ratio=element_pair_ratio)
         return True
 
+    def get_activation(self, mem_id, time=0):
+        return self.activation.get_activation(mem_id, time)
+
+    def sense_query(self, word, time=0):
+        # Gets the activation for each sense of a word given and returns them in a list.
+        candidates = []
+        for mem_id in self.knowledge.keys():
+            if isinstance(mem_id[0], nltk.corpus.reader.wordnet.Lemma):
+                if mem_id[0] == word:
+                    candidates.append(mem_id)
+        candidate_dict = {}
+        for candidate in candidates:
+            print(candidate)
+            candidate_dict[candidate] = self.activation.get_activation(mem_id=candidate, time=time)
+        return candidate_dict

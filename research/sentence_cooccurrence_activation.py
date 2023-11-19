@@ -75,6 +75,7 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
             if (act_times_list[retrieval_pair][0] > 0):
                 base_act_sum_term = act_times_list[retrieval_pair][2] * (time_since_last_act_list[retrieval_pair][1] * (
                         time_since_last_act_list[retrieval_pair][0] ** (-self.decay_parameter))) + base_act_sum_term
-
+        #print(base_act_sum_term)
         base_level_activation = self.constant_offset + math.log(base_act_sum_term)
         return base_level_activation
+
