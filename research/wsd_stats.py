@@ -1,5 +1,4 @@
-from wsd_task import extract_sentences, create_sem_network, naive_predict_word_sense, senseless_predict_word_sense,\
-    frequency_predict_word_sense
+from wsd_task import extract_sentences, create_sem_network, get_corpus_accuracy, precompute_cooccurrences, precompute_word_sense
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -11,7 +10,7 @@ def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type
     """
     sentence_list, word_sense_dict = extract_sentences()
     sem_network = create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset)
-    guess_list = naive_predict_word_sense(sem_network, sentence_list, word_sense_dict)
+    guess_list = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)[0]
     word_freq_guesses = {}
     for word_tuple in guess_list.keys():
         if plot_type == "word":
@@ -37,155 +36,62 @@ def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type
     plt.show()
 
 
-def get_cooccurrence_plot(plot_type="word-word", prediction_type="naive", activation_base=2, decay_parameter=0.05,
-                          constant_offset=0):
+def get_cooccurrence_plot(guess_type, plot_type):
+    # plot types are # correct over all senses of target word based on (1) other word in sentence sense and (2) other
+    #   word in sentence word
+    # plot type can be other_word or other_sense
     sentence_list, word_sense_dict = extract_sentences()
-    if prediction_type == "naive":
-        guess_list = naive_predict_word_sense(sentence_list, word_sense_dict)
-    elif prediction_type == "frequency":
-        guess_list = frequency_predict_word_sense(sentence_list, word_sense_dict)
-    elif prediction_type == "senseless":
-        #sem_network = create_sem_network(sentence_list, activation_base=activation_base,
-                                         #decay_parameter=decay_parameter, constant_offset=constant_offset)
-        guess_list = senseless_predict_word_sense(sentence_list, word_sense_dict)
+    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(sentence_list)
+    word_counts, sense_counts = precompute_word_sense(sentence_list)
+    if guess_type == "context_word":
+        accuracy_dict = get_corpus_accuracy("context_word", sentence_list, word_sense_dict)
+    elif guess_type == "context_sense":
+        accuracy_dict = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)
+    elif guess_type == "frequency":
+        accuracy_dict = get_corpus_accuracy("frequency", sentence_list, word_sense_dict)
     else:
         return False
-    #guess_list = naive_predict_word_sense(sentence_list, word_sense_dict)
-    word_freq_guesses = {}
-    for word_tuple in guess_list.keys():
-        if plot_type == "word-word" or plot_type == "word-sense":
-            word = word_tuple[0].name()
-        else:
-            word = word_tuple
-        if word not in word_freq_guesses.keys():
-            word_freq_guesses[word] = []
-        word_freq_guesses[word].extend(guess_list[word_tuple])
-    # Just do target = word, and context = word
-    if plot_type == "word-sense":
-        pair_counts = get_word_sense_pair_counts(sentence_list)
-        abs_counts = get_absolute_sense_counts(sentence_list)
-    elif plot_type == "sense-word":
-        pair_counts = get_word_sense_pair_counts(sentence_list)
-        abs_counts = get_absolute_word_counts(sentence_list)
-    elif plot_type == "sense-sense":
-        pair_counts = get_sense_pair_counts(sentence_list)
-        abs_counts = get_absolute_sense_counts(sentence_list)
-    else:
-        pair_counts = get_word_pair_counts(sentence_list)
-        abs_counts = get_absolute_word_counts(sentence_list)
-    word_percent_correct = []
-    cooccur_ratios = []
+    y_accuracies = []
+    x_cooccurrences = []
     for sentence in sentence_list:
-        for word_index in range(len(sentence)):
-            word = sentence[word_index]
-            ratio = 0
-            for context_word_index in range(word_index + 1, len(sentence)):
-                context_word = sentence[context_word_index]
-                # FIXME gotta make sure it pairs things up correctly depending on the case considered
-                if plot_type == "word-sense":
-                    word_pair = (word[0].name(), context_word)
-                    ratio += math.log(pair_counts[word_pair] / abs_counts[context_word])
-                elif plot_type == "sense-word":
-                    word_pair = (context_word[0].name(), word)
-                    ratio += math.log(pair_counts[word_pair] / abs_counts[context_word[0].name()])
-                elif plot_type == "sense-sense":
-                    if word[0] < context_word[0] or (word[0] == context_word[0] and word[1] <= context_word[1]):
-                        word_pair = (word, context_word)
+        for target_index in range(len(sentence)):
+            target_sense = sentence[target_index]
+            target_word = target_sense[0].name()
+            cumulative_cooccurrrence_ratio = 0
+            for other_index in range(len(sentence)):
+                if other_index != target_index:
+                    other_sense = sentence[other_index]
+                    other_word = other_sense[0].name()
+                    if plot_type == "other_word":
+                        cumulative_cooccurrrence_ratio += math.log(word_word_cooccurrences[(target_word, other_word)]/ word_counts[target_word])
+                    elif plot_type == "other_sense":
+                        cumulative_cooccurrrence_ratio += math.log(sense_word_cooccurrences[(other_sense, target_word)]/ word_counts[target_word])
                     else:
-                        word_pair = (context_word, word)
-                    ratio += math.log(pair_counts[word_pair] / abs_counts[context_word])
-                else:
-                    if word[0] < context_word[0] or (word[0] == context_word[0] and word[1] <= context_word[1]):
-                        word_pair = (word[0].name(), context_word[0].name())
-                    else:
-                        word_pair = (context_word[0].name(), word[0].name())
-                    ratio += math.log(pair_counts[word_pair] / abs_counts[context_word[0].name()])
-            cooccur_ratios.append(ratio)
-            if plot_type == "word-word" or plot_type == "word-sense":
-                word_percent_correct.append(
-                    word_freq_guesses[word[0].name()].count(True) / len(word_freq_guesses[word[0].name()]))
-            else:
-                word_percent_correct.append(word_freq_guesses[word].count(True) / len(word_freq_guesses[word]))
-    plt.scatter(cooccur_ratios, word_percent_correct)
-    if plot_type == "word-sense":
-        plt.xlabel("Cooccurrence Ratios (Word-Sense)")
-    elif plot_type == "sense-word":
-        plt.xlabel("Cooccurrence Ratios (Sense-Word)")
-    elif plot_type == "sense-sense":
-        plt.xlabel("Cooccurrence Ratios (Sense-Sense)")
+                        raise ValueError(plot_type)
+                #Make x the number of times other words in sentence cooccur with word we are interested in
+                target_word_accuracy_list = []
+                for sense in word_sense_dict[target_word]:
+                    target_word_accuracy_list.append(accuracy_dict[sense])
+                flat_target_accuracy_list = sum(target_word_accuracy_list, [])
+                y_accuracies.append(flat_target_accuracy_list.count(True) / len(flat_target_accuracy_list))
+                x_cooccurrences.append(cumulative_cooccurrrence_ratio)
+    plt.scatter(x_cooccurrences, y_accuracies)
+    if guess_type == "context_word":
+        plt.title("Accuracy vs. Cooccurrence (Context Word)")
+    elif guess_type == "context_sense":
+        plt.title("Accuracy vs. Cooccurrence (Context Sense)")
+    elif guess_type == "frequency":
+        plt.title("Accuracy vs. Cooccurrence (Frequency)")
     else:
-        plt.xlabel("Cooccurrence Ratios (Word-Word)")
-    plt.ylabel("Percentage Correct")
+        raise ValueError(guess_type)
+    if plot_type == "other_word":
+        plt.xlabel("Word Cooccurrence")
+    elif plot_type == "other_sense":
+        plt.xlabel("Sense Cooccurrence")
+    else:
+        raise ValueError(plot_type)
+    plt.ylabel("Target Word Accuracy")
     plt.show()
-
-
-def get_absolute_word_counts(sentence_list):
-    absolute_word_counts = {}
-    for sentence in sentence_list:
-        for word in sentence:
-            if word[0].name() not in absolute_word_counts.keys():
-                absolute_word_counts[word[0].name()] = 0
-            absolute_word_counts[word[0].name()] += 1
-    return absolute_word_counts
-
-def get_absolute_sense_counts(sentence_list):
-    absolute_sense_counts = {}
-    for sentence in sentence_list:
-        for word in sentence:
-            if word not in absolute_sense_counts.keys():
-                absolute_sense_counts[word] = 0
-            absolute_sense_counts[word] += 1
-    return absolute_sense_counts
-
-
-
-def get_word_pair_counts(sentence_list):
-    word_pair_counts = {}
-    for sentence in sentence_list:
-        for word1_index in range(len(sentence)):
-            for word2_index in range(word1_index + 1, len(sentence)):
-                word1 = sentence[word1_index]
-                word2 = sentence[word2_index]
-                if word1[0] < word2[0] or (word1[0] == word2[0] and word1[1] <= word2[1]):
-                    word_key = (word1[0].name(), word2[0].name())
-                else:
-                    word_key = (word2[0].name(), word1[0].name())
-                if word_key not in word_pair_counts.keys():
-                    word_pair_counts[word_key] = 0
-                word_pair_counts[word_key] += 1
-    return(word_pair_counts)
-
-
-
-def get_sense_pair_counts(sentence_list):
-    sense_pair_counts = {}
-    for sentence in sentence_list:
-        for word1_index in range(len(sentence)):
-            for word2_index in range(word1_index + 1, len(sentence)):
-                word1 = sentence[word1_index]
-                word2 = sentence[word2_index]
-                if word1[0] < word2[0] or (word1[0] == word2[0] and word1[1] <= word2[1]):
-                    sense_key = (word1, word2)
-                else:
-                    sense_key = (word2, word1)
-                if sense_key not in sense_pair_counts.keys():
-                    sense_pair_counts[sense_key] = 0
-                sense_pair_counts[sense_key] += 1
-    return sense_pair_counts
-
-def get_word_sense_pair_counts(sentence_list):
-    word_sense_pair_counts = {}
-    for sentence in sentence_list:
-        for word1_index in range(len(sentence)):
-            for word2_index in range(len(sentence)):
-                if word1_index != word2_index:
-                    word1 = sentence[word1_index]
-                    word2 = sentence[word2_index]
-                    word_sense_key = (word1[0].name(), word2)
-                    if word_sense_key not in word_sense_pair_counts.keys():
-                        word_sense_pair_counts[word_sense_key] = 0
-                    word_sense_pair_counts[word_sense_key] += 1
-    return word_sense_pair_counts
 
 
 def get_corpus_stats():
@@ -240,7 +146,8 @@ def get_corpus_stats():
 
 # Testing...
 #get_simple_plot(2, 0.05, 0, plot_type="sense")
-get_cooccurrence_plot(plot_type="word-word", prediction_type="naive")
-get_cooccurrence_plot(plot_type="word-sense", prediction_type="naive")
-get_cooccurrence_plot(plot_type="sense-word", prediction_type="naive")
-get_cooccurrence_plot(plot_type="sense-sense", prediction_type="naive")
+get_cooccurrence_plot(plot_type="other_word", guess_type="context_sense")
+get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
+
+get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
+get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
