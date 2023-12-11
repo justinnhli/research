@@ -8,7 +8,7 @@ from nltk.corpus import wordnet
 from nltk.corpus import semcor
 
 
-def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1):
+def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1):
     """
     Runs the word sense disambiguation task over the Semcor corpus.
     Parameters:
@@ -21,7 +21,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
     Returns:
         (float): The raw percent accuracy of the guesses of context_sense_predict_word_sense.
     """
-    sentence_list, word_sense_dict = extract_sentences()
+    sentence_list, word_sense_dict = extract_sentences(num_sentences=num_sentences)
     if guess_method == "context_word":
         # The guess_dict is a dictionary with keys the sense of each word in the corpus and values a list of boolean
         # values indicating whether the sense was guessed correctly each time it appears in the corpus.
@@ -53,7 +53,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
     return accuracy
 
 
-def extract_sentences():
+def extract_sentences(num_sentences = -1):
     """
     Runs the word sense disambiguation task.
     Parameters:
@@ -64,7 +64,10 @@ def extract_sentences():
     """
     sentence_list = []
     word_sense_dict = defaultdict(set)
-    semcor_sents = semcor.tagged_sents(tag="sem")
+    if num_sentences == -1:
+        semcor_sents = semcor.tagged_sents(tag="sem")
+    else:
+        semcor_sents = semcor.tagged_sents(tag="sem")[0:num_sentences]
     for sentence in semcor_sents:
         temp_word_sense_dict = defaultdict(set)
         sentence_word_list = []
@@ -81,7 +84,6 @@ def extract_sentences():
                 word_sense_dict[word] |= senses
             sentence_list.append(sentence_word_list)
     return sentence_list, word_sense_dict
-
 
 def create_sem_network(sentence_list, spreading=True, time=False, activation_base=2, decay_parameter=0.05,
                        constant_offset=0):
@@ -390,4 +392,4 @@ def dummy_predict_word_sense(sentence_list):
 # Testing...
 #print(run_wsd(guess_method="context_word"))
 #print(run_wsd(guess_method="context_sense"))
-#print(run_wsd(guess_method="frequency"))
+print(run_wsd(guess_method="naive_sem_spreading", iterations=3, num_sentences=300))

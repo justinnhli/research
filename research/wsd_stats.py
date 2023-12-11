@@ -1,6 +1,10 @@
-from wsd_task import extract_sentences, create_sem_network, get_corpus_accuracy, precompute_cooccurrences, precompute_word_sense
+from wsd_task import *
 import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 import numpy as np
+from collections import defaultdict
+import statistics
 import math
 
 
@@ -63,9 +67,9 @@ def get_cooccurrence_plot(guess_type, plot_type):
                     other_sense = sentence[other_index]
                     other_word = other_sense[0].name()
                     if plot_type == "other_word":
-                        cumulative_cooccurrrence_ratio += math.log(word_word_cooccurrences[(target_word, other_word)]/ word_counts[target_word])
+                        cumulative_cooccurrrence_ratio += math.log(word_word_cooccurrences[(target_word, other_word)]/word_counts[target_word])
                     elif plot_type == "other_sense":
-                        cumulative_cooccurrrence_ratio += math.log(sense_word_cooccurrences[(other_sense, target_word)]/ word_counts[target_word])
+                        cumulative_cooccurrrence_ratio += math.log(sense_word_cooccurrences[(other_sense, target_word)]/word_counts[target_word])
                     else:
                         raise ValueError(plot_type)
                 #Make x the number of times other words in sentence cooccur with word we are interested in
@@ -92,6 +96,88 @@ def get_cooccurrence_plot(guess_type, plot_type):
         raise ValueError(plot_type)
     plt.ylabel("Target Word Accuracy")
     plt.show()
+
+
+def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_colors=True, error=False):
+    sentence_list, word_sense_dict = extract_sentences()
+    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
+        sentence_list)
+    word_counts, sense_counts = precompute_word_sense(sentence_list)
+    target_accuracy_list = []
+    target_cooc_list = []
+    for sentence in sentence_list:
+        for target_index in range(len(sentence)):
+            target_sense = sentence[target_index]
+            target_word = target_sense[0].name()
+            if guess_type == "context_word":
+                guess = guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense_word_cooccurrences, word_word_cooccurrences)
+            elif guess_type == "context_sense":
+                guess = guess_word_sense_context_sense(target_index, sentence, word_sense_dict, sense_word_cooccurrences, sense_sense_cooccurrences)
+            elif guess_type == "frequency":
+                guess = guess_word_sense_frequency(target_index, sentence, word_sense_dict, sense_frequencies)
+            else:
+                raise ValueError(guess_type)
+            if guess == target_sense:
+                target_accuracy_list.append(1)
+            else:
+                target_accuracy_list.append(0)
+            temp_cooccurrence = 0
+            for other_index in range(len(sentence)):
+                if other_index == target_index:
+                    continue
+                other_sense = sentence[other_index]
+                other_word = other_sense[0].name()
+                if plot_type == "other_word":
+                    temp_cooccurrence += math.log(
+                            word_word_cooccurrences[(target_word, other_word)] / word_counts[target_word])
+                elif plot_type == "other_sense":
+                    temp_cooccurrence += math.log(
+                        sense_word_cooccurrences[(other_sense, target_word)] / word_counts[target_word])
+                else:
+                    raise ValueError(plot_type)
+            target_cooc_list.append(temp_cooccurrence)
+    max_bin_width = math.ceil(max(target_cooc_list)/bin_width) * bin_width
+    min_bin_width = math.floor(min(target_cooc_list)/bin_width) * bin_width
+    x_cooccurrences = []
+    y_accuracies = []
+    y_err = []
+    z_binsizes = []
+    for bin_index in range(min_bin_width, max_bin_width, bin_width):
+        bin_values = [target_accuracy_list[ii] for ii in range(len(target_cooc_list)) if target_cooc_list[ii] >= bin_index and target_cooc_list[ii] < bin_index + bin_width]
+        if len(bin_values) > 0:
+            x_cooccurrences.append(bin_index + (bin_width / 2))
+            y_accuracies.append(statistics.mean(bin_values))
+            z_binsizes.append(math.log(len(bin_values)))
+            if len(bin_values) > 1:
+                y_err.append(statistics.stdev(bin_values))
+            else:
+                y_err.append(0)
+    #plt.scatter(x_cooccurrences, y_accuracies)
+    fig, ax = plt.subplots(figsize=(9, 6))
+    scatter = ax.scatter(x_cooccurrences, y_accuracies, c=z_binsizes, s=80)
+    if bin_colors:
+        legend = ax.legend(*scatter.legend_elements(), loc="lower right",
+                       fontsize='x-small', title=" Log Bin Size")
+        ax.add_artist(legend)
+    if error:
+        ax.errorbar(x_cooccurrences, y_accuracies, yerr=y_err, capsize=1, fmt='none')
+    if guess_type == "context_word":
+        ax.set_title("Accuracy vs. Bin Cooccurrence (Context Word)")
+    elif guess_type == "context_sense":
+        ax.set_title("Accuracy vs. Bin Cooccurrence (Context Sense)")
+    elif guess_type == "frequency":
+        ax.set_title("Accuracy vs. Bin Cooccurrence (Frequency)")
+    else:
+        raise ValueError(guess_type)
+    if plot_type == "other_word":
+        ax.set_xlabel("Word Cooccurrence (bin = " + str(bin_width) + ")")
+    elif plot_type == "other_sense":
+        ax.set_xlabel("Sense Cooccurrence (bin = " + str(bin_width) + ")")
+    else:
+        raise ValueError(plot_type)
+    ax.set_ylabel("Avg. Binned Target Word Accuracy")
+    plt.show()
+
 
 
 def get_corpus_stats():
@@ -146,8 +232,10 @@ def get_corpus_stats():
 
 # Testing...
 #get_simple_plot(2, 0.05, 0, plot_type="sense")
-get_cooccurrence_plot(plot_type="other_word", guess_type="context_sense")
-get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
+#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=1)
+#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=20)
+get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=50)
+#get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
 
-get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
-get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
+#get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
+#get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
