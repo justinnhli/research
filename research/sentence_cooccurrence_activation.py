@@ -20,11 +20,13 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
         self.activation_base = activation_base
         self.decay_parameter = decay_parameter
 
-    def simple_activate(self, mem_id, element_pair_ratio=1, time=0):
+    def simple_activate(self, mem_id, spread_depth=-1, element_pair_ratio=1, time=0):
         """
         Activates a given element and its neighbors via spreading activation.
         Parameters:
             mem_id (any): The ID of the desired element.
+            spread_depth (int): The depth of connections to activate when a given element is activated. Serves mainly to
+                allow the same setup for non-spreading and spreading scenarios.
             element_pair_ratio (float): The ratio of the number of times a pair of elements have cooccurred over the number
                 of times the element of interest has been activated. (optional)
             time (float): The time of retrieval (for activation) (optional)
@@ -34,27 +36,30 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
         self.activations[mem_id].append([time, 1, element_pair_ratio])
         prev_act_candidates = set()
         curr_act_candidates = list(self.ltm.knowledge.get(mem_id))
-        graph_units = 1
-        while curr_act_candidates != []:
-            next_act_candidates = []
-            for element in curr_act_candidates:
-                if element != []:
-                    connection = list(element)[1]
-                    self.activations[connection].append([time, self.activation_base ** (-graph_units), 1])
-                    new_links = list(self.ltm.knowledge.get(connection))
-                    for link in new_links:
-                        if type(link) == list:
-                            for item in link:
-                                if item not in next_act_candidates:
-                                    next_act_candidates.append(item)
-                        else:
-                            if link not in next_act_candidates:
-                                next_act_candidates.append(link)
-            graph_units = graph_units + 1
-            prev_act_candidates.update(curr_act_candidates)
-            curr_act_candidates = [x for x in next_act_candidates if x not in prev_act_candidates]
-            if curr_act_candidates == [] or curr_act_candidates is None:
-                break
+        if spread_depth != 0:
+            graph_units = 1
+            while curr_act_candidates:
+                next_act_candidates = []
+                for element in curr_act_candidates:
+                    if element:
+                        connection = list(element)[1]
+                        self.activations[connection].append([time, self.activation_base ** (-graph_units), 1])
+                        new_links = list(self.ltm.knowledge.get(connection))
+                        for link in new_links:
+                            if type(link) == list:
+                                for item in link:
+                                    if item not in next_act_candidates:
+                                        next_act_candidates.append(item)
+                            else:
+                                if link not in next_act_candidates:
+                                    next_act_candidates.append(link)
+                if graph_units == spread_depth:
+                    break
+                graph_units = graph_units + 1
+                prev_act_candidates.update(curr_act_candidates)
+                curr_act_candidates = [x for x in next_act_candidates if x not in prev_act_candidates]
+                if curr_act_candidates == [] or curr_act_candidates is None:
+                    break
         return True
 
     def get_activation(self, mem_id, time):
@@ -75,7 +80,6 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
             if (act_times_list[retrieval_pair][0] > 0):
                 base_act_sum_term = act_times_list[retrieval_pair][2] * (time_since_last_act_list[retrieval_pair][1] * (
                         time_since_last_act_list[retrieval_pair][0] ** (-self.decay_parameter))) + base_act_sum_term
-        #print(base_act_sum_term)
         base_level_activation = self.constant_offset + math.log(base_act_sum_term)
         return base_level_activation
 

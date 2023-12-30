@@ -30,6 +30,7 @@ def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type
         word_appearances.append(len(word_freq_guesses[word]))
         word_percent_correct.append(word_freq_guesses[word].count(True) / len(word_freq_guesses[word]))
     plt.scatter(word_appearances, word_percent_correct)
+    plt.ylim([0, max(word_percent_correct)])
     if plot_type == "word":
         xlab = "Word Appearances"
     elif plot_type == "sense":
@@ -92,6 +93,7 @@ def get_cooccurrence_plot(guess_type, plot_type, activation_base=2, decay_parame
                 y_accuracies.append(flat_target_accuracy_list.count(True) / len(flat_target_accuracy_list))
                 x_cooccurrences.append(cumulative_cooccurrrence_ratio)
     plt.scatter(x_cooccurrences, y_accuracies)
+    plt.ylim([0, y_accuracies])
     if guess_type == "context_word":
         plt.title("Accuracy vs. Cooccurrence (Context Word)")
     elif guess_type == "context_sense":
@@ -182,6 +184,7 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
     # plt.scatter(x_cooccurrences, y_accuracies)
     fig, ax = plt.subplots(figsize=(9, 6))
     scatter = ax.scatter(x_cooccurrences, y_accuracies, c=z_binsizes, s=80)
+    ax.ylim([0, max(y_accuracies)])
     if bin_colors:
         legend = ax.legend(*scatter.legend_elements(), loc=3,
                            fontsize='x-small', title=" Log Bin Size")
@@ -212,7 +215,7 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
     else:
         plt.show()
 
-def get_iteration_graph(guess_type, num_sentences, activation_base=2, decay_parameter=0.05, constant_offset=0):
+def get_iteration_graph(guess_type, num_sentences, num_iterations, activation_base=2, decay_parameter=0.05, constant_offset=0):
     sentence_list, word_sense_dict = extract_sentences(num_sentences=num_sentences)
     word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
         sentence_list)
@@ -225,7 +228,32 @@ def get_iteration_graph(guess_type, num_sentences, activation_base=2, decay_para
         sem_network, timer = create_sem_network(sentence_list, spreading=True, time=True,
                                                 activation_base=activation_base,
                                                 decay_parameter=decay_parameter, constant_offset=constant_offset)
-
+    else:
+        raise ValueError(guess_type)
+    iterations = range(num_iterations)
+    corpus_accuracies = []
+    for iter in iterations:
+        guess_dict, sem_network, timer = get_corpus_accuracy("naive_semantic",
+                                         sentence_list=sentence_list,
+                                         word_sense_dict=word_sense_dict,
+                                         input_sem_network=sem_network,
+                                         input_timer=timer,
+                                         return_network_timer=True)
+        corpus_guesses = sum(guess_dict.values(), [])
+        accuracy = corpus_guesses.count(True) / len(corpus_guesses)
+        corpus_accuracies.append(accuracy)
+    fig, ax = plt.subplots(figsize=(9, 6))
+    scatter = ax.scatter(iterations, corpus_accuracies,  s=80)
+    ax.ylim([0, max(corpus_accuracies)])
+    if guess_type == "naive_semantic":
+        ax.set_title("Accuracy vs. Iterations (Semantic-No Spreading)")
+    elif guess_type == "naive_semantic_spreading":
+        ax.set_title("Accuracy vs. Iterations (Semantic - Spreading)")
+    else:
+        raise ValueError(guess_type)
+    ax.set_xlabel("Iterations")
+    ax.set_ylabel("Corpus Accuracy")
+    plt.show()
 
 def get_corpus_stats():
     """
@@ -294,3 +322,4 @@ def get_corpus_stats():
                                    #save_plot="sem_word_20_500.png")
 # get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
+get_iteration_graph("naive_semantic_spreading", num_iterations=10, num_sentences=2000)

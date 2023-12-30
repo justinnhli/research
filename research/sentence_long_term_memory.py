@@ -69,8 +69,7 @@ class sentenceLTM(NaiveDictLTM):
         self.store(word1, time, word1_ratio)
         self.store(word2, time, word2_ratio)
 
-
-    def store(self, mem_id=None, time=0, element_pair_ratio = 1, **kwargs): # noqa: D102
+    def store(self, mem_id=None, time=0, element_pair_ratio=1, spread_depth=-1, **kwargs):
         """
         Stores (or activates) an element added to the network.
         Parameters:
@@ -78,6 +77,8 @@ class sentenceLTM(NaiveDictLTM):
             time (float): The time of retrieval (for activation). (optional)
             element_pair_ratio (float): The ratio of the number of times a pair of elements have cooccurred over the number
                 of times the element of interest has been activated. (optional)
+            spread_depth (int): How deep to spread activation after an element has been activated (optional). Default is
+                spread_depth = -1: full spreading to all connected nodes.
         Returns:
             (Boolean): True if completed.
         """
@@ -94,8 +95,10 @@ class sentenceLTM(NaiveDictLTM):
             elif val not in self.knowledge:
                 self.knowledge[val] = AVLTree()
                 self.knowledge[mem_id].add(AttrVal(attr, val))
-        self.activation.simple_activate(mem_id=mem_id, time=time, element_pair_ratio=element_pair_ratio)
+        self.activation.simple_activate(mem_id=mem_id, time=time, element_pair_ratio=element_pair_ratio,
+                                        spread_depth=spread_depth)
         return True
+
 
     def get_activation(self, mem_id, time=0):
         return self.activation.get_activation(mem_id, time)
@@ -109,6 +112,5 @@ class sentenceLTM(NaiveDictLTM):
                     candidates.append(mem_id)
         candidate_dict = {}
         for candidate in candidates:
-            print(candidate)
             candidate_dict[candidate] = self.activation.get_activation(mem_id=candidate, time=time)
         return candidate_dict
