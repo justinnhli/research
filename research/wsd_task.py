@@ -1,10 +1,10 @@
 import random
 from collections import defaultdict
-import nltk
+#import nltk
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
-from nltk.corpus import semcor
-import pandas as pd
+#from nltk.corpus import semcor
+#import pandas as pd
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
