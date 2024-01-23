@@ -30,7 +30,7 @@ def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type
         word_appearances.append(len(word_freq_guesses[word]))
         word_percent_correct.append(word_freq_guesses[word].count(True) / len(word_freq_guesses[word]))
     plt.scatter(word_appearances, word_percent_correct)
-    plt.ylim([0, max(word_percent_correct)])
+    plt.ylim([0, 1.1])
     if plot_type == "word":
         xlab = "Word Appearances"
     elif plot_type == "sense":
@@ -93,7 +93,7 @@ def get_cooccurrence_plot(guess_type, plot_type, activation_base=2, decay_parame
                 y_accuracies.append(flat_target_accuracy_list.count(True) / len(flat_target_accuracy_list))
                 x_cooccurrences.append(cumulative_cooccurrrence_ratio)
     plt.scatter(x_cooccurrences, y_accuracies)
-    plt.ylim([0, y_accuracies])
+    plt.ylim([0, 1.1])
     if guess_type == "context_word":
         plt.title("Accuracy vs. Cooccurrence (Context Word)")
     elif guess_type == "context_sense":
@@ -184,7 +184,7 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
     # plt.scatter(x_cooccurrences, y_accuracies)
     fig, ax = plt.subplots(figsize=(9, 6))
     scatter = ax.scatter(x_cooccurrences, y_accuracies, c=z_binsizes, s=80)
-    ax.ylim([0, max(y_accuracies)])
+    plt.ylim([0, 1.1])
     if bin_colors:
         legend = ax.legend(*scatter.legend_elements(), loc=3,
                            fontsize='x-small', title=" Log Bin Size")
@@ -244,7 +244,7 @@ def get_iteration_graph(guess_type, num_sentences, num_iterations, activation_ba
         corpus_accuracies.append(accuracy)
     fig, ax = plt.subplots(figsize=(9, 6))
     scatter = ax.scatter(iterations, corpus_accuracies,  s=80)
-    ax.ylim([0, max(corpus_accuracies)])
+    plt.ylim([0, 1.1])
     if guess_type == "naive_semantic":
         ax.set_title("Accuracy vs. Iterations (Semantic-No Spreading)")
     elif guess_type == "naive_semantic_spreading":
@@ -314,12 +314,10 @@ def get_corpus_stats():
 
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=5, num_sentences=500,
                                    #save_plot="sem_sense_5_500.png")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=5, num_sentences=500,
-                                   #save_plot="sem_word_5_500.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
                                    #save_plot="sem_sense_20_500.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
                                    #save_plot="sem_word_20_500.png")
 # get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
-get_iteration_graph("naive_semantic_spreading", num_iterations=10, num_sentences=2000)
+#get_iteration_graph("naive_semantic_spreading", num_iterations=10, num_sentences=2000)

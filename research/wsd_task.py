@@ -1,10 +1,10 @@
 import random
 from collections import defaultdict
-#import nltk
+import nltk
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
-#from nltk.corpus import semcor
-#import pandas as pd
+from nltk.corpus import semcor
+import pandas as pd
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
@@ -470,22 +470,22 @@ def dummy_predict_word_sense(sentence_list):
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-#sentence_list, word_sense_dict = extract_sentences(200)
-#clear_network = "word"
-#guess_method = "naive_semantic"
+sentence_list, word_sense_dict = extract_sentences(200)
+clear_network = "word"
+guess_method = "naive_semantic"
 print("Semantic: No Spreading, Clear After Word")
-#no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-#no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns = ["Word", "Guess"])
-#print(no_spread_df)
+no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
+no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns = ["Word", "Guess"])
+print(no_spread_df)
 
-#print()
-#print()
+print()
+print()
 
-#guess_method = "naive_semantic_spreading"
+guess_method = "naive_semantic_spreading"
 print("Semantic: Spreading, Clear After Word")
-#spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-#spread_df = pd.DataFrame(list(spread_dict.items()), columns = ["Word", "Guess"])
-#print(spread_df)
+spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
+spread_df = pd.DataFrame(list(spread_dict.items()), columns = ["Word", "Guess"])
+print(spread_df)
 
 
 
