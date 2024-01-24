@@ -7,9 +7,9 @@ from uuid import uuid4 as uuid
 
 from networkx import MultiDiGraph
 
-from .data_structures import AVLTree
-from .rl_environments import AttrVal
-from .knowledge_base import KnowledgeSource
+from data_structures import AVLTree
+from rl_environments import AttrVal
+from knowledge_base import KnowledgeSource
 
 
 class ActivationDynamics:

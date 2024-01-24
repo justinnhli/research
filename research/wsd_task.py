@@ -90,12 +90,14 @@ def extract_sentences(num_sentences=-1):
             if not isinstance(item.label(), nltk.corpus.reader.wordnet.Lemma):
                 continue
             corpus_word = (item.label(), item.label().synset())
+            print(corpus_word)
             sentence_word_list.append(corpus_word)
             temp_word_sense_dict[corpus_word[0].name()].add(corpus_word)
         if len(temp_word_sense_dict) > 1:
             for word, senses in temp_word_sense_dict.items():
                 word_sense_dict[word] |= senses
             sentence_list.append(sentence_word_list)
+            print(len(sentence_list))
     return sentence_list, word_sense_dict
 
 

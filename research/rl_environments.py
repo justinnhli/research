@@ -3,8 +3,8 @@
 from collections import namedtuple
 from typing import Any, Tuple, List
 
-from .randommixin import RandomMixin
-from .data_structures import AVLTree
+from randommixin import RandomMixin
+from data_structures import AVLTree
 
 
 class Environment:
