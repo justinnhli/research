@@ -292,37 +292,25 @@ class AVLTree(Mapping[Any, Any]):
                 node.left, value = _del_helper(self, node.left, key)
             elif node.key < key:
                 node.right, value = _del_helper(self, node.right, key)
+            elif node.left is not None:
+                node.key = node.prev.key
+                node.value = node.prev.value
+                node.left, value = _del_helper(self, node.left, node.prev.key)
+            elif node.right is not None:
+                node.key = node.next.key
+                node.value = node.next.value
+                node.right, value = _del_helper(self, node.right, node.next.key)
             else:
-                if node.left is None and node.right is None:
-                    self.size -= 1
-                    if node.prev is not None:
-                        node.prev.next = node.next
-                    else:
-                        self.head = node.next
-                    if node.next is not None:
-                        node.next.prev = node.prev
-                    else:
-                        self.tail = node.prev
-                    return None, node.value
-                replacement = node
-                if node.left is not None:
-                    replacement = node.left
-                    while replacement.right is not None:
-                        replacement = replacement.right
-                    replacement_key = replacement.key
-                    replacement_value = replacement.value
-                    node.left, value = _del_helper(self, node.left, replacement.key)
-                elif node.right is not None:
-                    replacement = node.right
-                    while replacement.left is not None:
-                        replacement = replacement.left
-                    replacement_key = replacement.key
-                    replacement_value = replacement.value
-                    node.right, value = _del_helper(self, node.right, replacement.key)
+                self.size -= 1
+                if node.prev is not None:
+                    node.prev.next = node.next
                 else:
-                    raise KeyError('this should not happen')
-                node.key = replacement_key
-                node.value = replacement_value
+                    self.head = node.next
+                if node.next is not None:
+                    node.next.prev = node.prev
+                else:
+                    self.tail = node.prev
+                return None, node.value
             return self._balance(node), value
 
         self.root, value = _del_helper(self, self.root, key)
