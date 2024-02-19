@@ -1,10 +1,16 @@
 import random
 from collections import defaultdict
-import nltk
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
+import nltk
+from wsd_nltk_importer import*
 from nltk.corpus import semcor
+from nltk.corpus import wordnet as wn_corpus
+from nltk.stem import wordnet as wn
 import pandas as pd
+import json
+
+
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
             clear_network=True):
@@ -64,40 +70,6 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
     return accuracy
 
 
-def extract_sentences(num_sentences=-1):
-    """
-    Runs the word sense disambiguation task.
-    Parameters:
-        num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
-            from the corpus are used and if n=-1, all sentences from the corpus are used.
-    Returns:
-        list: sentence_list (list of all sentences or the first n sentences of the corpus), word_sense_dict (dictionary with the possible senses of
-            each word in the corpus)
-    """
-    sentence_list = []
-    word_sense_dict = defaultdict(set)
-    if num_sentences == -1:
-        semcor_sents = semcor.tagged_sents(tag="sem")
-    else:
-        semcor_sents = semcor.tagged_sents(tag="sem")[0:num_sentences]
-    for sentence in semcor_sents:
-        temp_word_sense_dict = defaultdict(set)
-        sentence_word_list = []
-        for item in sentence:
-            if not isinstance(item, nltk.Tree):
-                continue
-            if not isinstance(item.label(), nltk.corpus.reader.wordnet.Lemma):
-                continue
-            corpus_word = (item.label(), item.label().synset())
-            print(corpus_word)
-            sentence_word_list.append(corpus_word)
-            temp_word_sense_dict[corpus_word[0].name()].add(corpus_word)
-        if len(temp_word_sense_dict) > 1:
-            for word, senses in temp_word_sense_dict.items():
-                word_sense_dict[word] |= senses
-            sentence_list.append(sentence_word_list)
-            print(len(sentence_list))
-    return sentence_list, word_sense_dict
 
 
 def create_sem_network(sentence_list, spreading=True, activation_base=2, decay_parameter=0.05, constant_offset=0):
@@ -137,8 +109,7 @@ def create_sem_network(sentence_list, spreading=True, activation_base=2, decay_p
                                 syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms(),
                                 syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms(),
                                 syn.attributes(), syn.entailments(), syn.causes(), syn.also_sees(),
-                                syn.verb_groups(),
-                                syn.similar_tos()]
+                                syn.verb_groups(), syn.similar_tos()]
             lemma_relations = []
             for ii in range(len(synset_relations)):
                 lemma_relations.append([])
@@ -180,7 +151,8 @@ def precompute_word_sense(sentence_list):
     sense_counts = defaultdict(int)
     for sentence in sentence_list:
         for sense in sentence:
-            word_counts[sense[0].name()] += 1
+            #word_counts[sense[0].name()] += 1
+            word_counts[sense[0]] += 1
             sense_counts[sense] += 1
     return word_counts, sense_counts
 
@@ -204,12 +176,14 @@ def precompute_cooccurrences(sentence_list):
     for sentence in sentence_list:
         for target_index in range(len(sentence)):
             target_sense = sentence[target_index]
-            target_word = target_sense[0].name()
+            #target_word = target_sense[0].name()
+            target_word = target_sense[0]
             sense_frequencies[target_sense] += 1
             for other_index in range(len(sentence)):
                 if target_index != other_index:
                     other_sense = sentence[other_index]
-                    other_word = other_sense[0].name()
+                    #other_word = other_sense[0].name()
+                    other_word = other_sense[0]
                     word_word_cooccurrences[(target_word, other_word)] += 1
                     sense_word_cooccurrences[(target_sense, other_word)] += 1
                     sense_sense_cooccurrences[(target_sense, other_sense)] += 1
@@ -232,12 +206,15 @@ def guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense
     max_score = -float("inf")
     max_sense = None
     target_sense = sentence[target_index]
-    target_word = target_sense[0].name()
-    for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    #target_word = target_sense[0].name()
+    target_word = target_sense[0]
+    #for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    for target_sense_candidate in word_sense_dict[target_sense[0]]:
         aggregate = 0
         for other_index in range(len(sentence)):
             if other_index != target_index:
-                other_word = sentence[other_index][0].name()
+                #other_word = sentence[other_index][0].name()
+                other_word = sentence[other_index][0]
                 if (target_sense_candidate, other_word) not in sense_word_cooccurrences:
                     numerator = 0
                 else:
@@ -266,8 +243,10 @@ def guess_word_sense_context_sense(target_index, sentence, word_sense_dict, sens
     max_score = -float("inf")
     max_sense = None
     target_sense = sentence[target_index]
-    target_word = target_sense[0].name()
-    for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    #target_word = target_sense[0].name()
+    target_word = target_sense[0]
+    #for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    for target_sense_candidate in word_sense_dict[target_sense[0]]:
         aggregate = 0
         for other_index in range(len(sentence)):
             if other_index != target_index:
@@ -296,7 +275,8 @@ def guess_word_sense_frequency(target_index, sentence, word_sense_dict, sense_fr
         tuple: The sense (synset/lemma tuple) guess of the target word in the sentence.
     """
     target_sense = sentence[target_index]
-    target_word = target_sense[0].name()
+    #target_word = target_sense[0].name()
+    target_word = target_sense[0]
     max_score = -float("inf")
     max_sense = None
     for target_sense_candidate in word_sense_dict[target_word]:
@@ -325,7 +305,8 @@ def guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_netwo
         tuple: The sense (synset/lemma tuple) guess of the target word in the sentence.
     """
     word = sentence[target_index]
-    senses = word_sense_dict[word[0].name()]
+    #senses = word_sense_dict[word[0].name()]
+    senses = word_sense_dict[word[0]]
     max_act = float('-inf')
     for sense in senses:
         sense_act = sem_network.get_activation(mem_id=sense, time=time)
@@ -471,22 +452,16 @@ def dummy_predict_word_sense(sentence_list):
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-sentence_list, word_sense_dict = extract_sentences(200)
-clear_network = "word"
-guess_method = "naive_semantic"
-print("Semantic: No Spreading, Clear After Word")
-no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns = ["Word", "Guess"])
-print(no_spread_df)
+sentence_list, word_sense_dict = extract_sentences(num_sentences=200)
+#clear_network = "word"
+#guess_method = "naive_semantic"
+#print("Semantic: No Spreading, Clear After Word")
+#no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
+#no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
+#print(no_spread_df)
 
-print()
-print()
 
-guess_method = "naive_semantic_spreading"
-print("Semantic: Spreading, Clear After Word")
-spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-spread_df = pd.DataFrame(list(spread_dict.items()), columns = ["Word", "Guess"])
-print(spread_df)
+
 
 
 

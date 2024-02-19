@@ -1,6 +1,5 @@
 from wsd_task import *
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 import numpy as np
 from collections import defaultdict
@@ -131,7 +130,8 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
     for sentence in sentence_list:
         for target_index in range(len(sentence)):
             target_sense = sentence[target_index]
-            target_word = target_sense[0].name()
+            #target_word = target_sense[0].name()
+            target_word = target_sense[0]
             if guess_type == "context_word":
                 guess = guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense_word_cooccurrences,
                                                       word_word_cooccurrences)
@@ -154,7 +154,8 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
                 if other_index == target_index:
                     continue
                 other_sense = sentence[other_index]
-                other_word = other_sense[0].name()
+                #other_word = other_sense[0].name()
+                other_word = other_sense[0]
                 if plot_type == "other_word":
                     temp_cooccurrence += math.log(
                         word_word_cooccurrences[(target_word, other_word)] / word_counts[target_word])
@@ -305,11 +306,12 @@ def get_corpus_stats():
     return absolute_word_counts, absolute_sense_counts, word_pair_counts, sense_pair_counts
 
 
-# Testing...
-# get_simple_plot(2, 0.05, 0, plot_type="sense")
-# get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=1)
-# get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=20)
+# Testing ------------------------------------------------------------------------------------------------------------------------------
+#get_simple_plot(2, 0.05, 0, plot_type="sense")
+#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=1)
+#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=20)
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=50)
+get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="context_sense", bin_width=20)
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
 
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=5, num_sentences=500,
