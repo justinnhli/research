@@ -3,13 +3,12 @@ from collections import defaultdict
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
 import nltk
-from wsd_nltk_importer import*
+from wsd_nltk_importer import *
 from nltk.corpus import semcor
 from nltk.corpus import wordnet as wn_corpus
 from nltk.stem import wordnet as wn
 import pandas as pd
 import json
-
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
@@ -70,9 +69,8 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
     return accuracy
 
 
-
-
-def create_sem_network(sentence_list, spreading=True, activation_base=2, decay_parameter=0.05, constant_offset=0):
+def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activation_base=2, decay_parameter=0.05,
+                       constant_offset=0):
     """
     Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms, hyponyms,
         holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos. Note that all words
@@ -87,6 +85,11 @@ def create_sem_network(sentence_list, spreading=True, activation_base=2, decay_p
     Returns:
         network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
     """
+    semcor_words = set(sum(sentence_list, []))
+    spread_depth = -1
+    if not spreading:
+        spread_depth = 0
+    semantic_relations_dict = get_semantic_relations_dict(sentence_list)
     network = sentenceLTM(
         activation_cls=(lambda ltm:
                         SentenceCooccurrenceActivation(
@@ -95,45 +98,28 @@ def create_sem_network(sentence_list, spreading=True, activation_base=2, decay_p
                             constant_offset=constant_offset,
                             decay_parameter=decay_parameter
                         )))
-    semcor_words = sum(sentence_list, [])
-    spread_depth = -1
-    if not spreading:
-        spread_depth = 0
-    for sentence in sentence_list:
-        for word in sentence:
-            syn = word[1]
-            lemma = word[0]
-            synonyms = [(synon, syn) for synon in syn.lemmas() if (synon, syn) in semcor_words and synon != lemma]
-            # These are all synsets.
-            synset_relations = [syn.hypernyms(), syn.hyponyms(),
-                                syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms(),
-                                syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms(),
-                                syn.attributes(), syn.entailments(), syn.causes(), syn.also_sees(),
-                                syn.verb_groups(), syn.similar_tos()]
-            lemma_relations = []
-            for ii in range(len(synset_relations)):
-                lemma_relations.append([])
-                for jj in range(len(synset_relations[ii])):
-                    syn_lemmas = synset_relations[ii][jj].lemmas()
-                    for lemma in syn_lemmas:
-                        lemma_relations[ii].append((lemma, synset_relations[ii][jj]))
-            for ii in range(len(lemma_relations)):
-                lemma_relations[ii] = [word_tuple for word_tuple in set(lemma_relations[ii]) if word_tuple in
-                                       semcor_words and word_tuple != word]
-            network.store(mem_id=word,
-                          time=1,
-                          spread_depth=spread_depth,
-                          synonyms=synonyms,
-                          hypernyms=lemma_relations[0],
-                          hyponyms=lemma_relations[1],
-                          holynyms=lemma_relations[2],
-                          meronyms=lemma_relations[3],
-                          attributes=lemma_relations[4],
-                          entailments=lemma_relations[5],
-                          causes=lemma_relations[6],
-                          also_sees=lemma_relations[7],
-                          verb_groups=lemma_relations[8],
-                          similar_tos=lemma_relations[9])
+    for word_key in semantic_relations_dict.keys():
+        val_dict = semantic_relations_dict[word_key]
+        if not outside_corpus:
+            for val_key in val_dict.keys():
+                if not val_dict[val_key]:
+                    continue
+                rel_words = val_dict[val_key]
+                val_dict[val_key] = [word for word in rel_words if word in semcor_words]
+        network.store(mem_id=word_key,
+                      time=1,
+                      spread_depth=spread_depth,
+                      synonyms=val_dict['synonyms'],
+                      hypernyms=val_dict['hypernyms'],
+                      hyponyms=val_dict['hyponyms'],
+                      holynyms=val_dict['holonyms'],
+                      meronyms=val_dict['meronyms'],
+                      attributes=val_dict['attributes'],
+                      entailments=val_dict['entailments'],
+                      causes=val_dict['causes'],
+                      also_sees=val_dict['also_sees'],
+                      verb_groups=val_dict['verb_groups'],
+                      similar_tos=val_dict['similar_tos'])
     return network
 
 
@@ -151,7 +137,6 @@ def precompute_word_sense(sentence_list):
     sense_counts = defaultdict(int)
     for sentence in sentence_list:
         for sense in sentence:
-            #word_counts[sense[0].name()] += 1
             word_counts[sense[0]] += 1
             sense_counts[sense] += 1
     return word_counts, sense_counts
@@ -176,13 +161,13 @@ def precompute_cooccurrences(sentence_list):
     for sentence in sentence_list:
         for target_index in range(len(sentence)):
             target_sense = sentence[target_index]
-            #target_word = target_sense[0].name()
+            # target_word = target_sense[0].name()
             target_word = target_sense[0]
             sense_frequencies[target_sense] += 1
             for other_index in range(len(sentence)):
                 if target_index != other_index:
                     other_sense = sentence[other_index]
-                    #other_word = other_sense[0].name()
+                    # other_word = other_sense[0].name()
                     other_word = other_sense[0]
                     word_word_cooccurrences[(target_word, other_word)] += 1
                     sense_word_cooccurrences[(target_sense, other_word)] += 1
@@ -206,14 +191,14 @@ def guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense
     max_score = -float("inf")
     max_sense = None
     target_sense = sentence[target_index]
-    #target_word = target_sense[0].name()
+    # target_word = target_sense[0].name()
     target_word = target_sense[0]
-    #for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    # for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
     for target_sense_candidate in word_sense_dict[target_sense[0]]:
         aggregate = 0
         for other_index in range(len(sentence)):
             if other_index != target_index:
-                #other_word = sentence[other_index][0].name()
+                # other_word = sentence[other_index][0].name()
                 other_word = sentence[other_index][0]
                 if (target_sense_candidate, other_word) not in sense_word_cooccurrences:
                     numerator = 0
@@ -243,9 +228,9 @@ def guess_word_sense_context_sense(target_index, sentence, word_sense_dict, sens
     max_score = -float("inf")
     max_sense = None
     target_sense = sentence[target_index]
-    #target_word = target_sense[0].name()
+    # target_word = target_sense[0].name()
     target_word = target_sense[0]
-    #for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
+    # for target_sense_candidate in word_sense_dict[target_sense[0].name()]:
     for target_sense_candidate in word_sense_dict[target_sense[0]]:
         aggregate = 0
         for other_index in range(len(sentence)):
@@ -275,7 +260,7 @@ def guess_word_sense_frequency(target_index, sentence, word_sense_dict, sense_fr
         tuple: The sense (synset/lemma tuple) guess of the target word in the sentence.
     """
     target_sense = sentence[target_index]
-    #target_word = target_sense[0].name()
+    # target_word = target_sense[0].name()
     target_word = target_sense[0]
     max_score = -float("inf")
     max_sense = None
@@ -305,7 +290,7 @@ def guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_netwo
         tuple: The sense (synset/lemma tuple) guess of the target word in the sentence.
     """
     word = sentence[target_index]
-    #senses = word_sense_dict[word[0].name()]
+    # senses = word_sense_dict[word[0].name()]
     senses = word_sense_dict[word[0]]
     max_act = float('-inf')
     for sense in senses:
@@ -450,18 +435,11 @@ def dummy_predict_word_sense(sentence_list):
             accuracy_list.append(False)
     return accuracy_list
 
-
 # Testing --------------------------------------------------------------------------------------------------------------
 
-#clear_network = "word"
-#guess_method = "naive_semantic"
-#print("Semantic: No Spreading, Clear After Word")
-#no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-#no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
-#print(no_spread_df)
-
-
-
-
-
-
+# clear_network = "word"
+# guess_method = "naive_semantic"
+# print("Semantic: No Spreading, Clear After Word")
+# no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
+# no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
+# print(no_spread_df)

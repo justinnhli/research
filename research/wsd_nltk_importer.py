@@ -1,12 +1,7 @@
-import random
 from collections import defaultdict
-from sentence_long_term_memory import sentenceLTM
-from sentence_long_term_memory import SentenceCooccurrenceActivation
 import nltk
 from nltk.corpus import semcor
 from nltk.corpus import wordnet as wn_corpus
-from nltk.stem import wordnet as wn
-import pandas as pd
 import json
 import os.path
 
@@ -21,7 +16,13 @@ def extract_sentences(num_sentences=-1):
         list: sentence_list (list of all sentences or the first n sentences of the corpus), word_sense_dict (dictionary with the possible senses of
             each word in the corpus)
     """
-    if not (os.path.isfile("./sentence_list.json") or os.path.isfile("./word_sense_dict.json")):
+    if num_sentences == -1:
+        sentence_list_path = "./sentence_list.json"
+        word_sense_dict_path = "./word_sense_dict.json"
+    else:
+        sentence_list_path = "./sentence_list_"+str(num_sentences)+".json"
+        word_sense_dict_path = "./word_sense_dict_"+str(num_sentences)+".json"
+    if not (os.path.isfile(sentence_list_path) or os.path.isfile(word_sense_dict_path)):
         # Checking that file exists
         sentence_list = []
         word_sense_dict = defaultdict(set)
@@ -46,10 +47,10 @@ def extract_sentences(num_sentences=-1):
                     word_sense_dict[word] |= senses
                     word_sense_dict[word] = list(word_sense_dict[word])
                 sentence_list.append(sentence_word_list)
-        sent_list_file = open("./sentence_list.json", 'w')
+        sent_list_file = open(sentence_list_path, 'w')
         json.dump(sentence_list, sent_list_file)
         sent_list_file.close()
-        word_sense_dict_file = open("./word_sense_dict.json", 'w')
+        word_sense_dict_file = open(word_sense_dict_path, 'w')
         # Making word sense list from word sense dict
         word_sense_list = []
         for word in word_sense_dict.keys():
@@ -64,123 +65,106 @@ def extract_sentences(num_sentences=-1):
         word_sense_dict_file.close()
     else:
         # Getting json file containing the sentence list and converting the words stored as strings into tuples
-        sentence_list = json.load(open("./sentence_list.json"))
+        sentence_list = json.load(open(sentence_list_path))
         for sentence_index in range(len(sentence_list)):
             for word_index in range(len(sentence_list[sentence_index])):
                 word = sentence_list[sentence_index][word_index]
                 sentence_list[sentence_index][word_index] = tuple(word)
         # Getting json file containing word sense dict and converting words stored (values) as strings into tuples
-        word_sense_list = json.load(open("./word_sense_dict.json"))
+        word_sense_list = json.load(open(word_sense_dict_path))
         word_sense_dict = defaultdict(set)
         for pair_index in range(len(word_sense_list)):
             key = word_sense_list[pair_index][0]
             vals = word_sense_list[pair_index][1]
             for val in vals:
                 word_sense_dict[key].add(tuple(val))
-            #sense_values = word_sense_dict[key]
-            #tuple_vals = []
-            #for val in sense_values:
-                #tuple_vals.append(lemmastring_to_tuple(val))
-            #word_sense_dict[key] = tuple_vals
     return sentence_list, word_sense_dict
 
 
 
-def get_semantic_relations_dict(sentence_list, inside_corpus=True):
+def get_semantic_relations_dict(sentence_list):
     """
     Note: will have to make more edits to the function before inside_corpus = False is accurate, since entries will need
         to be made for all words that have links to them.
     """
-    if not os.path.isfile("./semantic_relations_dict.json"):
-        semantic_relations_dict = defaultdict(set)
+    if len(sentence_list) == 30195:
+        sem_rel_path = "./semantic_relations_list.json"
+    else:
+        sem_rel_path = "./semantic_relations_list_"+str(len(sentence_list))+".json"
+    if not os.path.isfile(sem_rel_path):
+        semantic_relations_list = []
+        # These are all the words in the corpus.
         semcor_words = set(sum(sentence_list, []))
+        print(len(sum(sentence_list, [])))
+        print(sum(sentence_list, []))
+        print(len(semcor_words))
+        print(semcor_words)
         counter = 0
-        for sentence in sentence_list:
+        for word in semcor_words:
             counter += 1
-            print(str(counter)+" out of "+str(len(sentence_list)))
-            for word in sentence:
-                word_string = tuple_to_lemmastring(word)
-                if word_string not in semantic_relations_dict.keys():
-                    syn = wn_corpus.synset(word[1])
-                    lemma = word[0]
-                    #synonyms = [(synon, syn) for synon in syn.lemmas() if (synon, syn) in semcor_words and synon != lemma]
-                    synonyms = [lemma_to_tuple(synon) for synon in syn.lemmas() if lemma_to_tuple(synon) in
-                                semcor_words and lemma_to_tuple(synon) != lemma]
-                    # These are all synsets.
-                    synset_relations = [syn.hypernyms(), syn.hyponyms(),
-                                        syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms(),
-                                        syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms(),
-                                        syn.attributes(), syn.entailments(), syn.causes(), syn.also_sees(),
-                                        syn.verb_groups(), syn.similar_tos()]
-                    lemma_relations = []
-                    for ii in range(len(synset_relations)):
-                        lemma_relations.append([])
-                        # Getting each of the synsets above in synset_relations.
-                        for jj in range(len(synset_relations[ii])):
-                            # Getting the lemmas in each of the synset_relations synsets.
-                            syn_lemmas = synset_relations[ii][jj].lemmas()
-                            # Adding each lemma to the list
-                            for lemma in syn_lemmas:
-                                lemma_relations[ii].append((lemma, synset_relations[ii][jj]))
-                    if inside_corpus:
-                        for ii in range(len(lemma_relations)):
-                            #lemma_relations[ii] = [word_tuple for word_tuple in set(lemma_relations[ii]) if word_tuple
-                                                #in semcor_words and word_tuple != word]
-                            lemma_relations[ii] = [lemma_to_tuple(word_tuple[0]) for word_tuple in set(lemma_relations[ii])
-                                                   if lemma_to_tuple(word_tuple[0]) in semcor_words and
-                                                   lemma_to_tuple(word_tuple[0]) != word]
-                    word_sem_rel_subdict = create_word_sem_rel_dict(synonyms=synonyms,
-                                                                    hypernyms=lemma_relations[0],
-                                                                    hyponyms=lemma_relations[1],
-                                                                    holonyms=lemma_relations[2],
-                                                                    meronyms=lemma_relations[3],
-                                                                    attributes=lemma_relations[4],
-                                                                    entailments=lemma_relations[5],
-                                                                    causes=lemma_relations[6],
-                                                                    also_sees=lemma_relations[7],
-                                                                    verb_groups=lemma_relations[8],
-                                                                    similar_tos=lemma_relations[9])
-                    semantic_relations_dict[word] = word_sem_rel_subdict
-        sem_rel_file = open("./semantic_relations_dict.json", 'w')
-        json.dump(semantic_relations_dict, sem_rel_file)
+            print(str(counter) + " out of " + str(len(semcor_words)))
+            syn = wn_corpus.synset(word[1])
+            lemma = word[0]
+            synonyms = [lemma_to_tuple(synon) for synon in syn.lemmas() if lemma_to_tuple(synon) != word]
+            # These are all synsets.
+            synset_relations = [syn.hypernyms(), syn.hyponyms(),
+                                syn.member_holonyms() + syn.substance_holonyms() + syn.part_holonyms(),
+                                syn.member_meronyms() + syn.substance_meronyms() + syn.part_meronyms(),
+                                syn.attributes(), syn.entailments(), syn.causes(), syn.also_sees(),
+                                syn.verb_groups(), syn.similar_tos()]
+            lemma_relations = []
+            for relation in range(len(synset_relations)):
+                lemma_relations.append([])
+                # Getting each of the synsets above in synset_relations.
+                for syn in range(len(synset_relations[relation])):
+                    # Getting the lemmas in each of the synset_relations synsets.
+                    syn_lemmas = synset_relations[relation][syn].lemmas()
+                    # Adding each lemma to the list
+                    for syn_lemma in syn_lemmas:
+                        lemma_tuple = lemma_to_tuple(syn_lemma)
+                        if word != lemma_tuple:
+                            #lemma_relations[relation].append((lemma, synset_relations[relation][syn]))
+                            lemma_relations[relation].append(lemma_tuple)
+            word_sem_rel_subdict = create_word_sem_rel_dict(synonyms=synonyms,
+                                                            hypernyms=lemma_relations[0],
+                                                            hyponyms=lemma_relations[1],
+                                                            holonyms=lemma_relations[2],
+                                                            meronyms=lemma_relations[3],
+                                                            attributes=lemma_relations[4],
+                                                            entailments=lemma_relations[5],
+                                                            causes=lemma_relations[6],
+                                                            also_sees=lemma_relations[7],
+                                                            verb_groups=lemma_relations[8],
+                                                            similar_tos=lemma_relations[9])
+            #semantic_relations_dict[word] = word_sem_rel_subdict
+            # Adding pairs of word & the dictionary containing its relations to the big json list (since json doesn't let lists be keys)
+            # But we can still keep the word_sem_rel_subdict intact since its keys are strings
+            semantic_relations_list.append([word, word_sem_rel_subdict])
+        sem_rel_file = open("./semantic_relations_list.json", 'w')
+        json.dump(semantic_relations_list, sem_rel_file)
         sem_rel_file.close()
-    semantic_relations_dict = json.load(open("./semantic_relations_dict.json"))
+    semantic_relations_list = json.load(open("./semantic_relations_list.json"))
+    semantic_relations_dict = {}
+    for pair in semantic_relations_list:
+        key = tuple(pair[0])
+        val_dict = pair[1]
+        for val_key in ["synonyms", "hypernyms", "hyponyms", "holonyms", "meronyms", "attributes", "entailments",
+                        "causes", "also_sees", "verb_groups", "similar_tos"]:
+            list_val_vals = val_dict[val_key]
+            tuple_val_vals = []
+            for val_val in list_val_vals:
+                tuple_val_vals.append(tuple(val_val))
+            val_dict[val_key] = tuple_val_vals
+        semantic_relations_dict[key] = val_dict
     return semantic_relations_dict
 
 
 # Helper Functions ----------------------------------------------------------------------------------------------------
-def lemma_to_lemmastring(lemma):
-    """
-    Takes in lemma object
-    Converts Lemma object to string tuple compatible with all python versions
-    """
-    if isinstance(lemma, nltk.corpus.reader.wordnet.Lemma):
-        lemma_word = lemma.name()
-        synset_string = lemma.synset().name()
-        lemma_string = lemma_word + " " + synset_string
-        return lemma_string
-    else:
-        raise ValueError("Lemma object could not be converted into string. Check Lemma type.")
-
 def lemma_to_tuple(lemma):
     lemma_word = lemma.name()
     synset_string = lemma.synset().name()
     lemma_tuple = (lemma_word, synset_string)
     return lemma_tuple
-
-def lemmastring_to_wordstring(lemmastring):
-    return lemmastring[:lemmastring.find(' ')]
-
-
-def lemmastring_to_tuple(word_string):
-    word_tuple = (word_string[:word_string.find(' ')], word_string[word_string.find(' ') + 1:])
-    return word_tuple
-
-
-def tuple_to_lemmastring(word_tuple):
-    lemma_string = word_tuple[0] + " " + word_tuple[1]
-    return lemma_string
-
 
 def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, attributes,
                                    entailments, causes, also_sees, verb_groups, similar_tos):
@@ -196,11 +180,13 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
         vals = sem_rel_dict[rel]
         string_vals = []
         for val in vals:
-            string_vals.append(tuple_to_lemmastring(val))
+            #string_vals.append(tuple_to_lemmastring(val))
+            string_vals.append(list(val))
         sem_rel_dict[rel] = string_vals
     return sem_rel_dict
 
 # Testing---------------------------------------------------------------------------------------------------------------
 
-sentence_list, word_sense_dict = extract_sentences()
-sem_relations_dict = get_semantic_relations_dict(sentence_list)
+#sentence_list, word_sense_dict = extract_sentences(200)
+#sem_relations_dict = get_semantic_relations_dict(sentence_list)
+#print(sem_relations_dict)

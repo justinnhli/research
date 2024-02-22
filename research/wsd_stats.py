@@ -12,7 +12,10 @@ def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type
     Produces simple scatterplot of percentage correct vs. word appearances for each word in the corpus.
     """
     sentence_list, word_sense_dict = extract_sentences()
-    sem_network = create_sem_network(sentence_list, activation_base, decay_parameter, constant_offset)
+    sem_network = create_sem_network(sentence_list=sentence_list,
+                                     activation_base=activation_base,
+                                     decay_parameter=decay_parameter,
+                                     constant_offset=constant_offset)
     guess_list = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)[0]
     word_freq_guesses = {}
     for word_tuple in guess_list.keys():
@@ -118,13 +121,18 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
         sentence_list)
     word_counts, sense_counts = precompute_word_sense(sentence_list)
     if guess_type == "naive_semantic":
-        sem_network, timer = create_sem_network(sentence_list, spreading=False, time=True,
+        sem_network = create_sem_network(sentence_list,
+                                                spreading=False,
                                                 activation_base=activation_base,
-                                                decay_parameter=decay_parameter, constant_offset=constant_offset)
+                                                decay_parameter=decay_parameter,
+                                                constant_offset=constant_offset)
     elif guess_type == "naive_semantic_spreading":
-        sem_network, timer = create_sem_network(sentence_list, spreading=True, time=True,
+        sem_network = create_sem_network(sentence_list,
+                                                spreading=True,
                                                 activation_base=activation_base,
-                                                decay_parameter=decay_parameter, constant_offset=constant_offset)
+                                                decay_parameter=decay_parameter,
+                                                constant_offset=constant_offset)
+    timer = 2
     target_accuracy_list = []
     target_cooc_list = []
     for sentence in sentence_list:
@@ -222,11 +230,11 @@ def get_iteration_graph(guess_type, num_sentences, num_iterations, activation_ba
         sentence_list)
     word_counts, sense_counts = precompute_word_sense(sentence_list)
     if guess_type == "naive_semantic":
-        sem_network, timer = create_sem_network(sentence_list, spreading=False, time=True,
+        sem_network = create_sem_network(sentence_list, spreading=False, time=True,
                                                 activation_base=activation_base,
                                                 decay_parameter=decay_parameter, constant_offset=constant_offset)
     elif guess_type == "naive_semantic_spreading":
-        sem_network, timer = create_sem_network(sentence_list, spreading=True, time=True,
+        sem_network = create_sem_network(sentence_list, spreading=True, time=True,
                                                 activation_base=activation_base,
                                                 decay_parameter=decay_parameter, constant_offset=constant_offset)
     else:
@@ -313,8 +321,8 @@ def get_corpus_stats():
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=50)
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="context_sense", bin_width=20)
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=5, num_sentences=500,
-                                   #save_plot="sem_sense_5_500.png")
+get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
+                                   save_plot="sem_sense_20_200.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
                                    #save_plot="sem_sense_20_500.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
