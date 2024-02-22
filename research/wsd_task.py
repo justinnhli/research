@@ -452,7 +452,7 @@ def dummy_predict_word_sense(sentence_list):
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-sentence_list, word_sense_dict = extract_sentences(num_sentences=200)
+
 #clear_network = "word"
 #guess_method = "naive_semantic"
 #print("Semantic: No Spreading, Clear After Word")
