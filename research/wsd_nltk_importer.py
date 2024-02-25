@@ -95,10 +95,8 @@ def get_semantic_relations_dict(sentence_list):
         semantic_relations_list = []
         # These are all the words in the corpus.
         semcor_words = set(sum(sentence_list, []))
-        print(len(sum(sentence_list, [])))
-        print(sum(sentence_list, []))
-        print(len(semcor_words))
-        print(semcor_words)
+        print("Length semcor words")
+        len(semcor_words)
         counter = 0
         for word in semcor_words:
             counter += 1
@@ -187,6 +185,8 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
 
 # Testing---------------------------------------------------------------------------------------------------------------
 
-#sentence_list, word_sense_dict = extract_sentences(200)
+#sentence_list, word_sense_dict = extract_sentences()
+#print(len(sentence_list))
 #sem_relations_dict = get_semantic_relations_dict(sentence_list)
+#print(sem_relations_dict)
 #print(sem_relations_dict)

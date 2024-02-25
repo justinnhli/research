@@ -7,15 +7,11 @@ import statistics
 import math
 
 
-def get_simple_plot(activation_base, decay_parameter, constant_offset, plot_type="word"):
+def get_simple_plot(plot_type="word"):
     """
     Produces simple scatterplot of percentage correct vs. word appearances for each word in the corpus.
     """
     sentence_list, word_sense_dict = extract_sentences()
-    sem_network = create_sem_network(sentence_list=sentence_list,
-                                     activation_base=activation_base,
-                                     decay_parameter=decay_parameter,
-                                     constant_offset=constant_offset)
     guess_list = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)[0]
     word_freq_guesses = {}
     for word_tuple in guess_list.keys():
@@ -138,7 +134,6 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
     for sentence in sentence_list:
         for target_index in range(len(sentence)):
             target_sense = sentence[target_index]
-            #target_word = target_sense[0].name()
             target_word = target_sense[0]
             if guess_type == "context_word":
                 guess = guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense_word_cooccurrences,
@@ -162,7 +157,6 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
                 if other_index == target_index:
                     continue
                 other_sense = sentence[other_index]
-                #other_word = other_sense[0].name()
                 other_word = other_sense[0]
                 if plot_type == "other_word":
                     temp_cooccurrence += math.log(
@@ -190,7 +184,6 @@ def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_col
                 y_err.append(statistics.stdev(bin_values))
             else:
                 y_err.append(0)
-    # plt.scatter(x_cooccurrences, y_accuracies)
     fig, ax = plt.subplots(figsize=(9, 6))
     scatter = ax.scatter(x_cooccurrences, y_accuracies, c=z_binsizes, s=80)
     plt.ylim([0, 1.1])
@@ -321,8 +314,8 @@ def get_corpus_stats():
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=50)
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="context_sense", bin_width=20)
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
-get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
-                                   save_plot="sem_sense_20_200.png")
+#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=-1,
+                                   #save_plot="sem_sense_20_all.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
                                    #save_plot="sem_sense_20_500.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
@@ -330,3 +323,5 @@ get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_se
 # get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
 # get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
 #get_iteration_graph("naive_semantic_spreading", num_iterations=10, num_sentences=2000)
+
+#get_simple_plot()

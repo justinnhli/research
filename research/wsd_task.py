@@ -161,13 +161,11 @@ def precompute_cooccurrences(sentence_list):
     for sentence in sentence_list:
         for target_index in range(len(sentence)):
             target_sense = sentence[target_index]
-            # target_word = target_sense[0].name()
             target_word = target_sense[0]
             sense_frequencies[target_sense] += 1
             for other_index in range(len(sentence)):
                 if target_index != other_index:
                     other_sense = sentence[other_index]
-                    # other_word = other_sense[0].name()
                     other_word = other_sense[0]
                     word_word_cooccurrences[(target_word, other_word)] += 1
                     sense_word_cooccurrences[(target_sense, other_word)] += 1
@@ -354,10 +352,11 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     elif guess_method == "naive_semantic_spreading" and input_sem_network is None and input_timer is None:
         sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset)
-    elif input_sem_network is not None and input_timer is not None:
+    elif input_sem_network is not None and input_timer is not None and (
+            guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
         sem_network = input_sem_network
         timer = input_timer
-    else:
+    elif guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading":
         raise ValueError(input_sem_network, input_timer)
     if clear_network != "never" and clear_network != "sentence" and clear_network != "word":
         raise ValueError(clear_network)
@@ -435,6 +434,7 @@ def dummy_predict_word_sense(sentence_list):
             accuracy_list.append(False)
     return accuracy_list
 
+
 # Testing --------------------------------------------------------------------------------------------------------------
 
 # clear_network = "word"
@@ -443,3 +443,7 @@ def dummy_predict_word_sense(sentence_list):
 # no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
 # no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
 # print(no_spread_df)
+
+print(run_wsd("frequency"))
+print(run_wsd("context_word"))
+print(run_wsd("context_sense"))
