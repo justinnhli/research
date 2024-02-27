@@ -185,9 +185,3 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
 
 # Testing---------------------------------------------------------------------------------------------------------------
 
-sentence_list, word_sense_dict = extract_sentences()
-#print(len(sentence_list))
-sem_relations_dict = get_semantic_relations_dict(sentence_list)
-
-sentence_list, word_sense_dict = extract_sentences(200)
-sem_relations_dict = get_semantic_relations_dict(sentence_list)

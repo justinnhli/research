@@ -311,8 +311,8 @@ def clear_sem_network(sem_network, start_time):
     return sem_network
 
 
-def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_network=None, input_timer=None,
-                        clear_network="never", activation_base=2, decay_parameter=0.05, constant_offset=0,
+def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_network=None,
+                        input_timer=None, clear_network="never", activation_base=2, decay_parameter=0.05, constant_offset=0,
                         iterations=1):
     """
     Guesses the word sense for every word in the corpus based on a specified guess method.
@@ -335,76 +335,93 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
         list: A list of how accurate guesses were based on each sense-specific word in the corpus, and the overall accuracy
             of the guessing method.
     """
-    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
-        sentence_list)
+    if "semantic" in guess_method:
+        path = "./" + guess_method + "_" + str(
+            len(sentence_list)) + "_sents_" + clear_network + "_clear_accuracy_list.json"
+    else:
+        path = "./" + guess_method + "_" + str(len(sentence_list)) + "_sents_" + "accuracy_list.json"
     accuracy_dict = defaultdict(list)
-    if guess_method == "naive_semantic" and input_sem_network is None and input_timer is None:
-        # Same network for spreading and no spreading
-        sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
+    if not os.path.isfile(path):
+        word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
+            sentence_list)
+        if guess_method == "naive_semantic" and input_sem_network is None and input_timer is None:
+            # Same network for spreading and no spreading
+            sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset)
-    elif guess_method == "naive_semantic_spreading" and input_sem_network is None and input_timer is None:
-        sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
+        elif guess_method == "naive_semantic_spreading" and input_sem_network is None and input_timer is None:
+            sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset)
-    elif input_sem_network is not None and input_timer is not None and (
-            guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
-        sem_network = input_sem_network
-        timer = input_timer
-    elif guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading":
-        raise ValueError(input_sem_network, input_timer)
-    if clear_network != "never" and clear_network != "sentence" and clear_network != "word":
-        raise ValueError(clear_network)
-    timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
-    for iter in range(iterations):
-        for sentence in sentence_list:
-            if "naive_semantic" in guess_method and clear_network == "sentence":
-                sem_network = clear_sem_network(sem_network, 1)
-                timer = 2  # reset timer.
-            for target_index in range(len(sentence)):
-                if "naive_semantic" in guess_method and clear_network == "word":
+        elif input_sem_network is not None and input_timer is not None and (
+                guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
+            sem_network = input_sem_network
+        elif guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading":
+            raise ValueError(input_sem_network, input_timer)
+        if clear_network != "never" and clear_network != "sentence" and clear_network != "word":
+            raise ValueError(clear_network)
+        timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
+        for iter in range(iterations):
+            for sentence in sentence_list:
+                if "naive_semantic" in guess_method and clear_network == "sentence":
                     sem_network = clear_sem_network(sem_network, 1)
                     timer = 2  # reset timer.
-                if guess_method == "context_word":
-                    guess = guess_word_sense_context_word(target_index,
+                for target_index in range(len(sentence)):
+                    if "naive_semantic" in guess_method and clear_network == "word":
+                        sem_network = clear_sem_network(sem_network, 1)
+                        timer = 2  # reset timer.
+                    if guess_method == "context_word":
+                        guess = guess_word_sense_context_word(target_index,
                                                           sentence,
                                                           word_sense_dict,
                                                           sense_word_cooccurrences,
                                                           word_word_cooccurrences)
-                elif guess_method == "context_sense":
-                    guess = guess_word_sense_context_sense(target_index,
+                    elif guess_method == "context_sense":
+                        guess = guess_word_sense_context_sense(target_index,
                                                            sentence,
                                                            word_sense_dict,
                                                            sense_word_cooccurrences,
                                                            sense_sense_cooccurrences)
-                elif guess_method == "frequency":
-                    guess = guess_word_sense_frequency(target_index,
+                    elif guess_method == "frequency":
+                        guess = guess_word_sense_frequency(target_index,
                                                        sentence,
                                                        word_sense_dict,
                                                        sense_frequencies)
-                elif guess_method == "naive_semantic":
-                    guess = guess_word_sense_semantic(target_index,
+                    elif guess_method == "naive_semantic":
+                        guess = guess_word_sense_semantic(target_index,
                                                       sentence,
                                                       word_sense_dict,
                                                       sem_network,
                                                       timer,
                                                       spread_depth=0)
-                    timer += 1
-                elif guess_method == "naive_semantic_spreading":
-                    guess = guess_word_sense_semantic(target_index,
+                        timer += 1
+                    elif guess_method == "naive_semantic_spreading":
+                        guess = guess_word_sense_semantic(target_index,
                                                       sentence,
                                                       word_sense_dict,
                                                       sem_network,
                                                       timer,
                                                       spread_depth=-1)
-                    timer += 1
-                else:
-                    raise ValueError(guess_method)
-                target_sense = sentence[target_index]
-                if target_sense not in accuracy_dict:
-                    accuracy_dict[target_sense] = []
-                if target_sense == guess:
-                    accuracy_dict[target_sense].append(True)
-                else:
-                    accuracy_dict[target_sense].append(False)
+                        timer += 1
+                    else:
+                        raise ValueError(guess_method)
+                    target_sense = sentence[target_index]
+                    if target_sense not in accuracy_dict:
+                        accuracy_dict[target_sense] = []
+                    if target_sense == guess:
+                        accuracy_dict[target_sense].append(True)
+                    else:
+                        accuracy_dict[target_sense].append(False)
+        accuracy_list = []
+        for word in accuracy_dict.keys():
+            accuracy_list.append([word, accuracy_dict[word]])
+        file = open(path, 'w')
+        json.dump(accuracy_list, file)
+        file.close()
+    else:
+        accuracy_list = json.load(open(path))
+        for entry in accuracy_list:
+            word = tuple(entry[0])
+            accuracies = entry[1]
+            accuracy_dict[word] = accuracies
     return accuracy_dict
 
 
@@ -436,5 +453,8 @@ def dummy_predict_word_sense(sentence_list):
 # no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
 # no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
 # print(no_spread_df)
-
-print(run_wsd("naive_semantic_spreading", num_sentences=200))
+sentence_list, word_sense_dict = extract_sentences()
+get_corpus_accuracy("frequency", sentence_list, word_sense_dict)
+get_corpus_accuracy("context_word", sentence_list, word_sense_dict)
+get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)
+get_corpus_accuracy("naive_semantic", sentence_list, word_sense_dict)
