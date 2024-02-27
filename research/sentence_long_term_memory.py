@@ -107,9 +107,9 @@ class sentenceLTM(NaiveDictLTM):
         # Gets the activation for each sense of a word given and returns them in a list.
         candidates = []
         for mem_id in self.knowledge.keys():
-            if isinstance(mem_id[0], nltk.corpus.reader.wordnet.Lemma):
-                if mem_id[0] == word:
-                    candidates.append(mem_id)
+            #if isinstance(mem_id[0], nltk.corpus.reader.wordnet.Lemma):
+            if mem_id[0] == word:
+                candidates.append(mem_id)
         candidate_dict = {}
         for candidate in candidates:
             candidate_dict[candidate] = self.activation.get_activation(mem_id=candidate, time=time)

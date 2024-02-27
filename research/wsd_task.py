@@ -1,14 +1,7 @@
 import random
-from collections import defaultdict
 from sentence_long_term_memory import sentenceLTM
 from sentence_long_term_memory import SentenceCooccurrenceActivation
-import nltk
 from wsd_nltk_importer import *
-from nltk.corpus import semcor
-from nltk.corpus import wordnet as wn_corpus
-from nltk.stem import wordnet as wn
-import pandas as pd
-import json
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
