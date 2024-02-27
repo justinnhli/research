@@ -138,10 +138,10 @@ def get_semantic_relations_dict(sentence_list):
             # Adding pairs of word & the dictionary containing its relations to the big json list (since json doesn't let lists be keys)
             # But we can still keep the word_sem_rel_subdict intact since its keys are strings
             semantic_relations_list.append([word, word_sem_rel_subdict])
-        sem_rel_file = open("./semantic_relations_list.json", 'w')
+        sem_rel_file = open(sem_rel_path, 'w')
         json.dump(semantic_relations_list, sem_rel_file)
         sem_rel_file.close()
-    semantic_relations_list = json.load(open("./semantic_relations_list.json"))
+    semantic_relations_list = json.load(open(sem_rel_path))
     semantic_relations_dict = {}
     for pair in semantic_relations_list:
         key = tuple(pair[0])
@@ -185,8 +185,9 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
 
 # Testing---------------------------------------------------------------------------------------------------------------
 
-#sentence_list, word_sense_dict = extract_sentences()
+sentence_list, word_sense_dict = extract_sentences()
 #print(len(sentence_list))
-#sem_relations_dict = get_semantic_relations_dict(sentence_list)
-#print(sem_relations_dict)
-#print(sem_relations_dict)
+sem_relations_dict = get_semantic_relations_dict(sentence_list)
+
+sentence_list, word_sense_dict = extract_sentences(200)
+sem_relations_dict = get_semantic_relations_dict(sentence_list)

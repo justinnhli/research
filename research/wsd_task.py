@@ -5,7 +5,7 @@ from wsd_nltk_importer import *
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
-            clear_network=True):
+            clear_network="never"):
     """
     Runs the word sense disambiguation task over the Semcor corpus (or a subset of it).
     Parameters:
@@ -437,6 +437,4 @@ def dummy_predict_word_sense(sentence_list):
 # no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
 # print(no_spread_df)
 
-print(run_wsd("frequency"))
-print(run_wsd("context_word"))
-print(run_wsd("context_sense"))
+print(run_wsd("naive_semantic_spreading", num_sentences=200))

@@ -1,5 +1,5 @@
 import math
-import nltk
+#import nltk
 from long_term_memory import NaiveDictLTM
 from uuid import uuid4 as uuid
 from data_structures import AVLTree
