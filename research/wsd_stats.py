@@ -306,8 +306,47 @@ def get_corpus_stats():
                     word_pair_counts[word_key] = 1
     return absolute_word_counts, absolute_sense_counts, word_pair_counts, sense_pair_counts
 
+def guess_type_comparisons(guess_method, sentence_list, clear_network="never"):
+    if "semantic" in guess_method:
+        my_path = "./" + guess_method + "_" + str(
+            len(sentence_list)) + "_sents_" + clear_network + "_clear_accuracy_list.json"
+        cluster_path = "./cluster_" + guess_method + "_" + str(
+            len(sentence_list)) + "_sents_" + clear_network + "_clear_accuracy_list.json"
+    else:
+        my_path = "./" + guess_method + "_" + str(len(sentence_list)) + "_sents_" + "accuracy_list.json"
+        cluster_path = "./cluster_" + guess_method + "_" + str(len(sentence_list)) + "_sents_" + "accuracy_list.json"
+    discrepancy_dict = defaultdict(list)
+    my_list = json.load(open(my_path))
+    cluster_list = json.load(open(cluster_path))
+    my_dict = {}
+    cluster_dict = {}
+    for index in range(len(my_list)):
+        my_word = tuple(my_list[index][0])
+        my_accuracies = my_list[index][1]
+        my_dict[my_word] = my_accuracies
+        cluster_word = tuple(cluster_list[index][0])
+        cluster_accuracies = cluster_list[index][1]
+        cluster_dict[cluster_word] = cluster_accuracies
+    for word in my_dict.keys():
+        my_accs = my_dict[word]
+        cluster_accs = cluster_dict[word]
+        if len(my_accs) != len(cluster_accs):
+            discrepancy_dict[word].append("length difference")
+        if my_accs.count(True) != cluster_accs.count(True):
+            discrepancy_dict[word].append("True difference")
+        if my_accs.count(False) != cluster_accs.count(False):
+            discrepancy_dict[word].append("False difference")
+    return discrepancy_dict
+
 
 # Testing ------------------------------------------------------------------------------------------------------------------------------
+sentence_list, word_sense_dict = extract_sentences()
+comps = guess_type_comparisons("frequency", sentence_list)
+print(len(comps.keys()))
+
+
+
+
 #get_simple_plot(2, 0.05, 0, plot_type="sense")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=1)
 #get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=20)
@@ -320,8 +359,3 @@ def get_corpus_stats():
                                    #save_plot="sem_sense_20_500.png")
 #get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
                                    #save_plot="sem_word_20_500.png")
-# get_cooccurrence_plot(plot_type="other_word", guess_type="frequency")
-# get_cooccurrence_plot(plot_type="other_sense", guess_type="frequency")
-#get_iteration_graph("naive_semantic_spreading", num_iterations=10, num_sentences=2000)
-
-#get_simple_plot()

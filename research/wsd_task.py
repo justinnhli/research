@@ -446,15 +446,3 @@ def dummy_predict_word_sense(sentence_list):
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-
-# clear_network = "word"
-# guess_method = "naive_semantic"
-# print("Semantic: No Spreading, Clear After Word")
-# no_spread_dict = get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, clear_network=clear_network)
-# no_spread_df = pd.DataFrame(list(no_spread_dict.items()), columns=["Word", "Guess"])
-# print(no_spread_df)
-sentence_list, word_sense_dict = extract_sentences()
-get_corpus_accuracy("frequency", sentence_list, word_sense_dict)
-get_corpus_accuracy("context_word", sentence_list, word_sense_dict)
-get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)
-get_corpus_accuracy("naive_semantic", sentence_list, word_sense_dict)
