@@ -340,8 +340,8 @@ def guess_type_comparisons(guess_method, sentence_list, clear_network="never"):
 
 
 # Testing ------------------------------------------------------------------------------------------------------------------------------
-sentence_list, word_sense_dict = extract_sentences()
-comps = guess_type_comparisons("frequency", sentence_list)
+sentence_list, word_sense_dict = extract_sentences(200)
+comps = guess_type_comparisons("naive_semantic_spreading", sentence_list)
 print(len(comps.keys()))
 
 

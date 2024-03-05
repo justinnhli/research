@@ -95,14 +95,10 @@ def get_semantic_relations_dict(sentence_list):
         semantic_relations_list = []
         # These are all the words in the corpus.
         semcor_words = set(sum(sentence_list, []))
-        print("Length semcor words")
-        len(semcor_words)
         counter = 0
         for word in semcor_words:
             counter += 1
-            print(str(counter) + " out of " + str(len(semcor_words)))
             syn = wn_corpus.synset(word[1])
-            lemma = word[0]
             synonyms = [lemma_to_tuple(synon) for synon in syn.lemmas() if lemma_to_tuple(synon) != word]
             # These are all synsets.
             synset_relations = [syn.hypernyms(), syn.hyponyms(),
@@ -184,5 +180,7 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
     return sem_rel_dict
 
 # Testing---------------------------------------------------------------------------------------------------------------
-sents, wsd = extract_sentences()
-get_semantic_relations_dict(sents)
+#sents, wsd = extract_sentences()
+#get_semantic_relations_dict(sents)
+
+
