@@ -369,7 +369,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     else:
         path = "./results/" + guess_method + "_iter_"
     if "semantic" in guess_method:
-        path = path + str(len(sentence_list)) + "_sents_" + clear_network + "_clear" + + "_partition_"+ str(partition) +\
+        path = path + str(len(sentence_list)) + "_sents_" + clear_network + "_clear" + "_partition_"+ str(partition) +\
                "_accuracy_list_" + curr_time + ".json"
     else:
         path = path + str(len(sentence_list)) + "_sents_" +"partition_"+ str(partition) + "_accuracy_list_" + curr_time + ".json"
