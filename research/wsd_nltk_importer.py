@@ -6,7 +6,7 @@ import json
 import os.path
 
 
-def extract_sentences(num_sentences=-1):
+def extract_sentences(num_sentences=-1, partition=1):
     """
     Runs the word sense disambiguation task.
     Parameters:
@@ -19,9 +19,12 @@ def extract_sentences(num_sentences=-1):
     if num_sentences == -1:
         sentence_list_path = "./sentence_list.json"
         word_sense_dict_path = "./word_sense_dict.json"
-    else:
+    elif num_sentences != -1 and partition == 1:
         sentence_list_path = "./sentence_list_"+str(num_sentences)+".json"
         word_sense_dict_path = "./word_sense_dict_"+str(num_sentences)+".json"
+    else:
+        sentence_list_path = "./sentence_list_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
+        word_sense_dict_path = "./word_sense_dict_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
     if not (os.path.isfile(sentence_list_path) or os.path.isfile(word_sense_dict_path)):
         # Checking that file exists
         sentence_list = []
@@ -29,7 +32,15 @@ def extract_sentences(num_sentences=-1):
         if num_sentences == -1:
             semcor_sents = semcor.tagged_sents(tag="sem")
         else:
-            semcor_sents = semcor.tagged_sents(tag="sem")[0:num_sentences]
+            print("yes")
+            if partition == 1:
+                print("yes1")
+                semcor_sents = semcor.tagged_sents(tag="sem")[0:num_sentences]
+            elif partition*num_sentences > 30195:
+                raise ValueError(partition, num_sentences)
+            else:
+                print("yes2")
+                semcor_sents = semcor.tagged_sents(tag="sem")[(num_sentences*(partition-1)):(num_sentences*partition)]
         for sentence in semcor_sents:
             temp_word_sense_dict = defaultdict(set)
             sentence_word_list = []
@@ -82,15 +93,17 @@ def extract_sentences(num_sentences=-1):
 
 
 
-def get_semantic_relations_dict(sentence_list):
+def get_semantic_relations_dict(sentence_list, partition=1):
     """
     Note: will have to make more edits to the function before inside_corpus = False is accurate, since entries will need
         to be made for all words that have links to them.
     """
     if len(sentence_list) == 30195:
         sem_rel_path = "./semantic_relations_list.json"
-    else:
+    elif partition == 1:
         sem_rel_path = "./semantic_relations_list_"+str(len(sentence_list))+".json"
+    else:
+        sem_rel_path = "./semantic_relations_list_" + str(len(sentence_list)) + "_partition_" + str(partition) + ".json"
     if not os.path.isfile(sem_rel_path):
         semantic_relations_list = []
         # These are all the words in the corpus.
@@ -174,13 +187,12 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
         vals = sem_rel_dict[rel]
         string_vals = []
         for val in vals:
-            #string_vals.append(tuple_to_lemmastring(val))
             string_vals.append(list(val))
         sem_rel_dict[rel] = string_vals
     return sem_rel_dict
 
 # Testing---------------------------------------------------------------------------------------------------------------
-#sents, wsd = extract_sentences()
-#get_semantic_relations_dict(sents)
-
+for part in range(1, 7):
+    sent_list, wsd = extract_sentences(num_sentences=5000, partition=part)
+    dicter = get_semantic_relations_dict(sentence_list=sent_list, partition=part)
 
