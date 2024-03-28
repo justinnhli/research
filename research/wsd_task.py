@@ -6,7 +6,7 @@ from wsd_nltk_importer import *
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
-            partition=1, clear_network="never"):
+            partition=1, outside_corpus=True, clear_network="never"):
     """
     Runs the word sense disambiguation task over the Semcor corpus (or a subset of it).
     Parameters:
@@ -53,7 +53,8 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
                                          decay_parameter=decay_parameter,
                                          constant_offset=constant_offset,
                                          iterations=iterations,
-                                         partition=partition)
+                                         partition=partition,
+                                         outside_corpus=outside_corpus)
     elif guess_method == "naive_semantic_spreading":
         guess_dicts = get_corpus_accuracy("naive_semantic_spreading",
                                          sentence_list=sentence_list,
@@ -63,7 +64,8 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
                                          decay_parameter=decay_parameter,
                                          constant_offset=constant_offset,
                                          iterations=iterations,
-                                         partition=partition)
+                                         partition=partition,
+                                         outside_corpus=outside_corpus)
     else:
         raise ValueError(guess_method)
     accuracies = []
@@ -104,7 +106,7 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activ
     spread_depth = -1
     if not spreading:
         spread_depth = 0
-    semantic_relations_dict = get_semantic_relations_dict(sentence_list, partition)
+    semantic_relations_dict = get_semantic_relations_dict(sentence_list, partition, outside_corpus)
     network = sentenceLTM(
         activation_cls=(lambda ltm:
                         SentenceCooccurrenceActivation(
@@ -341,7 +343,7 @@ def clear_sem_network(sem_network, start_time):
 
 def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_network=None,
                         input_timer=None, clear_network="never", activation_base=2, decay_parameter=0.05,
-                        constant_offset=0, iterations=1, partition=1):
+                        constant_offset=0, iterations=1, partition=1, outside_corpus=True):
     """
     Guesses the word sense for every word in the corpus based on a specified guess method.
     Parameters:
@@ -379,7 +381,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
         # Same network for spreading and no spreading
         sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition)
+                                         partition=partition, outside_corpus=outside_corpus)
     elif guess_method == "naive_semantic_spreading" and input_sem_network is None and input_timer is None:
         sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset,

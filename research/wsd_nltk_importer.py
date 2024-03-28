@@ -20,8 +20,8 @@ def extract_sentences(num_sentences=-1, partition=1):
         sentence_list_path = "./sentence_list.json"
         word_sense_dict_path = "./word_sense_dict.json"
     elif num_sentences != -1 and partition == 1:
-        sentence_list_path = "./sentence_list_"+str(num_sentences)+".json"
-        word_sense_dict_path = "./word_sense_dict_"+str(num_sentences)+".json"
+        sentence_list_path = "./sentence_list_" + str(num_sentences) + ".json"
+        word_sense_dict_path = "./word_sense_dict_" + str(num_sentences) + ".json"
     else:
         sentence_list_path = "./sentence_list_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
         word_sense_dict_path = "./word_sense_dict_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
@@ -32,15 +32,13 @@ def extract_sentences(num_sentences=-1, partition=1):
         if num_sentences == -1:
             semcor_sents = semcor.tagged_sents(tag="sem")
         else:
-            print("yes")
             if partition == 1:
-                print("yes1")
                 semcor_sents = semcor.tagged_sents(tag="sem")[0:num_sentences]
-            elif partition*num_sentences > 30195:
+            elif partition * num_sentences > 30195:
                 raise ValueError(partition, num_sentences)
             else:
-                print("yes2")
-                semcor_sents = semcor.tagged_sents(tag="sem")[(num_sentences*(partition-1)):(num_sentences*partition)]
+                semcor_sents = semcor.tagged_sents(tag="sem")[
+                               (num_sentences * (partition - 1)):(num_sentences * partition)]
         for sentence in semcor_sents:
             temp_word_sense_dict = defaultdict(set)
             sentence_word_list = []
@@ -92,18 +90,20 @@ def extract_sentences(num_sentences=-1, partition=1):
     return sentence_list, word_sense_dict
 
 
-
-def get_semantic_relations_dict(sentence_list, partition=1):
+def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True):
     """
     Note: will have to make more edits to the function before inside_corpus = False is accurate, since entries will need
         to be made for all words that have links to them.
     """
+    sem_rel_path = "./semantic_relations_list"
+    if not outside_corpus:
+        sem_rel_path = sem_rel_path + "_inside_corpus"
     if len(sentence_list) == 30195:
-        sem_rel_path = "./semantic_relations_list.json"
+        sem_rel_path = sem_rel_path + ".json"
     elif partition == 1:
-        sem_rel_path = "./semantic_relations_list_"+str(len(sentence_list))+".json"
+        sem_rel_path = sem_rel_path + "_" + str(len(sentence_list)) + ".json"
     else:
-        sem_rel_path = "./semantic_relations_list_" + str(len(sentence_list)) + "_partition_" + str(partition) + ".json"
+        sem_rel_path = sem_rel_path + "_" + str(len(sentence_list)) + "_partition_" + str(partition) + ".json"
     if not os.path.isfile(sem_rel_path):
         semantic_relations_list = []
         # These are all the words in the corpus.
@@ -126,11 +126,13 @@ def get_semantic_relations_dict(sentence_list, partition=1):
                 for syn in range(len(synset_relations[relation])):
                     # Getting the lemmas in each of the synset_relations synsets.
                     syn_lemmas = synset_relations[relation][syn].lemmas()
+                    # Checking that lemmas from relations are in the corpus if outside_corpus=False
+                    if not outside_corpus:
+                        syn_lemmas = [lemma for lemma in syn_lemmas if lemma in semcor_words]
                     # Adding each lemma to the list
                     for syn_lemma in syn_lemmas:
                         lemma_tuple = lemma_to_tuple(syn_lemma)
                         if word != lemma_tuple:
-                            #lemma_relations[relation].append((lemma, synset_relations[relation][syn]))
                             lemma_relations[relation].append(lemma_tuple)
             word_sem_rel_subdict = create_word_sem_rel_dict(synonyms=synonyms,
                                                             hypernyms=lemma_relations[0],
@@ -143,7 +145,7 @@ def get_semantic_relations_dict(sentence_list, partition=1):
                                                             also_sees=lemma_relations[7],
                                                             verb_groups=lemma_relations[8],
                                                             similar_tos=lemma_relations[9])
-            #semantic_relations_dict[word] = word_sem_rel_subdict
+            # semantic_relations_dict[word] = word_sem_rel_subdict
             # Adding pairs of word & the dictionary containing its relations to the big json list (since json doesn't let lists be keys)
             # But we can still keep the word_sem_rel_subdict intact since its keys are strings
             semantic_relations_list.append([word, word_sem_rel_subdict])
@@ -173,8 +175,9 @@ def lemma_to_tuple(lemma):
     lemma_tuple = (lemma_word, synset_string)
     return lemma_tuple
 
+
 def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, attributes,
-                                   entailments, causes, also_sees, verb_groups, similar_tos):
+                             entailments, causes, also_sees, verb_groups, similar_tos):
     """
     Creates an empty semantic relations dictionary with given semantic relations for a word.
     Also converts tuples into lemmastrings for storage in json file.
@@ -191,8 +194,8 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
         sem_rel_dict[rel] = string_vals
     return sem_rel_dict
 
+
 # Testing---------------------------------------------------------------------------------------------------------------
 for part in range(1, 7):
     sent_list, wsd = extract_sentences(num_sentences=5000, partition=part)
-    dicter = get_semantic_relations_dict(sentence_list=sent_list, partition=part)
-
+    dicter = get_semantic_relations_dict(sentence_list=sent_list, partition=part, outside_corpus=False)
