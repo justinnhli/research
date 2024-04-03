@@ -18,6 +18,10 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
         iterations (int): The number of times to run through the corpus (for semantic effects only).
         num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
             from the corpus are used and if n=-1, all sentences from the corpus are used.
+        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+            sentences 10000 - 14999.
+        outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
+            relations are only considered from words inside the corpus.
         clear_network (string): How often to clear the network. Possible values are "never", "sentence", or "word",
             indicating that the network is never cleared, cleared after each sentence, or cleared after each word.
     Returns:
@@ -28,44 +32,44 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
         # The guess_dict is a dictionary with keys the sense of each word in the corpus and values a list of boolean
         # values indicating whether the sense was guessed correctly each time it appears in the corpus.
         guess_dicts = get_corpus_accuracy(guess_method="context_word",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         iterations=iterations,
-                                         partition=partition)
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          iterations=iterations,
+                                          partition=partition)
     elif guess_method == "context_sense":
         guess_dicts = get_corpus_accuracy(guess_method="context_sense",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         iterations=iterations,
-                                         partition=partition)
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          iterations=iterations,
+                                          partition=partition)
     elif guess_method == "frequency":
         guess_dicts = get_corpus_accuracy(guess_method="frequency",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         iterations=iterations,
-                                         partition=partition)
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          iterations=iterations,
+                                          partition=partition)
     elif guess_method == "naive_semantic":
         guess_dicts = get_corpus_accuracy("naive_semantic",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         clear_network=clear_network,
-                                         activation_base=activation_base,
-                                         decay_parameter=decay_parameter,
-                                         constant_offset=constant_offset,
-                                         iterations=iterations,
-                                         partition=partition,
-                                         outside_corpus=outside_corpus)
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          clear_network=clear_network,
+                                          activation_base=activation_base,
+                                          decay_parameter=decay_parameter,
+                                          constant_offset=constant_offset,
+                                          iterations=iterations,
+                                          partition=partition,
+                                          outside_corpus=outside_corpus)
     elif guess_method == "naive_semantic_spreading":
         guess_dicts = get_corpus_accuracy("naive_semantic_spreading",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         clear_network=clear_network,
-                                         activation_base=activation_base,
-                                         decay_parameter=decay_parameter,
-                                         constant_offset=constant_offset,
-                                         iterations=iterations,
-                                         partition=partition,
-                                         outside_corpus=outside_corpus)
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          clear_network=clear_network,
+                                          activation_base=activation_base,
+                                          decay_parameter=decay_parameter,
+                                          constant_offset=constant_offset,
+                                          iterations=iterations,
+                                          partition=partition,
+                                          outside_corpus=outside_corpus)
     else:
         raise ValueError(guess_method)
     accuracies = []
@@ -80,9 +84,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
             elif len(set(guess_list)) == 1 and guess_list[0]:
                 upper_accuracies += 1
                 lower_accuracies += 1
-        accuracies.append([lower_accuracies/total, upper_accuracies/total])
-        #raw_truths = sum(guess_dict.values(), [])
-        #accuracies.append(raw_truths.count(True) / len(raw_truths))
+        accuracies.append([lower_accuracies / total, upper_accuracies / total])
     return accuracies
 
 
@@ -99,6 +101,8 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activ
         activation_base (float): A parameter in the activation equation.
         decay_parameter (float): A parameter in the activation equation.
         constant_offset (float): A parameter in the activation equation.
+        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+            sentences 10000 - 14999.
     Returns:
         network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
     """
@@ -340,6 +344,34 @@ def clear_sem_network(sem_network, start_time):
         activations[word] = [act for act in activations[word] if act[0] <= start_time]
     return sem_network
 
+def get_accuracy_from_file(input_file):
+    """
+    Calculates the accuracy range for a given output from get_corpus_accuracy stored in a json file.
+    Parameters:
+        input_file (string) file path
+    Returns: (list) list with the 0th element the lower bound of the accuracy range and the 1st element the upper bound
+        of the accuracy range
+    """
+    guess_list = json.load(open(input_file))
+    guess_dict = defaultdict(list)
+    for word_result in guess_list:
+        guess_dict[tuple(word_result[0])] = word_result[1]
+    accuracy_range = []
+    total = 0
+    upper_accuracies = 0
+    lower_accuracies = 0
+    for word in list(guess_dict.keys()):
+        guesses = guess_dict[word]
+        for guess_list in guesses:
+            if len(set(guess_list)) == 2:
+                upper_accuracies += 1
+            elif len(set(guess_list)) == 1 and guess_list[0]:
+                upper_accuracies += 1
+                lower_accuracies += 1
+            total += 1
+    accuracy_range.append([lower_accuracies / total, upper_accuracies / total])
+    return accuracy_range
+
 
 def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_network=None,
                         input_timer=None, clear_network="never", activation_base=2, decay_parameter=0.05,
@@ -361,6 +393,10 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
         decay_parameter (float): A parameter in the activation equation.
         constant_offset (float): A parameter in the activation equation.
         iterations (int): The number of times to run through the corpus (for semantic effects only).
+        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+            sentences 10000 - 14999.
+        outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
+            relations are only considered from words inside the corpus.
     Returns:
         list: A list of how accurate guesses were based on each sense-specific word in the corpus, and the overall accuracy
             of the guessing method.
@@ -371,10 +407,11 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     else:
         path = "./results/" + guess_method + "_iter_"
     if "semantic" in guess_method:
-        path = path + str(len(sentence_list)) + "_sents_" + clear_network + "_clear" + "_partition_"+ str(partition) +\
-               "_accuracy_list_" + curr_time + ".json"
+        path = path + str(len(sentence_list)) + "_sents_" + clear_network + "_clear_" + str(outside_corpus) + \
+               "_outside_corpus_" + str(partition) + "_partition_accuracy_list_" + curr_time + ".json"
     else:
-        path = path + str(len(sentence_list)) + "_sents_" +"partition_"+ str(partition) + "_accuracy_list_" + curr_time + ".json"
+        path = path + str(len(sentence_list)) + "_sents_" + "partition_" + str(
+            partition) + "_accuracy_list_" + curr_time + ".json"
     word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
         sentence_list)
     if guess_method == "naive_semantic" and input_sem_network is None and input_timer is None:
@@ -385,7 +422,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     elif guess_method == "naive_semantic_spreading" and input_sem_network is None and input_timer is None:
         sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition)
+                                         partition=partition, outside_corpus=outside_corpus)
     elif input_sem_network is not None and input_timer is not None and (
             guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
         sem_network = input_sem_network
@@ -394,7 +431,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     if clear_network != "never" and clear_network != "sentence" and clear_network != "word":
         raise ValueError(clear_network)
     timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
-    accuracy_dicts = [] # List to store dictionaries of correct guesses for each iteration
+    accuracy_dicts = []  # List to store dictionaries of correct guesses for each iteration
     for iter in range(iterations):
         if "naive_semantic" in guess_method and iter > 1:
             # Clear semantic network each iteration, so you start fresh & don't have to remake the network (expensive)
@@ -411,36 +448,36 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
                     timer = 2  # reset timer.
                 if guess_method == "context_word":
                     guesses = guess_word_sense_context_word(target_index,
-                                                          sentence,
-                                                          word_sense_dict,
-                                                          sense_word_cooccurrences,
-                                                          word_word_cooccurrences)
+                                                            sentence,
+                                                            word_sense_dict,
+                                                            sense_word_cooccurrences,
+                                                            word_word_cooccurrences)
                 elif guess_method == "context_sense":
                     guesses = guess_word_sense_context_sense(target_index,
-                                                           sentence,
-                                                           word_sense_dict,
-                                                           sense_word_cooccurrences,
-                                                           sense_sense_cooccurrences)
+                                                             sentence,
+                                                             word_sense_dict,
+                                                             sense_word_cooccurrences,
+                                                             sense_sense_cooccurrences)
                 elif guess_method == "frequency":
                     guesses = guess_word_sense_frequency(target_index,
-                                                       sentence,
-                                                       word_sense_dict,
-                                                       sense_frequencies)
+                                                         sentence,
+                                                         word_sense_dict,
+                                                         sense_frequencies)
                 elif guess_method == "naive_semantic":
                     guesses = guess_word_sense_semantic(target_index,
-                                                      sentence,
-                                                      word_sense_dict,
-                                                      sem_network,
-                                                      timer,
-                                                      spread_depth=0)
+                                                        sentence,
+                                                        word_sense_dict,
+                                                        sem_network,
+                                                        timer,
+                                                        spread_depth=0)
                     timer += 1
                 elif guess_method == "naive_semantic_spreading":
                     guesses = guess_word_sense_semantic(target_index,
-                                                      sentence,
-                                                      word_sense_dict,
-                                                      sem_network,
-                                                      timer,
-                                                      spread_depth=-1)
+                                                        sentence,
+                                                        word_sense_dict,
+                                                        sem_network,
+                                                        timer,
+                                                        spread_depth=-1)
                     timer += 1
                 else:
                     raise ValueError(guess_method)
@@ -459,7 +496,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
             accuracy_list.append([word, accuracy_dict[word]])
         if iterations > 1:
             iter_path = path
-            iter_path.replace("iter", "iter"+str(iter))
+            iter_path.replace("iter", "iter" + str(iter))
             file = open(iter_path, 'w')
         else:
             file = open(path, 'w')
@@ -487,5 +524,6 @@ def dummy_predict_word_sense(sentence_list):
         else:
             accuracy_list.append(False)
     return accuracy_list
+
 
 # Testing --------------------------------------------------------------------------------------------------------------

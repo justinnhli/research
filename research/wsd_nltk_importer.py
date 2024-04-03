@@ -12,6 +12,8 @@ def extract_sentences(num_sentences=-1, partition=1):
     Parameters:
         num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
             from the corpus are used and if n=-1, all sentences from the corpus are used.
+        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+            sentences 10000 - 14999.
     Returns:
         list: sentence_list (list of all sentences or the first n sentences of the corpus), word_sense_dict (dictionary with the possible senses of
             each word in the corpus)
@@ -92,8 +94,14 @@ def extract_sentences(num_sentences=-1, partition=1):
 
 def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True):
     """
-    Note: will have to make more edits to the function before inside_corpus = False is accurate, since entries will need
-        to be made for all words that have links to them.
+    Gets the words related to each word in sentence_list and builds a dictionary to make the semantic network
+    Parameters:
+        sentence_list (list): list of all sentences or a partition of n sentences in the corpus
+        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+            sentences 10000 - 14999.
+        outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
+            relations are only considered from words inside the corpus.
+    Returns: (dict) A dictionary with the semantic relations for every unique word in sentence_list
     """
     sem_rel_path = "./semantic_relations_list"
     if not outside_corpus:
@@ -145,7 +153,6 @@ def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True)
                                                             also_sees=lemma_relations[7],
                                                             verb_groups=lemma_relations[8],
                                                             similar_tos=lemma_relations[9])
-            # semantic_relations_dict[word] = word_sem_rel_subdict
             # Adding pairs of word & the dictionary containing its relations to the big json list (since json doesn't let lists be keys)
             # But we can still keep the word_sem_rel_subdict intact since its keys are strings
             semantic_relations_list.append([word, word_sem_rel_subdict])
@@ -170,6 +177,12 @@ def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True)
 
 # Helper Functions ----------------------------------------------------------------------------------------------------
 def lemma_to_tuple(lemma):
+    """
+    Converts lemmas to tuples to prevent usage of the nltk corpus
+    Parameters:
+        lemma (lemma object) a lemma object from the nltk package
+    Returns: a tuple containing the sense and synset of the word originally in lemma format.
+    """
     lemma_word = lemma.name()
     synset_string = lemma.synset().name()
     lemma_tuple = (lemma_word, synset_string)
@@ -179,8 +192,21 @@ def lemma_to_tuple(lemma):
 def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, attributes,
                              entailments, causes, also_sees, verb_groups, similar_tos):
     """
-    Creates an empty semantic relations dictionary with given semantic relations for a word.
-    Also converts tuples into lemmastrings for storage in json file.
+    Creates a semantic relations dictionary with given semantic relations for a word and converts those relations into
+        a list.
+    Parameters:
+        synonyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        hypernyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        hyponyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        holonyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        meronyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        attributes (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        entailments (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        causes (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        also_sees (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        verb_groups (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+        similar_tos (list) A list of word relations drawn from the synset a word belongs to from the nltk package
+    Returns: A dictionary with the semantic relations for one word in the corpus.
     """
     sem_rel_dict = {"synonyms": set(synonyms), "hypernyms": set(hypernyms), "hyponyms": set(hyponyms),
                     "holonyms": set(holonyms), "meronyms": set(meronyms), "attributes": set(attributes),
@@ -196,6 +222,4 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
 
 
 # Testing---------------------------------------------------------------------------------------------------------------
-for part in range(1, 7):
-    sent_list, wsd = extract_sentences(num_sentences=5000, partition=part)
-    dicter = get_semantic_relations_dict(sentence_list=sent_list, partition=part, outside_corpus=False)
+
