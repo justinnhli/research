@@ -62,8 +62,6 @@ class PairwiseCooccurrenceActivation(ActivationDynamics):
 
 
 
-
-
     def get_activation(self, mem_id, time):
         """Get the activation of the element with the given ID.
         Parameters:

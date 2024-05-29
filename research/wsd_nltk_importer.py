@@ -19,14 +19,14 @@ def extract_sentences(num_sentences=-1, partition=1):
             each word in the corpus)
     """
     if num_sentences == -1:
-        sentence_list_path = "./sentence_list.json"
-        word_sense_dict_path = "./word_sense_dict.json"
+        sentence_list_path = "./sentence_list/sentence_list.json"
+        word_sense_dict_path = "./word_sense_dict/word_sense_dict.json"
     elif num_sentences != -1 and partition == 1:
-        sentence_list_path = "./sentence_list_" + str(num_sentences) + ".json"
-        word_sense_dict_path = "./word_sense_dict_" + str(num_sentences) + ".json"
+        sentence_list_path = "./sentence_list/sentence_list_" + str(num_sentences) + ".json"
+        word_sense_dict_path = "./word_sense_dict/word_sense_dict_" + str(num_sentences) + ".json"
     else:
-        sentence_list_path = "./sentence_list_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
-        word_sense_dict_path = "./word_sense_dict_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
+        sentence_list_path = "./sentence_list/sentence_list_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
+        word_sense_dict_path = "./word_sense_dict/word_sense_dict_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
     if not (os.path.isfile(sentence_list_path) or os.path.isfile(word_sense_dict_path)):
         # Checking that file exists
         sentence_list = []
@@ -103,7 +103,7 @@ def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True)
             relations are only considered from words inside the corpus.
     Returns: (dict) A dictionary with the semantic relations for every unique word in sentence_list
     """
-    sem_rel_path = "./semantic_relations_list"
+    sem_rel_path = "./semantic_relations/semantic_relations_list"
     if not outside_corpus:
         sem_rel_path = sem_rel_path + "_inside_corpus"
     if len(sentence_list) == 30195:

@@ -121,16 +121,8 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activ
                         )))
     relations_keys = list(semantic_relations_dict.keys())
     for word_index in range(len(relations_keys)):
-        if word_index % 100 == 0:
-            print(str(word_index) + " of " + str(len(relations_keys)))
         word_key = relations_keys[word_index]
         val_dict = semantic_relations_dict[word_key]
-        if not outside_corpus:
-            for val_key in val_dict.keys():
-                if not val_dict[val_key]:
-                    continue
-                rel_words = val_dict[val_key]
-                val_dict[val_key] = [word for word in rel_words if word in semcor_words]
         network.store(mem_id=word_key,
                       time=1,
                       spread_depth=spread_depth,
@@ -314,6 +306,8 @@ def guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_netwo
     """
     word = sentence[target_index]
     senses = word_sense_dict[word[0]]
+    if word[0] == "be":
+        get_word_activations("be", time, word_sense_dict, sem_network)
     max_act = float('-inf')
     for sense in senses:
         sense_act = sem_network.get_activation(mem_id=sense, time=time)
@@ -375,7 +369,7 @@ def get_accuracy_from_file(input_file):
 
 def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_network=None,
                         input_timer=None, clear_network="never", activation_base=2, decay_parameter=0.05,
-                        constant_offset=0, iterations=1, partition=1, outside_corpus=True):
+                        constant_offset=0, iterations=1, partition=1, outside_corpus=True, index_info=False):
     """
     Guesses the word sense for every word in the corpus based on a specified guess method.
     Parameters:
@@ -397,6 +391,8 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
             sentences 10000 - 14999.
         outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
             relations are only considered from words inside the corpus.
+        index_info (bool): True indicates that the first entry in each dictionary value will indicate where in the
+         corpus the word is from in an "index tuple": (sentence number out of corpus, word number out of sentence)
     Returns:
         list: A list of how accurate guesses were based on each sense-specific word in the corpus, and the overall accuracy
             of the guessing method.
@@ -407,11 +403,13 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     else:
         path = "./results/" + guess_method + "_iter_"
     if "semantic" in guess_method:
-        path = path + str(len(sentence_list)) + "_sents_" + clear_network + "_clear_" + str(outside_corpus) + \
-               "_outside_corpus_" + str(partition) + "_partition_accuracy_list_" + curr_time + ".json"
+        path += str(len(sentence_list)) + "_sents_" + clear_network + "_clear_" + str(outside_corpus) + \
+               "_outside_corpus_" + str(partition) + "_partition"
     else:
-        path = path + str(len(sentence_list)) + "_sents_" + "partition_" + str(
-            partition) + "_accuracy_list_" + curr_time + ".json"
+        path += str(len(sentence_list)) + "_sents_" + str(partition) + "_partition"
+    if index_info:
+        path += "_index"
+    path += "_accuracy_list_" + curr_time + ".json"
     word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
         sentence_list)
     if guess_method == "naive_semantic" and input_sem_network is None and input_timer is None:
@@ -438,7 +436,8 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
             sem_network = clear_sem_network(sem_network, 1)
             timer = 2  # reset timer
         accuracy_dict = defaultdict(list)
-        for sentence in sentence_list:
+        for sentence_index in range(len(sentence_list)):
+            sentence = sentence_list[sentence_index]
             if "naive_semantic" in guess_method and clear_network == "sentence":
                 sem_network = clear_sem_network(sem_network, 1)
                 timer = 2  # reset timer.
@@ -490,7 +489,10 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
                         temp_sense_accuracies.append(True)
                     else:
                         temp_sense_accuracies.append(False)
-                accuracy_dict[target_sense].append(temp_sense_accuracies)
+                if index_info:
+                    accuracy_dict[target_sense].append([tuple([sentence_index, target_index]), temp_sense_accuracies])
+                else:
+                    accuracy_dict[target_sense].append(temp_sense_accuracies)
         accuracy_list = []
         for word in accuracy_dict.keys():
             accuracy_list.append([word, accuracy_dict[word]])
@@ -503,6 +505,10 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
         json.dump(accuracy_list, file)
         file.close()
         accuracy_dicts.append(accuracy_dict)
+        # Testing Thingie
+        senses = word_sense_dict["be"]
+        for sense in senses:
+            print("Sense =", sense, "Acts =", sem_network.activation.activations[sense])
     return accuracy_dicts
 
 
@@ -525,5 +531,14 @@ def dummy_predict_word_sense(sentence_list):
             accuracy_list.append(False)
     return accuracy_list
 
+def get_word_activations(word, time, word_sense_dict, network):
+    senses = word_sense_dict[word]
+    print("Time =", time)
+    for sense in senses:
+        print("Sense=", sense, ", Activation =", network.activation.get_activation(sense, time))
+
 
 # Testing --------------------------------------------------------------------------------------------------------------
+
+#run_wsd("naive_semantic_spreading", activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=1000,
+            #partition=2, outside_corpus=True, clear_network="never")

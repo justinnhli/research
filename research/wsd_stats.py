@@ -1,261 +1,7 @@
 from wsd_task import *
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 from collections import defaultdict
-import statistics
-import math
+import os
 
-
-def get_simple_plot(plot_type="word"):
-    """
-    Produces simple scatterplot of percentage correct vs. word appearances for each word in the corpus.
-    """
-    sentence_list, word_sense_dict = extract_sentences()
-    guess_list = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)[0]
-    word_freq_guesses = {}
-    for word_tuple in guess_list.keys():
-        if plot_type == "word":
-            key = word_tuple[0].name()
-        elif plot_type == "sense":
-            key = word_tuple
-        if key not in word_freq_guesses.keys():
-            word_freq_guesses[key] = []
-        word_freq_guesses[key].extend(guess_list[word_tuple])
-    word_appearances = []
-    word_percent_correct = []
-    for word in word_freq_guesses.keys():
-        word_appearances.append(len(word_freq_guesses[word]))
-        word_percent_correct.append(word_freq_guesses[word].count(True) / len(word_freq_guesses[word]))
-    plt.scatter(word_appearances, word_percent_correct)
-    plt.ylim([0, 1.1])
-    if plot_type == "word":
-        xlab = "Word Appearances"
-    elif plot_type == "sense":
-        xlab = "Sense Appearances"
-    plt.xlabel(xlab)
-    plt.ylabel("Percentage Correct")
-    # Mess with this more
-    plt.show()
-
-
-def get_cooccurrence_plot(guess_type, plot_type, activation_base=2, decay_parameter=0.05, constant_offset=0,
-                          iterations=1):
-    # plot types are # correct over all senses of target word based on (1) other word in sentence sense and (2) other
-    #   word in sentence word
-    # plot type can be other_word or other_sense
-    sentence_list, word_sense_dict = extract_sentences()
-    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
-        sentence_list)
-    word_counts, sense_counts = precompute_word_sense(sentence_list)
-    if guess_type == "context_word":
-        accuracy_dict = get_corpus_accuracy("context_word", sentence_list, word_sense_dict)
-    elif guess_type == "context_sense":
-        accuracy_dict = get_corpus_accuracy("context_sense", sentence_list, word_sense_dict)
-    elif guess_type == "frequency":
-        accuracy_dict = get_corpus_accuracy("frequency", sentence_list, word_sense_dict)
-    elif guess_type == "naive_semantic":
-        accuracy_dict = get_corpus_accuracy("naive_semantic", sentence_list, word_sense_dict,
-                                            activation_base=activation_base, decay_parameter=decay_parameter,
-                                            constant_offset=constant_offset, iterations=iterations)
-    elif guess_type == "naive_semantic_spreading":
-        accuracy_dict = get_corpus_accuracy("naive_semantic_spreading", sentence_list, word_sense_dict,
-                                            activation_base=activation_base, decay_parameter=decay_parameter,
-                                            constant_offset=constant_offset, iterations=iterations)
-    else:
-        return False
-    y_accuracies = []
-    x_cooccurrences = []
-    for sentence in sentence_list:
-        for target_index in range(len(sentence)):
-            target_sense = sentence[target_index]
-            target_word = target_sense[0].name()
-            cumulative_cooccurrrence_ratio = 0
-            for other_index in range(len(sentence)):
-                if other_index != target_index:
-                    other_sense = sentence[other_index]
-                    other_word = other_sense[0].name()
-                    if plot_type == "other_word":
-                        cumulative_cooccurrrence_ratio += math.log(
-                            word_word_cooccurrences[(target_word, other_word)] / word_counts[target_word])
-                    elif plot_type == "other_sense":
-                        cumulative_cooccurrrence_ratio += math.log(
-                            sense_word_cooccurrences[(other_sense, target_word)] / word_counts[target_word])
-                    else:
-                        raise ValueError(plot_type)
-                # Make x the number of times other words in sentence cooccur with word we are interested in
-                target_word_accuracy_list = []
-                for sense in word_sense_dict[target_word]:
-                    target_word_accuracy_list.append(accuracy_dict[sense])
-                flat_target_accuracy_list = sum(target_word_accuracy_list, [])
-                y_accuracies.append(flat_target_accuracy_list.count(True) / len(flat_target_accuracy_list))
-                x_cooccurrences.append(cumulative_cooccurrrence_ratio)
-    plt.scatter(x_cooccurrences, y_accuracies)
-    plt.ylim([0, 1.1])
-    if guess_type == "context_word":
-        plt.title("Accuracy vs. Cooccurrence (Context Word)")
-    elif guess_type == "context_sense":
-        plt.title("Accuracy vs. Cooccurrence (Context Sense)")
-    elif guess_type == "frequency":
-        plt.title("Accuracy vs. Cooccurrence (Frequency)")
-    else:
-        raise ValueError(guess_type)
-    if plot_type == "other_word":
-        plt.xlabel("Word Cooccurrence")
-    elif plot_type == "other_sense":
-        plt.xlabel("Sense Cooccurrence")
-    else:
-        raise ValueError(plot_type)
-    plt.ylabel("Target Word Accuracy")
-    plt.show()
-
-
-def get_cooccurrence_sentence_bin_plot(guess_type, plot_type, bin_width, bin_colors=True, error=False, num_sentences=-1,
-                                       activation_base=2, decay_parameter=0.05, constant_offset=0, save_plot = ""):
-    sentence_list, word_sense_dict = extract_sentences(num_sentences=num_sentences)
-    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
-        sentence_list)
-    word_counts, sense_counts = precompute_word_sense(sentence_list)
-    if guess_type == "naive_semantic":
-        sem_network = create_sem_network(sentence_list,
-                                                spreading=False,
-                                                activation_base=activation_base,
-                                                decay_parameter=decay_parameter,
-                                                constant_offset=constant_offset)
-    elif guess_type == "naive_semantic_spreading":
-        sem_network = create_sem_network(sentence_list,
-                                                spreading=True,
-                                                activation_base=activation_base,
-                                                decay_parameter=decay_parameter,
-                                                constant_offset=constant_offset)
-    timer = 2
-    target_accuracy_list = []
-    target_cooc_list = []
-    for sentence in sentence_list:
-        for target_index in range(len(sentence)):
-            target_sense = sentence[target_index]
-            target_word = target_sense[0]
-            if guess_type == "context_word":
-                guess = guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense_word_cooccurrences,
-                                                      word_word_cooccurrences)
-            elif guess_type == "context_sense":
-                guess = guess_word_sense_context_sense(target_index, sentence, word_sense_dict,
-                                                       sense_word_cooccurrences, sense_sense_cooccurrences)
-            elif guess_type == "frequency":
-                guess = guess_word_sense_frequency(target_index, sentence, word_sense_dict, sense_frequencies)
-            elif guess_type == "naive_semantic" or guess_type == "naive_semantic_spreading":
-                guess = guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_network, timer)
-                timer += 1
-            else:
-                raise ValueError(guess_type)
-            if guess == target_sense:
-                target_accuracy_list.append(1)
-            else:
-                target_accuracy_list.append(0)
-            temp_cooccurrence = 0
-            for other_index in range(len(sentence)):
-                if other_index == target_index:
-                    continue
-                other_sense = sentence[other_index]
-                other_word = other_sense[0]
-                if plot_type == "other_word":
-                    temp_cooccurrence += math.log(
-                        word_word_cooccurrences[(target_word, other_word)] / word_counts[target_word])
-                elif plot_type == "other_sense":
-                    temp_cooccurrence += math.log(
-                        sense_word_cooccurrences[(other_sense, target_word)] / word_counts[target_word])
-                else:
-                    raise ValueError(plot_type)
-            target_cooc_list.append(temp_cooccurrence)
-    max_bin_width = math.ceil(max(target_cooc_list) / bin_width) * bin_width
-    min_bin_width = math.floor(min(target_cooc_list) / bin_width) * bin_width
-    x_cooccurrences = []
-    y_accuracies = []
-    y_err = []
-    z_binsizes = []
-    for bin_index in range(min_bin_width, max_bin_width, bin_width):
-        bin_values = [target_accuracy_list[ii] for ii in range(len(target_cooc_list)) if
-                      target_cooc_list[ii] >= bin_index and target_cooc_list[ii] < bin_index + bin_width]
-        if len(bin_values) > 0:
-            x_cooccurrences.append(bin_index + (bin_width / 2))
-            y_accuracies.append(statistics.mean(bin_values))
-            z_binsizes.append(math.log(len(bin_values)))
-            if len(bin_values) > 1:
-                y_err.append(statistics.stdev(bin_values))
-            else:
-                y_err.append(0)
-    fig, ax = plt.subplots(figsize=(9, 6))
-    scatter = ax.scatter(x_cooccurrences, y_accuracies, c=z_binsizes, s=80)
-    plt.ylim([0, 1.1])
-    if bin_colors:
-        legend = ax.legend(*scatter.legend_elements(), loc=3,
-                           fontsize='x-small', title=" Log Bin Size")
-        ax.add_artist(legend)
-    if error:
-        ax.errorbar(x_cooccurrences, y_accuracies, yerr=y_err, capsize=1, fmt='none')
-    if guess_type == "context_word":
-        ax.set_title("Accuracy vs. Bin Cooccurrence (Context Word)")
-    elif guess_type == "context_sense":
-        ax.set_title("Accuracy vs. Bin Cooccurrence (Context Sense)")
-    elif guess_type == "frequency":
-        ax.set_title("Accuracy vs. Bin Cooccurrence (Frequency)")
-    elif guess_type == "naive_semantic":
-        ax.set_title("Accuracy vs. Bin Cooccurrence (Semantic)")
-    elif guess_type == "naive_semantic_spreading":
-        ax.set_title("Accuracy vs. Bin Cooccurrence (Semantic Spreading)")
-    else:
-        raise ValueError(guess_type)
-    if plot_type == "other_word":
-        ax.set_xlabel("Word Cooccurrence (bin = " + str(bin_width) + ")")
-    elif plot_type == "other_sense":
-        ax.set_xlabel("Sense Cooccurrence (bin = " + str(bin_width) + ")")
-    else:
-        raise ValueError(plot_type)
-    ax.set_ylabel("Avg. Binned Target Word Accuracy")
-    if save_plot != "":
-        fig.savefig(save_plot)
-    else:
-        plt.show()
-
-def get_iteration_graph(guess_type, num_sentences, num_iterations, activation_base=2, decay_parameter=0.05, constant_offset=0):
-    sentence_list, word_sense_dict = extract_sentences(num_sentences=num_sentences)
-    word_word_cooccurrences, sense_word_cooccurrences, sense_sense_cooccurrences, sense_frequencies = precompute_cooccurrences(
-        sentence_list)
-    word_counts, sense_counts = precompute_word_sense(sentence_list)
-    if guess_type == "naive_semantic":
-        sem_network = create_sem_network(sentence_list, spreading=False, time=True,
-                                                activation_base=activation_base,
-                                                decay_parameter=decay_parameter, constant_offset=constant_offset)
-    elif guess_type == "naive_semantic_spreading":
-        sem_network = create_sem_network(sentence_list, spreading=True, time=True,
-                                                activation_base=activation_base,
-                                                decay_parameter=decay_parameter, constant_offset=constant_offset)
-    else:
-        raise ValueError(guess_type)
-    iterations = range(num_iterations)
-    corpus_accuracies = []
-    for iter in iterations:
-        guess_dict, sem_network, timer = get_corpus_accuracy("naive_semantic",
-                                         sentence_list=sentence_list,
-                                         word_sense_dict=word_sense_dict,
-                                         input_sem_network=sem_network,
-                                         input_timer=timer,
-                                         return_network_timer=True)
-        corpus_guesses = sum(guess_dict.values(), [])
-        accuracy = corpus_guesses.count(True) / len(corpus_guesses)
-        corpus_accuracies.append(accuracy)
-    fig, ax = plt.subplots(figsize=(9, 6))
-    scatter = ax.scatter(iterations, corpus_accuracies,  s=80)
-    plt.ylim([0, 1.1])
-    if guess_type == "naive_semantic":
-        ax.set_title("Accuracy vs. Iterations (Semantic-No Spreading)")
-    elif guess_type == "naive_semantic_spreading":
-        ax.set_title("Accuracy vs. Iterations (Semantic - Spreading)")
-    else:
-        raise ValueError(guess_type)
-    ax.set_xlabel("Iterations")
-    ax.set_ylabel("Corpus Accuracy")
-    plt.show()
 
 def get_corpus_stats():
     """
@@ -306,56 +52,346 @@ def get_corpus_stats():
                     word_pair_counts[word_key] = 1
     return absolute_word_counts, absolute_sense_counts, word_pair_counts, sense_pair_counts
 
-def guess_type_comparisons(guess_method, sentence_list, clear_network="never"):
-    if "semantic" in guess_method:
-        my_path = "./" + guess_method + "_" + str(
-            len(sentence_list)) + "_sents_" + clear_network + "_clear_accuracy_list.json"
-        cluster_path = "./cluster_" + guess_method + "_" + str(
-            len(sentence_list)) + "_sents_" + clear_network + "_clear_accuracy_list.json"
+
+def get_results_file(partition, guess_method):
+    base_directory = "/Users/lilygebhart/Documents/GitHub/research/research/results_partitions_5000/partition"
+    partition_files = os.listdir(base_directory + str(partition))
+    if guess_method == "naive_semantic":
+        file = [file for file in partition_files if guess_method in file and "spreading" not in file]
+    elif guess_method == "word" or guess_method == "never" or guess_method == "sentence":
+        file = [file for file in partition_files if guess_method in file and "spreading" in file]
     else:
-        my_path = "./" + guess_method + "_" + str(len(sentence_list)) + "_sents_" + "accuracy_list.json"
-        cluster_path = "./cluster_" + guess_method + "_" + str(len(sentence_list)) + "_sents_" + "accuracy_list.json"
-    discrepancy_dict = defaultdict(list)
-    my_list = json.load(open(my_path))
-    cluster_list = json.load(open(cluster_path))
-    my_dict = {}
-    cluster_dict = {}
-    for index in range(len(my_list)):
-        my_word = tuple(my_list[index][0])
-        my_accuracies = my_list[index][1]
-        my_dict[my_word] = my_accuracies
-        cluster_word = tuple(cluster_list[index][0])
-        cluster_accuracies = cluster_list[index][1]
-        cluster_dict[cluster_word] = cluster_accuracies
-    for word in my_dict.keys():
-        my_accs = my_dict[word]
-        cluster_accs = cluster_dict[word]
-        if len(my_accs) != len(cluster_accs):
-            discrepancy_dict[word].append("length difference")
-        if my_accs.count(True) != cluster_accs.count(True):
-            discrepancy_dict[word].append("True difference")
-        if my_accs.count(False) != cluster_accs.count(False):
-            discrepancy_dict[word].append("False difference")
-    return discrepancy_dict
+        file = [file for file in partition_files if guess_method in file]
+    return base_directory + str(partition) + "/" + file[0]
 
 
-# Testing ------------------------------------------------------------------------------------------------------------------------------
-sentence_list, word_sense_dict = extract_sentences(200)
-comps = guess_type_comparisons("naive_semantic_spreading", sentence_list)
-print(len(comps.keys()))
+def get_method_accuracy_breakdown(handle,partition):
+    accuracy_breakdown_dict = defaultdict(list)
+    indexed_guess_dict = get_indexed_guess_dict(handle,
+                                                num_sentences=5000,
+                                                partition=partition,
+                                                indexed=False)
+    for word in list(indexed_guess_dict.keys()):
+        word_instance_dict = indexed_guess_dict[word]
+        for index in list(word_instance_dict.keys()):
+            guess = word_instance_dict[index]
+            if True in guess:
+                if len(guess) == 1:
+                    guess_acc_key = "true_one"
+                else:
+                    guess_acc_key = "true_mult"
+            else:
+                if len(guess) == 1:
+                    guess_acc_key = "false_one"
+                else:
+                    guess_acc_key = "false_mult"
+            accuracy_breakdown_dict[guess_acc_key].append(tuple([word, index]))
+    return accuracy_breakdown_dict
+
+
+def get_method_accuracy_breakdown_counts(handle):
+    acc_breakdown_dict = get_method_accuracy_breakdown(handle)
+    breakdown_counts = defaultdict(int)
+    breakdown_counts["true_one"] = len(acc_breakdown_dict["true_one"])
+    breakdown_counts["true_mult"] = len(acc_breakdown_dict["true_mult"])
+    breakdown_counts["false_one"] = len(acc_breakdown_dict["false_one"])
+    breakdown_counts["false_mult"] = len(acc_breakdown_dict["false_mult"])
+    return breakdown_counts
+
+
+def get_sentence_positions(num_sentences=-1, partition=1):
+    sentence_position_dict = defaultdict(list)
+    sentence_list, wsd = extract_sentences(num_sentences, partition)
+    for sent_index in range(len(sentence_list)):
+        sentence = sentence_list[sent_index]
+        for word_index in range(len(sentence)):
+            word = sentence[word_index]
+            sentence_position_dict[word].append(tuple([sent_index, word_index]))
+    return sentence_position_dict
+
+
+def get_indexed_guess_dict(handle, num_sentences=-1, partition=1, indexed=False):
+    guesses_json = json.load(open(handle))
+    indexed_guess_dict = defaultdict(dict)
+    if not indexed:
+        sentence_position_dict = get_sentence_positions(num_sentences, partition)
+    for index in range(len(guesses_json)):
+        word_appearances = guesses_json[index]
+        word = tuple(word_appearances[0])
+        guess_list = word_appearances[1]
+        instance_dict = defaultdict(dict)
+        if not indexed:
+            word_positions = sentence_position_dict[word]
+        for instance_index in range(len(guess_list)):
+            instance = guess_list[instance_index]
+            if indexed:
+                instance_dict[instance[0]] = instance[1]
+            else:
+                instance_dict[word_positions[instance_index]] = instance
+        indexed_guess_dict[tuple(word)] = instance_dict
+    return indexed_guess_dict
+
+
+def get_pairwise_guess_comp(handle1, handle2, num_sentences=-1, partition=1):
+    indexed_guess_dict1 = get_indexed_guess_dict(handle1,
+                                                 num_sentences=num_sentences,
+                                                 partition=partition,
+                                                 indexed=False)
+    indexed_guess_dict2 = get_indexed_guess_dict(handle2,
+                                                 num_sentences=num_sentences,
+                                                 partition=partition,
+                                                 indexed=False)
+    comp_guesses_dict = defaultdict(list)
+    for word in list(indexed_guess_dict1.keys()):
+        word_instance_dict1 = indexed_guess_dict1[word]
+        word_instance_dict2 = indexed_guess_dict2[word]
+        for index in list(word_instance_dict1.keys()):
+            guess1 = word_instance_dict1[index]
+            guess2 = word_instance_dict2[index]
+            if True in guess1 and True in guess2:
+                if len(guess1) == 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["true_one", "true_one"])
+                elif len(guess1) == 1 and len(guess2) > 1:
+                    comp_guesses_key = tuple(["true_one", "true_mult"])
+                elif len(guess1) > 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["true_mult", "true_one"])
+                else:
+                    comp_guesses_key = tuple(["true_mult", "true_mult"])
+            elif True in guess1 and True not in guess2:
+                if len(guess1) == 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["true_one", "false_one"])
+                elif len(guess1) > 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["true_mult", "false_one"])
+                elif len(guess1) == 1 and len(guess2) > 1:
+                    comp_guesses_key = tuple(["true_one", "false_mult"])
+                else:
+                    comp_guesses_key = tuple(["truemult", "false_mult"])
+            elif True not in guess1 and True in guess2:
+                if len(guess1) == 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["false_one", "true_one"])
+                elif len(guess1) > 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["false_mult", "true_one"])
+                elif len(guess1) == 1 and len(guess2) > 1:
+                    comp_guesses_key = tuple(["false_one", "true_mult"])
+                else:
+                    comp_guesses_key = tuple(["false_mult", "true_mult"])
+            else:
+                # if everything is false in here
+                if len(guess1) > 1 and len(guess2) > 1:
+                    comp_guesses_key = tuple(["false_mult", "false_mult"])
+                elif len(guess1) == 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["false_one", "false_one"])
+                elif len(guess1) > 1 and len(guess2) == 1:
+                    comp_guesses_key = tuple(["false_mult", "false_one"])
+                else:
+                    comp_guesses_key = tuple(["false_one", "false_mult"])
+            comp_guesses_dict[comp_guesses_key].append(tuple([word, index]))
+    return comp_guesses_dict
+
+
+def get_mult_simple_guess_comps(handle_list, num_sentences=-1, partition=1):
+    guess_dicts = []
+    comp_guesses_dict = defaultdict(list)
+    for handle in handle_list:
+        guess_dicts.append(get_indexed_guess_dict(handle,
+                                                  num_sentences=num_sentences,
+                                                  partition=partition,
+                                                  indexed=False))
+    sample_dict = guess_dicts[0]
+    guess_dict_keys = list(sample_dict.keys())
+    for word_index in range(len(guess_dict_keys)):
+        word = guess_dict_keys[word_index]
+        index_keys = list(sample_dict[word].keys())
+        for index in index_keys:
+            true_list = []
+            for d in range(len(guess_dicts)):
+                guess_accuracies = guess_dicts[d][word][index]
+                if True in guess_accuracies:
+                    true_list.append(True)
+                else:
+                    true_list.append(False)
+            true_list = list(set(true_list))
+            if len(true_list) == 1:
+                if true_list[0]:
+                    comp_guesses_key = "all_true"
+                else:
+                    comp_guesses_key = "all_false"
+            else:
+                comp_guesses_key = "true_false"
+            comp_guesses_dict[comp_guesses_key].append(tuple([word, index]))
+    return comp_guesses_dict
+
+
+def get_pairwise_counts(handle1, handle2, num_sentences, partition, detailed=False):
+    pairwise_guesses = get_pairwise_guess_comp(handle1, handle2, num_sentences=num_sentences, partition=partition)
+    count_difs = defaultdict(int)
+    categories = [tuple(["true_one", "true_one"]),
+                  tuple(["true_one", "true_mult"]),
+                  tuple(["true_mult", "true_one"]),
+                  tuple(["true_mult", "true_mult"]),
+                  tuple(["true_one", "false_one"]),
+                  tuple(["true_mult", "false_one"]),
+                  tuple(["true_one", "false_mult"]),
+                  tuple(["true_mult", "false_mult"]),
+                  tuple(["false_one", "true_one"]),
+                  tuple(["false_mult", "true_one"]),
+                  tuple(["false_one", "true_mult"]),
+                  tuple(["false_mult", "true_mult"]),
+                  tuple(["false_mult", "false_mult"]),
+                  tuple(["false_one", "false_one"]),
+                  tuple(["false_mult", "false_one"]),
+                  tuple(["false_one", "false_mult"])]
+    if not detailed:
+        for cat in categories[0:4]:
+            count_difs["true_true"] += len(pairwise_guesses[cat])
+        for cat in categories[4:8]:
+            count_difs["true_false"] += len(pairwise_guesses[cat])
+        for cat in categories[8:12]:
+            count_difs["false_true"] += len(pairwise_guesses[cat])
+        for cat in categories[12:]:
+            count_difs["false_false"] += len(pairwise_guesses[cat])
+    else:
+        for cat in categories:
+            count_difs[cat] += len(pairwise_guesses[cat])
+    return count_difs
+
+
+def get_contradictory_results(handle_list1, handle_list2, num_sentences=-1, partition=1):
+    """
+    Pits everything in handle_list1 against everything in handle_list2
+    """
+    comps_1 = get_mult_simple_guess_comps(handle_list1, num_sentences=num_sentences, partition=partition)
+    comps_2 = get_mult_simple_guess_comps(handle_list2, num_sentences=num_sentences, partition=partition)
+    trues1 = set(comps_1["all_true"])
+    falses1 = set(comps_1["all_false"])
+    trues2 = set(comps_2["all_true"])
+    falses2 = set(comps_2["all_false"])
+    true_false = trues1 & falses2
+    false_true = falses1 & trues2
+    return true_false, false_true
+
+
+def get_contradictory_partition_results(false_guess_methods, true_guess_methods):
+    for partition in range(1, 7):
+        false_directories = []
+        for method in false_guess_methods:
+            false_directories.append(get_results_file(partition=partition, guess_method=method))
+        true_directories = []
+        for method in true_guess_methods:
+            false_directories.append(get_results_file(partition=partition, guess_method=method))
+        true_false, results = get_contradictory_results(false_directories, true_directories, num_sentences=5000,
+                                                        partition=partition)
+        print("partition: ", partition)
+        print("Number of Discrepancies", len(results))
+        presorted_results = []
+        frequency_dict = defaultdict(int)
+        sent_dict = defaultdict(list)
+        for elem in list(results):
+            presorted_results.append(tuple([elem[1], elem[0]]))
+            frequency_dict[elem[0]] += 1
+            sent_dict[elem[1][0]].append(elem[0])
+        sorted_results = sorted(presorted_results)
+
+        frequency_list = []
+        for i in list(frequency_dict.keys()):
+            frequency_list.append([frequency_dict[i], i])
+        frequency_list = (sorted(frequency_list))[::-1]
+        print("freq list ")
+        for i in frequency_list:
+            if i[0] > 1:
+                print(i)
+
+        sent_list = []
+        for i in list(sent_dict.keys()):
+            if len(sent_dict[i]) > 1:
+                sent_list.append([i, sent_dict[i]])
+        print("sentlist ")
+        for i in sorted(sent_list):
+            print(i)
+        print()
+
+
+# Testing --------------------------------------------------------------------------------------------------------------
+# loc_words = [('be', 'exist.v.01'),
+# ('exist', 'exist.v.01')]
+# # Getting frequencies of certain words in the corpus.
+# for partition in [1,4]:
+#     print("Partition:", partition)
+#     sent_list = extract_sentences(num_sentences=5000, partition=partition)[0]
+#     frequencies = precompute_word_sense(sent_list)[1]
+#     for sent_index in range(len(sent_list)):
+#         sent = sent_list[sent_index]
+#         for word_index in range(len(sent)):
+#             word = sent[word_index]
+#             if word in loc_words:
+#                 print(word, ", sent=", sent_index, ", word=", word_index)
+
+
+# for partition in [1,4]:
+#     sent_list = extract_sentences(num_sentences=5000, partition=partition)[0]
+#     sem_rels = get_semantic_relations_dict(sent_list, partition=partition, outside_corpus=False)
+#     for word in [('constitute', 'constitute.v.01'), ('comprise', 'constitute.v.01'), ('represent', 'constitute.v.01'), ('make_up', 'constitute.v.01'), ('exist', 'exist.v.01') ]:
+#         if word in list(sem_rels.keys()):
+#             print("Partition:", partition, ", Word:", word)
+#             print(list(sem_rels[word].keys()))
+#             primary_connects = set()
+#             print("Primary Connections:")
+#             for connect in list(sem_rels[word].keys()):
+#                 print(connect, ":", sem_rels[word][connect])
+#                 primary_connects.update(sem_rels[word][connect])
+#             print("Number of Primary Connections:", len(list(primary_connects)))
+#             print()
+#
+
+
+# for partition in range(1,7):
+#     print("partition :", partition)
+#     accs = get_method_accuracy_breakdown(get_results_file(partition=partition, guess_method="context_sense"), partition)
+#     #sent_list = extract_sentences(num_sentences=5000, partition=partition)[0]
+#     #sents = sum(sent_list, [])
+#     #sem_rels = get_semantic_relations_dict(sent_list[0], 1, False)
+#     occurrence_dict = defaultdict(dict)
+#     print(list(accs.keys()))
+#     for key in list(accs.keys()):
+#         guess_accs = accs[key]
+#         for i in guess_accs:
+#             if "be" in i[0]:
+#                 if i[0] not in list(occurrence_dict.keys()):
+#                     occurrence_dict[i[0]]["true_mult"] = 0
+#                     occurrence_dict[i[0]]["true_one"] = 0
+#                     occurrence_dict[i[0]]["false_mult"] = 0
+#                     occurrence_dict[i[0]]["false_one"] = 0
+#                 occurrence_dict[i[0]][key] += 1
+#     keys = list(occurrence_dict.keys())
+#     for i in keys:
+#         print(i, ":")
+#         for j in list(accs.keys()):
+#             print(j, ":", occurrence_dict[i][j])
+#     print()
 
 
 
 
-#get_simple_plot(2, 0.05, 0, plot_type="sense")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=1)
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=20)
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="frequency", bin_width=50)
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="context_sense", bin_width=20)
-# get_cooccurrence_plot(plot_type="other_sense", guess_type="context_sense")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=-1,
-                                   #save_plot="sem_sense_20_all.png")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_sense", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
-                                   #save_plot="sem_sense_20_500.png")
-#get_cooccurrence_sentence_bin_plot(plot_type="other_word", guess_type="naive_semantic_spreading", bin_width=20, num_sentences=500,
-                                   #save_plot="sem_word_20_500.png")
+
+#for partition in range(1, 7):
+    #for guess in ["never", "sentence", "word"]:
+        #handle = get_results_file(partition, guess)
+        #context_word_handle = get_results_file(partition, "context_word")
+        #context_sense_handle = get_results_file(partition, "context_sense")
+        #no_spread_handle = get_results_file(partition, "naive_semantic")
+
+        # print("partition:", partition, ",", guess, "clear Spreading vs Context Sense")
+        # sense_counts = get_pairwise_counts(handle, context_sense_handle, 5000, partition, detailed=True)
+        # for i in list(sense_counts.keys()):
+        # print(i, " : ", sense_counts[i])
+        # print()
+        # print("partition:", partition, ",", guess, "clear Spreading vs Context Word")
+        # word_counts = get_pairwise_counts(handle, context_word_handle, 5000, partition, detailed=True)
+        # for i in list(sense_counts.keys()):
+        # print(i, " : ", word_counts[i])
+        # print()
+        # print("partition:", partition, ",", guess, "clear Spreading vs No Spreading")
+        # no_spread_counts = get_pairwise_counts(handle, no_spread_handle, 5000, partition, detailed=True)
+        # for i in list(no_spread_counts.keys()):
+        # print(i, " : ", no_spread_counts[i])
+        # print()

@@ -1,5 +1,3 @@
-import math
-#import nltk
 from long_term_memory import NaiveDictLTM
 from uuid import uuid4 as uuid
 from data_structures import AVLTree
@@ -15,7 +13,6 @@ class sentenceLTM(NaiveDictLTM):
         Parameters:
             activation_cls: Must be SentenceCooccurrenceActivation.
         """
-        #super.__init__(**kwargs)
         super().__init__(**kwargs)
         self.activation = activation_cls(self)
         self.cooccurrent_elements = {}
