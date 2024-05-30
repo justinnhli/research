@@ -2,7 +2,7 @@
 import json
 import csv
 from collections import defaultdict
-from research import sem_network
+from research import agent_sem_network
 from research.wsd_task import clear_sem_network
 
 
@@ -25,8 +25,8 @@ def run_rat(rat_file_link, swowen_link, sffan_link, spreading=True, guess_type="
     rat_file = csv.reader(open(rat_file_link))
     next(rat_file)
     if guess_type == "semantic":
-        combined_dict = sem_network.make_combined_dict(swowen_link, sffan_link)
-        network = sem_network.create_combined_sem_network(combined_dict)
+        combined_dict = agent_sem_network.make_combined_dict(swowen_link, sffan_link)
+        network = agent_sem_network.create_combined_sem_network(combined_dict)
         if spreading:
             spread_depth = -1
         else:
@@ -85,7 +85,7 @@ def guess_rat_semantic(context, network, spread_depth):
 
 def solve_rat_spreading(swowen_link, sffan_link, rat_link):
     results = defaultdict(set)
-    combined_dict = sem_network.make_combined_dict(swowen_link, sffan_link)
+    combined_dict = agent_sem_network.make_combined_dict(swowen_link, sffan_link)
     print(len(list(combined_dict.keys())))
     rat_dict = make_rat_dict(rat_link)
     counter = 0
@@ -138,6 +138,8 @@ def get_all_network_links(network_dict, word):
                     next_links.update(network_dict[link])
         curr_links = next_links.difference(past_links)
     return past_links
+
+
 
 
 
