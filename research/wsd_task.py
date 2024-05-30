@@ -11,7 +11,8 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
     Runs the word sense disambiguation task over the Semcor corpus (or a subset of it).
     Parameters:
         guess_method (string): The function used to guess the sense of each word in each sentence. Possibilities are:
-            "cooc", "frequency", "naive_semantic", "naive_semantic_spreading", "oracle".
+            "cooc", "frequency", "naive_semantic", "naive_semantic_spreading", "oracle". Integrated mechanism
+            possibilities include: "sem_thresh_cooc", "cooc_thresh_sem"
         activation_base (float): A parameter in the activation equation.
         decay_parameter (float): A parameter in the activation equation.
         constant_offset (float): A parameter in the activation equation.
@@ -84,6 +85,23 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
                                           iterations=iterations,
                                           partition=partition,
                                           outside_corpus=outside_corpus)
+    elif guess_method == "sem_thresh_cooc":
+        guess_dicts = get_corpus_accuracy("sem_thresh_cooc",
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          iterations=iterations,
+                                          partition=partition)
+    elif guess_method == "cooc_thresh_sem":
+        guess_dicts = get_corpus_accuracy("cooc_thresh_sem",
+                                          sentence_list=sentence_list,
+                                          word_sense_dict=word_sense_dict,
+                                          clear_network=clear_network,
+                                          activation_base=activation_base,
+                                          decay_parameter=decay_parameter,
+                                          constant_offset=constant_offset,
+                                          iterations=iterations,
+                                          partition=partition,
+                                          outside_corpus=outside_corpus)
     else:
         raise ValueError(guess_method)
     accuracies = []
@@ -103,7 +121,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
 
 
 def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activation_base=2, decay_parameter=0.05,
-                       constant_offset=0, partition=1):
+                       constant_offset=0, partition=1, cooc_thresh=False):
     """
     Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms, hyponyms,
         holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos. Note that all words
@@ -133,9 +151,19 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activ
                             decay_parameter=decay_parameter
                         )))
     relations_keys = list(semantic_relations_dict.keys())
+    if cooc_thresh:
+        cooc_rel_dict = create_cooc_relations_dict(sentence_list)
     for word_index in range(len(relations_keys)):
         word_key = relations_keys[word_index]
         val_dict = semantic_relations_dict[word_key]
+        print(word_key, val_dict.items())
+        if cooc_thresh:
+            for cat in val_dict.keys():
+                rels = val_dict[cat]
+                for rel in rels:
+                    if rel not in cooc_rel_dict[word_key]:
+                        val_dict[cat].remove(rel)
+        print(word_key, val_dict.items())
         network.store(mem_id=word_key,
                       time=1,
                       spread_depth=spread_depth,
@@ -151,6 +179,22 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=True, activ
                       verb_groups=val_dict['verb_groups'],
                       similar_tos=val_dict['similar_tos'])
     return network
+
+
+def create_cooc_relations_dict(sentence_list):
+    """
+    Creates a dictionary where each word in the corpus is a key and each of the other words it cooccurs with (are in
+    the same sentence as our target word) are values (in a set).
+    """
+    cooc_rel_dict = defaultdict(set)
+    for sent in sentence_list:
+        for index in range(len(sent)):
+            for context_index in range(len(sent)):
+                if index != context_index:
+                    word = sent[index]
+                    context_word = sent[context_index]
+                    cooc_rel_dict[word].update(context_word)
+    return cooc_rel_dict
 
 
 def precompute_word_sense(sentence_list):
@@ -264,7 +308,8 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     Guesses the word sense for every word in the corpus based on a specified guess method.
     Parameters:
         guess_method (string): Which method to use when guessing the sense of each word. Possibilities are "cooc",
-            "naive_semantic_spreading", "naive_semantic", "oracle", and "frequency".
+            "naive_semantic_spreading", "naive_semantic", "oracle", and "frequency". Integrated mechanisms include
+            "sem_thresh_cooc", "cooc_thresh_sem".
         sentence_list (list): A nested list of all sentences in the corpus with each word referenced by a lemma/synset
             tuple.
         word_sense_dict (dict): dictionary with the possible senses of each word in the corpus
@@ -313,21 +358,26 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
                                          partition=partition, outside_corpus=outside_corpus)
     elif guess_method == "oracle":
         sem_network_never = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
-                                         decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition, outside_corpus=outside_corpus)
+                                               decay_parameter=decay_parameter, constant_offset=constant_offset,
+                                               partition=partition, outside_corpus=outside_corpus)
         sem_network_word = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
-                                         decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition, outside_corpus=outside_corpus)
+                                              decay_parameter=decay_parameter, constant_offset=constant_offset,
+                                              partition=partition, outside_corpus=outside_corpus)
         sem_network_sentence = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
-                                         decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition, outside_corpus=outside_corpus)
+                                                  decay_parameter=decay_parameter, constant_offset=constant_offset,
+                                                  partition=partition, outside_corpus=outside_corpus)
         sem_network_no_spread = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
-                                         decay_parameter=decay_parameter, constant_offset=constant_offset,
-                                         partition=partition, outside_corpus=outside_corpus)
+                                                   decay_parameter=decay_parameter, constant_offset=constant_offset,
+                                                   partition=partition, outside_corpus=outside_corpus)
         timer_never = 2
         timer_word = 2
         timer_sentence = 2
-    elif input_sem_network is not None and input_timer is not None and (guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
+    elif guess_method == "cooc_thresh_sem":
+        sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
+                                                   decay_parameter=decay_parameter, constant_offset=constant_offset,
+                                                   partition=partition, outside_corpus=outside_corpus, cooc_thresh=True)
+    elif input_sem_network is not None and input_timer is not None and (
+            guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading"):
         sem_network = input_sem_network
     elif guess_method == "naive_semantic" or guess_method == "naive_semantic_spreading" or guess_method == "oracle":
         raise ValueError(input_sem_network, input_timer)
@@ -336,6 +386,9 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
     if context != "word" and context != "sense":
         raise ValueError(context)
     timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
+    if guess_method == "sem_thresh_cooc":
+        sem_rel_dict = get_semantic_relations_dict(sentence_list=sentence_list, partition=partition,
+                                                   outside_corpus=False)
     accuracy_dicts = []  # List to store dictionaries of correct guesses for each iteration
     for iter in range(iterations):
         if "naive_semantic" in guess_method and iter > 1:
@@ -412,6 +465,23 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
                     timer_word += 1
                     timer_sentence += 1
                     timer_never += 1
+                elif guess_method == "sem_thresh_cooc":
+                    guesses = guess_word_sense_spreading_thresholded_cooccurrence(target_index,
+                                                                                  sentence,
+                                                                                  word_sense_dict,
+                                                                                  sem_rel_dict,
+                                                                                  sense_sense_cooccurrences,
+                                                                                  sense_word_cooccurrences,
+                                                                                  word_word_cooccurrences,
+                                                                                  context="word")
+                elif guess_method == "cooc_thresh_sem":
+                    guesses = guess_word_sense_semantic(target_index,
+                                                        sentence,
+                                                        word_sense_dict,
+                                                        sem_network,
+                                                        timer,
+                                                        spread_depth=-1)
+                    timer += 1
                 else:
                     raise ValueError(guess_method)
                 target_sense = sentence[target_index]
@@ -580,7 +650,6 @@ def guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_netwo
     senses = word_sense_dict[word[0]]
     max_act = float('-inf')
     for sense in senses:
-        print(sense, sem_network.activation.activations[sense])
         sense_act = sem_network.get_activation(mem_id=sense, time=time)
         if sense_act > max_act:
             max_act = sense_act
@@ -593,9 +662,53 @@ def guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_netwo
     return sense_guess
 
 
+def guess_word_sense_spreading_thresholded_cooccurrence(target_index, sentence, word_sense_dict, sem_rel_dict,
+                                                        sense_sense_cooccurrences, sense_word_cooccurrences,
+                                                        word_word_cooccurrences, context="word"):
+    max_score = -float("inf")
+    max_sense = None
+    target_sense = sentence[target_index]
+    target_word = target_sense[0]
+    for target_sense_candidate in word_sense_dict[target_sense[0]]:
+        aggregate = 0
+        for other_index in range(len(sentence)):
+            if other_index == target_index:
+                continue
+            other_sense = sentence[other_index]
+            if other_sense not in sem_rel_dict[target_sense] or target_sense not in sem_rel_dict[other_sense]:
+                continue
+            if context == "sense":
+                if (target_sense_candidate, other_sense) not in sense_sense_cooccurrences:
+                    numerator = 0
+                else:
+                    numerator = sense_sense_cooccurrences[(target_sense_candidate, other_sense)]
+                denominator = sense_word_cooccurrences[(other_sense, target_word)]
+            else:  # context == "word"
+                other_word = other_sense[0]
+                if (target_sense_candidate, other_word) not in sense_word_cooccurrences:
+                    numerator = 0
+                else:
+                    numerator = sense_word_cooccurrences[(target_sense_candidate, other_word)]
+                denominator = word_word_cooccurrences[(other_word, target_word)]
+            if denominator != 0:
+                aggregate += numerator / denominator
+        if aggregate > max_score:
+            max_score = aggregate
+            max_sense = [target_sense_candidate]
+        elif aggregate == max_score:
+            max_sense.append(target_sense_candidate)
+        if aggregate == 0:
+            return []
+    return max_sense
+
+
 def guess_word_sense_oracle(target_index, sentence, word_sense_dict, sense_sense_cooccurrences,
                             sense_word_cooccurrences, word_word_cooccurrences, sem_network_no_spread, sem_network_never,
                             sem_network_word, sem_network_sentence, timer_word, timer_sentence, timer_never):
+    """
+    Upper bound on WSD that assumes knowledge of the correct answer and tests if each cooccurrence and will answer
+    correct if at least one cooccurrence or spreading mechanism gets it right.
+    """
     correct_sense = sentence[target_index]
     cooc_word_guess = guess_word_sense_context_word(target_index, sentence, word_sense_dict, sense_word_cooccurrences,
                                                     word_word_cooccurrences)
@@ -618,7 +731,8 @@ def guess_word_sense_oracle(target_index, sentence, word_sense_dict, sense_sense
                                                spread_depth=-1)
     if correct_sense in sem_guess_word:
         return [correct_sense]
-    sem_guess_sentence = guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_network_sentence, timer_sentence,
+    sem_guess_sentence = guess_word_sense_semantic(target_index, sentence, word_sense_dict, sem_network_sentence,
+                                                   timer_sentence,
                                                    spread_depth=-1)
     if correct_sense in sem_guess_sentence:
         return [correct_sense]
@@ -634,7 +748,6 @@ def get_uniform_random_accuracy():
     num_words = 0
     uniform_likelihood_sum = 0
     sent_list, ws_dict = extract_sentences(-1)
-    print(ws_dict.items())
     sent_counter = 0
     accuracies = []
     for sent in sent_list:
@@ -648,8 +761,5 @@ def get_uniform_random_accuracy():
             num_words = 0
     return accuracies
 
-
 # Testing --------------------------------------------------------------------------------------------------------------
-#print(get_uniform_random_accuracy())
-print(run_wsd("oracle", activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1,
-    num_sentences=500, partition=1, outside_corpus=False))
+print(run_wsd("cooc_thresh_sem", iterations=1, num_sentences=500, partition=1, clear_network="never"))
