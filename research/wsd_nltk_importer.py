@@ -8,7 +8,6 @@ import os.path
 
 def extract_sentences(num_sentences=-1, partition=1):
     """
-    Runs the word sense disambiguation task.
     Parameters:
         num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
             from the corpus are used and if n=-1, all sentences from the corpus are used.
@@ -92,7 +91,7 @@ def extract_sentences(num_sentences=-1, partition=1):
     return sentence_list, word_sense_dict
 
 
-def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=True):
+def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=False):
     """
     Gets the words related to each word in sentence_list and builds a dictionary to make the semantic network
     Parameters:
@@ -220,6 +219,21 @@ def create_word_sem_rel_dict(synonyms, hypernyms, hyponyms, holonyms, meronyms, 
         sem_rel_dict[rel] = string_vals
     return sem_rel_dict
 
+def get_adjusted_sense_sem_rel_dict(sem_rel_dict):
+    """
+    Uses normal semantic relations dict that includes the particular sense of each related word that falls into each
+    sense category.
+    """
+    keys = sem_rel_dict.keys()
+    for word in keys:
+        rels = sem_rel_dict[word]
+        for rel in rels.keys():
+            new_rel_list = []
+            rel_words = rels[rel]
+            for rel_word in rel_words:
+                new_rel_list.append(rel_word[0])
+            sem_rel_dict[word][rel] = new_rel_list
+    return sem_rel_dict
 
 # Testing---------------------------------------------------------------------------------------------------------------
 

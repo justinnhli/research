@@ -1,0 +1,1 @@
+[["cheese", ["cottage", "swiss"]], ["ice", ["cream", "skate"]], ["sore", ["loser", "throat"]], ["boat", ["life", "show"]], ["watch", ["night", "wrist"]], ["bill", ["duck", "fold"]], ["chair", ["rocking", "wheel"]], ["honey", ["comb", "dew"]], ["soda", ["baking", "fountain"]], ["forest", ["preserve", "ranger"]]]
