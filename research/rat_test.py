@@ -10,7 +10,8 @@ from agent_spreading_thresh_cooccurrence import AgentSpreadingThreshCoocNGrams
 from agent_cooccurrence_thresh_spreading import AgentCoocThreshSpreadingNGrams
 
 
-def run_rat(rat_file_link, sem_rel_link, stopwords_link, spreading=True, guess_type="dummy"):
+def run_rat(guess_type, rat_file_link, sem_rel_link, stopwords_link, spreading=True, clear="never", activation_base=2,
+            decay_parameter=0.05, constant_offset=0):
     """
     Runs the RAT test.
     The stopwords_link is a text file that contains all stopwords
@@ -38,6 +39,14 @@ def run_rat(rat_file_link, sem_rel_link, stopwords_link, spreading=True, guess_t
     elif guess_type == "sem_thresh_cooc":
         sem_rel_dict = json.load(open(sem_rel_link))
         sem_thresh_cooc_agent = AgentSpreadingThreshCoocNGrams(stopwords=stopwords, sem_rel_dict=sem_rel_dict)
+    elif guess_type == "cooc_thresh_sem":
+        sem_rel_dict = json.load(open(sem_rel_link))
+        cooc_thresh_sem_agent = AgentCoocThreshSpreadingNGrams(sem_rel_dict,
+                                                               spreading=spreading,
+                                                               clear=clear,
+                                                               activation_base=activation_base,
+                                                               decay_parameter=decay_parameter,
+                                                               constant_offset=constant_offset)
     guesses = []
     count = 0
     for trial in rat_file:
@@ -55,6 +64,10 @@ def run_rat(rat_file_link, sem_rel_link, stopwords_link, spreading=True, guess_t
             guess = sem_agent.do_rat(context[0], context[1], context[2], spread_depth)
         elif guess_type == "cooccurrence":
             guess = cooc_agent.do_rat(context[0], context[1], context[2])
+        elif guess_type == "cooc_thresh_sem":
+            guess = cooc_thresh_sem_agent.do_rat(context[0], context[1], context[2])
+        elif guess_type == "sem_thresh_cooc":
+            guess = sem_thresh_cooc_agent.do_rat(context[0], context[1], context[2])
         else:
             raise ValueError(guess_type)
         guesses.append([true_guess, guess])
@@ -104,45 +117,6 @@ def make_combined_dict(swowen_link, sffan_link):
         json.dump(combined_dict, combined_file)
         combined_file.close()
     return
-
-
-def create_RAT_sem_network(sem_rel_dict, spreading=True, activation_base=2, decay_parameter=0.05,
-                                constant_offset=0):
-    """
-    Builds a semantic network with each key word in the SWOWEN and South Florida Free Association Norms (SFFAN).
-        Note that all words are stored at time 1.
-    Parameters:
-        SWOWEN_link (string): link to the SWOWEN preprocessed dictionary
-        SFFAN_link (string): link to the SFFAN preprocessed dictionary
-        spreading (bool): Whether to include the effects of spreading in creating the semantic network.
-        activation_base (float): A parameter in the activation equation.
-        decay_parameter (float): A parameter in the activation equation.
-        constant_offset (float): A parameter in the activation equation.
-        partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
-            sentences 10000 - 14999.
-    Returns:
-        network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
-    """
-    if spreading:
-        spread_depth = -1
-    else:
-        spread_depth = 0
-    network = sentence_long_term_memory.sentenceLTM(
-        activation_cls=(lambda ltm:
-                        sentence_long_term_memory.SentenceCooccurrenceActivation(
-                            ltm,
-                            activation_base=activation_base,
-                            constant_offset=constant_offset,
-                            decay_parameter=decay_parameter
-                        )))
-    keys = list(sem_rel_dict.keys())
-    for word in keys:
-        assocs = sem_rel_dict[word]
-        network.store(mem_id=word,
-                      time=1,
-                      spread_depth=spread_depth,
-                      assocs=assocs)
-    return network
 
 
 
