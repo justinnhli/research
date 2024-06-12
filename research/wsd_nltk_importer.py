@@ -100,7 +100,7 @@ def get_semantic_relations_dict(sentence_list, partition=1, outside_corpus=False
             sentences 10000 - 14999.
         outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
             relations are only considered from words inside the corpus.
-    Returns: (dict) A dictionary with the semantic relations for every unique word in sentence_list
+    Returns: (dict) A dictionary with the semantic relations for every unique word in sentence_list.
     """
     sem_rel_path = "./semantic_relations/semantic_relations_list"
     if not outside_corpus:

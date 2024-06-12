@@ -1,19 +1,20 @@
-""" A small library of functions that assist in working with the Semcor corpus"""
-
 from collections import defaultdict
-import random
-import datetime
 import nltk
 from nltk.corpus import semcor
-from nltk.corpus import wordnet as wn_corpus
 import json
 import os.path
 
 
 class CorpusUtilities:
-
+    """ A small library of functions that assist in working with the Semcor corpus"""
     def __init__(self, num_sentences=-1, partition=1):
-        """ If num_sentences == -1, all sentences in the corpus are used"""
+        """
+        Parameters:
+            num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
+                from the corpus are used and if n=-1, all sentences from the corpus are used.
+            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking
+                at sentences 10000 - 14999.
+        """
         self.num_sentences = num_sentences
         self.partition = partition
     def lemma_to_tuple(self, lemma):
@@ -21,7 +22,8 @@ class CorpusUtilities:
         Converts lemmas to tuples to prevent usage of the nltk corpus
         Parameters:
             lemma (lemma object) a lemma object from the nltk package
-        Returns: a tuple containing the sense and synset of the word originally in lemma format.
+        Returns:
+            (tuple) a tuple containing the sense and synset of the word originally in lemma format.
         """
         lemma_word = lemma.name()
         synset_string = lemma.synset().name()
@@ -30,15 +32,14 @@ class CorpusUtilities:
 
     def get_sentence_list(self):
         """
-            Gets sentence list from semcor corpus in nltk python module
-            Parameters:
-                num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
-                    from the corpus are used and if n=-1, all sentences from the corpus are used.
-                partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
-                    sentences 10000 - 14999.
-            Returns:
-                list: sentence_list (list of all sentences or the first n sentences of the corpus), word_sense_dict (dictionary with the possible senses of
-                    each word in the corpus)
+        Gets sentence list from semcor corpus in nltk python module
+        Parameters:
+            num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
+                from the corpus are used and if n=-1, all sentences from the corpus are used.
+            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
+                sentences 10000 - 14999.
+        Returns:
+            (list) sentence_list (list of all sentences or the first n sentences of the corpus)
         """
         if self.num_sentences == -1:
             sentence_list_path = "./sentence_list/sentence_list.json"
@@ -147,7 +148,11 @@ class CorpusUtilities:
         return sense_word_cooccurrences
 
     def get_word_sense_dict(self):
-        """ Makes a dictionary with each senseless word the key, and each of its senses the values."""
+        """
+        Makes a dictionary with each senseless word the key, and each of its senses the values.
+        Returns:
+             (dict) dictionary with the possible senses of each word in the corpus
+            """
         word_sense_dict = defaultdict(set)
         sentence_list = self.get_sentence_list()
         for sentence in sentence_list:

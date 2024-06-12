@@ -51,8 +51,7 @@ def run_rat(guess_type, rat_file_link, sem_rel_link, stopwords_link, spreading=T
     count = 0
     for trial in rat_file:
         count += 1
-        print("count", count)
-        if count > 10:
+        if count > 5:
             break
         row = trial
         context = row[:3]
@@ -121,22 +120,24 @@ def make_combined_dict(swowen_link, sffan_link):
 
 
 # Testing.... ______________________________________________________________________________________________________
-# sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading_sample.json'
-# swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading_sample.json'
-# rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
-#
-# results, accuracy = run_rat(rat_link, swowen_link, guess_type="semantic")
-# print("semantic", results)
+sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading_sample.json'
+swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading_sample.json'
+rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
+
+# results, accuracy = run_rat(guess_type="sem_thresh_cooc", rat_file_link=rat_link, sem_rel_link=swowen_link,
+#                             stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
+# print("thresh", results)
 # file = open("rat_test_results_semantic.txt", mode="w")
 # json.dump(results, file)
 # file.close()
-# print(accuracy)
-#
-# results, accuracy = run_rat(rat_link, swowen_link, guess_type="cooccurrence")
-# print("cooccurrence", results)
+
+
+results, accuracy = run_rat(guess_type="cooccurrence", rat_file_link=rat_link, sem_rel_link=swowen_link,
+                            stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
+print("cooccurrence", results)
 # file = open("rat_test_results_cooc.txt", mode="w")
 # json.dump(results, file)
 # file.close()
-# print(accuracy)
+print(accuracy)
 
 

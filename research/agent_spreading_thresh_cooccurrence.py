@@ -14,7 +14,18 @@ class AgentSpreadingThreshCoocCorpus(AgentCooccurrenceCorpus, AgentSpreadingCorp
     def __init__(self, num_sentences, partition, corpus_utilities, context_type, outside_corpus):
         """
         Whole corpus is whether semantic relations should be required to cooccur with the target word over the whole
-        corpus (True) or only in the partition of interest
+        corpus (True) or only in the partition of interest.
+        Parameters:
+            num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
+                from the corpus are used and if n=-1, all sentences from the corpus are used.
+            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking
+                at sentences 10000 - 14999.
+            corpus_utilities (class): A class of functions useful for corpus mechanisms, specific to the partition of the
+                Semcor corpus used
+            context_type (string): Indicates for cooccurrence dependent corpus mechanisms, whether we know the sense of the
+                context words ("sense") or not ("word")
+            whole_corpus (bool): For cooccurrence dependent corpus mechanisms, whether to include cooccurrent relations from
+                the whole corpus (True) or not (False).
         """
         super().__init__(num_sentences=num_sentences, partition=partition,
                          corpus_utilities=corpus_utilities, context_type=context_type)
@@ -32,10 +43,14 @@ class AgentSpreadingThreshCoocCorpus(AgentCooccurrenceCorpus, AgentSpreadingCorp
 
     def get_word_adjusted_sem_rel_dict(self, sem_rel_dict):
         """
-        Uses normal semantic relations dict that includes the particular sense of each related word that falls into each
-        sense category.
-        Makes a "word-based" (for dealing with teh semcor corpus) semantic relations dictionary from the original sense
-        based sem rel dict.
+         Creates a word-based semantic relations dictionary (assuming we don't care about the sense of each
+         semantically-related word).
+         Parameters:
+            sem_rel_dict (dict): A nested dictionary with each sense-specific word the key, and values the different
+                semantic categories (synonyms, hyponyms, etc.) that the various sense-specific semantically related
+                words are included in.
+         Returns: (dict) Altered semantic relations dict that assumes only the sense of each semantically related word
+            is not known.
         """
         keys = sem_rel_dict.keys()
         for word in keys:
@@ -50,6 +65,15 @@ class AgentSpreadingThreshCoocCorpus(AgentCooccurrenceCorpus, AgentSpreadingCorp
 
 
     def do_wsd(self, target_index, sentence):
+        """
+        Completes the WSD task.
+        Parameters:
+            target_index (int): Integer >= 0 corresponding to the index of the list of sentence words where the target
+                sense can be found.
+            sentence (list): List of words in the current sentence from the SemCor corpus.
+        Returns:
+            (list) A list of word sense disambiguation sense guesses.
+        """
         max_score = -float("inf")
         max_senses = None
         target_sense = sentence[target_index]
@@ -87,18 +111,38 @@ class AgentSpreadingThreshCoocCorpus(AgentCooccurrenceCorpus, AgentSpreadingCorp
 class AgentSpreadingThreshCoocNGrams(AgentCooccurrenceNGrams, AgentSpreadingNGrams):
 
     def __init__(self, stopwords, sem_rel_dict, ngrams=GoogleNGram('~/ngram')):
+        """
+        Parameters:
+            stopwords (list): A list of stopwords - common words to not include semantic relations to.
+            sem_rel_dict (dict): A dictionary containing all semantic relations (the values) for each word
+                (the keys) from the SWOWEN, SFFAN, (or both) databases.
+            ngrams (class): The google ngrams class.
+        """
         super().__init__(stopwords, ngrams)
         self.sem_rel_dict = self.filter_sem_rel_dict(sem_rel_dict)
 
 
     def do_rat(self, context1, context2, context3):
+        """
+        Completes one round of the RAT task.
+        Parameters:
+            context1, context2, context3 (string): Context words to be used in the RAT task.
+        Returns:
+            A list of RAT guesses. Returns [] if there are no viable guesses.
+        """
         cooc_set1 = set([elem[0].upper() for elem in self.ngrams.get_max_probability(context1)])
         cooc_set2 = set([elem[0].upper() for elem in self.ngrams.get_max_probability(context2)])
         cooc_set3 = set([elem[0].upper() for elem in self.ngrams.get_max_probability(context3)])
         # Now threshold based on semantic relations as well
-        sem_rel_set1 = set([elem.upper() for elem in self.sem_rel_dict[context1]])
-        sem_rel_set2 = set([elem.upper() for elem in self.sem_rel_dict[context2]])
-        sem_rel_set3 = set([elem.upper() for elem in self.sem_rel_dict[context3]])
+        sem_rel_set1 = set()
+        sem_rel_set2 = set()
+        sem_rel_set3 = set()
+        if context1.lower() in list(self.sem_rel_dict.keys()):
+            sem_rel_set1 = set([elem.upper() for elem in self.sem_rel_dict[context1]])
+        if context2.lower() in list(self.sem_rel_dict.keys()):
+            sem_rel_set2 = set([elem.upper() for elem in self.sem_rel_dict[context2]])
+        if context3.lower() in list(self.sem_rel_dict.keys()):
+            sem_rel_set3 = set([elem.upper() for elem in self.sem_rel_dict[context3]])
         joint_cooc_set = cooc_set1 & cooc_set2 & cooc_set3 & sem_rel_set1 & sem_rel_set2 & sem_rel_set3
         if len(joint_cooc_set) == 0:
             return None

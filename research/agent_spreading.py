@@ -1,9 +1,5 @@
-""" Implements the spreading agent. """
-
-import random
-import datetime
 from sentence_long_term_memory import sentenceLTM
-import json
+from nltk.corpus import wordnet as wn_corpus
 from corpus_utilities import *
 from sentence_cooccurrence_activation import SentenceCooccurrenceActivation
 from n_gram_cooccurrence.google_ngrams import *
@@ -36,16 +32,30 @@ class AgentSpreading:
         return network
 
     def do_wsd(self, word, context, time, network):
+        """ Finds guesses for the WSD task."""
         raise NotImplementedError
 
     def do_rat(self, context1, context2, context3, network):
+        """ Finds guesses for the RAT test."""
         raise NotImplementedError
 
 
 class AgentSpreadingCorpus(AgentSpreading):
 
-    def __init__(self, corpus_utilities, outside_corpus, spreading=True, clear="never", activation_base=2,
-                 decay_parameter=0.05, constant_offset=0):
+    def __init__(self, corpus_utilities, outside_corpus, spreading=True, clear="never", activation_base=2.0,
+                 decay_parameter=0.05, constant_offset=0.0):
+        """
+        Parameters:
+            corpus_utilities (class): A class of functions useful for corpus mechanisms, specific to the partition of the
+                Semcor corpus used.
+            outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
+            spreading (bool): Whether to include the effects of spreading in creating the semantic network.
+            clear (string): How often to clear the network. Possible values are "never", "sentence", or "word",
+                indicating that the network is never cleared, cleared after each sentence, or cleared after each word.
+            activation_base (float): A parameter in the activation equation.
+            decay_parameter (float): A parameter in the activation equation.
+            constant_offset (float): A parameter in the activation equation.
+        """
         super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
         self.corpus_utilities = corpus_utilities
         self.sentence_list = corpus_utilities.get_sentence_list()
@@ -60,7 +70,8 @@ class AgentSpreadingCorpus(AgentSpreading):
                     at sentences 10000 - 14999.
                 outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
                     relations are only considered from words inside the corpus.
-            Returns: (dict) A dictionary with the semantic relations for every unique word in sentence_list
+            Returns:
+                (dict) A dictionary with the semantic relations for every unique word in sentence_list
         """
         sem_rel_path = "./semantic_relations/semantic_relations_list"
         if not outside_corpus:
@@ -140,8 +151,7 @@ class AgentSpreadingCorpus(AgentSpreading):
     def create_word_sem_rel_dict(self, synonyms, hypernyms, hyponyms, holonyms, meronyms, attributes,
                                  entailments, causes, also_sees, verb_groups, similar_tos):
         """
-        Creates a semantic relations dictionary with given semantic relations for a word and converts those relations into
-            a list.
+        Creates a semantic relations dictionary with given semantic relations for a word.
         Parameters:
             synonyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
             hypernyms (list) A list of word relations drawn from the synset a word belongs to from the nltk package
@@ -170,18 +180,9 @@ class AgentSpreadingCorpus(AgentSpreading):
 
     def create_sem_network(self):
         """
-        Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms, hyponyms,
-            holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos. Note that all words
-            are stored at time 1.
-        Parameters:
-            sentence_list (Nested String List): A list of the sentences or the first n sentences in the Semcor corpus
-                with each word represented by a tuple: (lemma, lemma synset).
-            spreading (bool): Whether to include the effects of spreading in creating the semantic network.
-            activation_base (float): A parameter in the activation equation.
-            decay_parameter (float): A parameter in the activation equation.
-            constant_offset (float): A parameter in the activation equation.
-            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
-                sentences 10000 - 14999.
+        Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms,
+            hyponyms, holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos.
+             Note that all words are stored at time 1.
         Returns:
             network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
         """
@@ -219,8 +220,14 @@ class AgentSpreadingCorpus(AgentSpreading):
 
     def do_wsd(self, word, context, time, network):
         """
-        For WSD, the word is the "target word" and context, all senses of the target word (including the correct sense,
-        from the word sense dictionary).
+        Gets guesses for a trial of the WSD.
+        Parameters:
+            word (sense-word tuple): The word to guess the sense of, the "target word" (should not have sense-identifying
+                information).
+            context (list): A list of all possible senses of the target word, often obtained from the word sense
+                dictionary.
+            time (int): The time to calculate activations at.
+            network (sentenceLTM): Semantic network
         """
         spread_depth = -1
         if not self.spreading:
@@ -241,11 +248,22 @@ class AgentSpreadingCorpus(AgentSpreading):
 
 
 class AgentSpreadingNGrams(AgentSpreading):
-
+    """ Implements spreading on google ngrams. """
     def __init__(self, sem_rel_dict, stopwords, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never", activation_base=2,
                  decay_parameter=0.05, constant_offset=0):
-        """sem_rel_dict has all semantic relations we're interested in - from either SWOWEN or SFFAN, or both!
-        Stopwords is same thing as in the AgentCooccurrenceNGrams class"""
+        """
+        Parameters:
+            sem_rel_dict (dictionary): A dictionary containing all semantic relations (the values) for each word
+                (the keys) from the SWOWEN, SFFAN, (or both) databases.
+            stopwords (list): A list of stopwords - common words to not include semantic relations to.
+            ngrams (class): Instance of the GoogleNGram class.
+            spreading (bool): Whether to include the effects of spreading in creating the semantic network.
+            clear (string): How often to clear the network. Possible values are "never", "trial",
+                indicating that the network is never cleared, or cleared after each RAT trial.
+            activation_base (float): A parameter in the activation equation.
+            decay_parameter (float): A parameter in the activation equation.
+            constant_offset (float): A parameter in the activation equation.
+        """
         super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
         self.ngrams = ngrams
         self.sem_rel_dict = self.filter_sem_rel_dict(sem_rel_dict)
@@ -253,32 +271,24 @@ class AgentSpreadingNGrams(AgentSpreading):
 
 
     def filter_sem_rel_dict(self, sem_rel_dict):
-        """ Filters the sem rel dict for stopwords to ensure that all words are valid."""
+        """
+        Filters the sem rel dict for stopwords to ensure that all words are valid.
+        Parameters:
+            sem_rel_dict (dictionary): A dictionary containing all semantic relations (the values) for each word
+                (the keys) from the SWOWEN, SFFAN, (or both) databases.
+        Returns:
+            (dict) filtered semantic relations dictionary.
+        """
         keys = sem_rel_dict.keys()
         for key in keys:
-            rel_cats = sem_rel_dict[key]
-            for cat in rel_cats:
-                words = [word for word in sem_rel_dict[key][cat] if word.lower() not in self.stopwords]
-                sem_rel_dict[key][cat] = words
+            rels = sem_rel_dict[key]
+            words = [word for word in rels if word.lower() not in self.stopwords]
+            sem_rel_dict[key] = words
         return sem_rel_dict
 
 
     def create_sem_network(self):
-        """
-        Builds a semantic network with each key word in the SWOWEN and South Florida Free Association Norms (SFFAN).
-            Note that all words are stored at time 1.
-        Parameters:
-            SWOWEN_link (string): link to the SWOWEN preprocessed dictionary
-            SFFAN_link (string): link to the SFFAN preprocessed dictionary
-            spreading (bool): Whether to include the effects of spreading in creating the semantic network.
-            activation_base (float): A parameter in the activation equation.
-            decay_parameter (float): A parameter in the activation equation.
-            constant_offset (float): A parameter in the activation equation.
-            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
-                sentences 10000 - 14999.
-        Returns:
-            network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
-        """
+        """ Creates a semantic network from the semantic relations list. """
         if self.spreading:
             spread_depth = -1
         else:
@@ -301,7 +311,13 @@ class AgentSpreadingNGrams(AgentSpreading):
         return network
 
     def do_rat(self, context1, context2, context3, network):
-        """ The contexts are the three context words, spread depth is how far to spread when activating"""
+        """
+        Completes one trial of the RAT.
+        Parameters:
+            context1, context2, context3 (string): Context words to be used in the RAT task.
+        Returns:
+            A list of RAT guesses. Returns [] if there are no viable guesses.
+        """
         if self.spreading:
             spread_depth = -1
         else:

@@ -6,16 +6,33 @@ from n_gram_cooccurrence.google_ngrams import *
 
 
 class AgentOracle:
+    """ Implements the "upper bound" oracle agent. """
 
     def __init__(self, corpus_utilities):
+        """
+        Parameters:
+            corpus_utilities (class): A class of functions useful for corpus mechanisms, specific to the partition of the
+                Semcor corpus used
+        """
         self.corpus_utilities = corpus_utilities
         self.num_sentences = corpus_utilities.num_sentences
         self.partition = corpus_utilities.partition
 
     def do_wsd(self, target_index, sentence, timer_word, timer_sentence, timer_never):
+        """
+        Completes a trial of the WSD.
+        Parameters:
+            target_index (int): The index of the "target" word in the sentence given in the sentence parameter list.
+            sentence (list): A list of lemma/synset tuples referring to all words in the sentence (including the target
+                sense)
+            timer_word (int): Timer for the network that clears after every word.
+            timer_sentence (int): Timer for the network that clears after every sentence.
+            timer_never (int): Timer for the network that never clears.
+        """
         raise NotImplementedError
 
     def do_rat(self):
+        """ Runs a trial of the RAT."""
         raise NotImplementedError
 
 
@@ -23,6 +40,15 @@ class AgentOracleCorpus(AgentOracle):
 
     def __init__(self, corpus_utilities, outside_corpus=False, activation_base=2,
                  decay_parameter=0.05, constant_offset=0):
+        """
+        Parameters:
+            corpus_utilities (class): A class of functions useful for corpus mechanisms, specific to the partition of the
+                Semcor corpus used
+            outside_corpus (bool): True if semantic relations can be considered outside the corpus and False if semantic
+            activation_base (float): A parameter in the activation equation.
+            decay_parameter (float): A parameter in the activation equation.
+            constant_offset (float): A parameter in the activation equation.
+        """
         super().__init__(corpus_utilities)
         self.num_sentences = corpus_utilities.num_sentences
         self.partition = corpus_utilities.partition
@@ -63,8 +89,14 @@ class AgentOracleCorpus(AgentOracle):
 
     def do_wsd(self, target_index, sentence, timer_word, timer_sentence, timer_never):
         """
-        Upper bound on WSD that assumes knowledge of the correct answer and tests if each cooccurrence and will answer
-        correct if at least one cooccurrence or spreading mechanism gets it right.
+        Completes a trial of the WSD.
+        Parameters:
+            target_index (int): The index of the "target" word in the sentence given in the sentence parameter list.
+            sentence (list): A list of lemma/synset tuples referring to all words in the sentence (including the target
+                sense)
+            timer_word (int): Timer for the network that clears after every word.
+            timer_sentence (int): Timer for the network that clears after every sentence.
+            timer_never (int): Timer for the network that never clears.
         """
         word = sentence[target_index]
         word_senses = self.word_sense_dict[word[0]]

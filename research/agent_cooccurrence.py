@@ -10,17 +10,28 @@ class AgentCooccurrence:
         pass
 
     def get_count(self, *events):
+        """ Gets the number of times each word occurred, or several words occurred together in context"""
         raise NotImplementedError()
 
     def get_conditional_probability(self, target, base):
+        """
+        Gets the conditional probability of seeing a particular word given the context.
+        Parameters:
+            target (varies): The word of interest.
+            base (varies): The context.
+        Returns:
+            (float) decimal conditional probability.
+        """
         joint_count = self.get_count(base, target)
         base_count = self.get_count(base)
         return joint_count / base_count
 
     def do_wsd(self, target_index, sentence):
+        """ Completes the WSD task """
         raise NotImplementedError()
 
     def do_rat(self, context1, context2, context3):
+        """ Completes the RAT task. """
         raise NotImplementedError()
 
 
@@ -28,7 +39,17 @@ class AgentCooccurrenceCorpus(AgentCooccurrence):
     """ Cooccurrence Agent for a corpus cooccurrence source. """
 
     def __init__(self, num_sentences, partition, corpus_utilities, context_type):
-        "cooc_source is a nested list of sentences, which are themselves lists containing sense-specified words"
+        """
+        Parameters:
+            num_sentences (int): The number of sentences from the corpus to use in the task. The first n sentences
+                from the corpus are used and if n=-1, all sentences from the corpus are used.
+            partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking
+                at sentences 10000 - 14999.
+            corpus_utilities (class): A class of functions useful for corpus mechanisms, specific to the partition of
+                the Semcor corpus used
+            context_type (string): Indicates for cooccurrence dependent corpus mechanisms, whether we know the sense of
+                the context words ("sense") or not ("word")
+        """
         super().__init__()
         self.num_sentences = num_sentences
         self.partition = partition
@@ -42,9 +63,72 @@ class AgentCooccurrenceCorpus(AgentCooccurrence):
         self.sense_word_cooccurrences = corpus_utilities.get_sense_word_cooccurrences()
         self.word_word_cooccurrences = corpus_utilities.get_word_word_cooccurrences()
 
+    def get_count(self, *events):
+        """
+        Gets the counts of a single returned element, or two different elements for computing the conditional
+        probability.
+        Parameters:
+            events (list): events to get the counts of.
+        Returns:
+            (int) counts of the events
+        """
+        if len(events) == 0:
+            raise ValueError(events)
+        if len(events) == 1:
+            event = events[0]
+            if type(event) == tuple:  # Context type = sense
+                return self.sense_counts[event]
+            else:  # Context type = word
+                return self.word_counts[event]
+        elif len(events) == 2:
+            event1 = events[0]
+            event2 = events[1]
+            if type(event1) == tuple and type(event2) == tuple:  # Two senses
+                if (event1, event2) not in self.sense_sense_cooccurrences.keys():
+                    return 0
+                return self.sense_sense_cooccurrences[(event1, event2)]
+            elif type(event1) == tuple and type(event2) != tuple:  # event1 is a sense, event2 is a word
+                if (event1, event2) not in self.sense_word_cooccurrences.keys():
+                    return 0
+                return self.sense_word_cooccurrences[(event1, event2)]
+            elif type(event1) != tuple and type(event2) == tuple:  # event1 is a word, event2 is a sense
+                if (event2, event1) not in self.sense_word_cooccurrences.keys():
+                    return 0
+                return self.sense_word_cooccurrences[(event2, event1)]
+            else:  # event1 and event2 are words
+                if (event1, event2) not in self.word_word_cooccurrences.keys():
+                    return 0
+                return self.word_word_cooccurrences[(event1, event2)]
+        else:
+            raise ValueError(events)
+
+    def get_conditional_probability(self, target, base):
+        """
+        Gets conditional probability
+        Parameters:
+            target (tuple): Word of interest. Assumes that target is a sense (aka is formatted as a (word, sense) tuple)
+            base (tuple or string): Context, can be a sense (described above) or a word (just a string, no sense
+                information).
+        Returns:
+            (float) Decimal conditional probability
+        """
+        joint_count = self.get_count(base, target)  # How many times target SENSE & context cooccur
+        base_count = self.get_count(base, target[0]) # How many times target WORD & context cooccur
+        if base_count == 0:
+            return 0
+        return joint_count / base_count
+
+
     def do_wsd(self, target_index, sentence):
-        """ Gets a guess for the WSD task, assuming that either sense-specific information is known about the context
-        (context_type = "sense") or not (context_type = "word")"""
+        """
+        Completes the WSD task.
+        Parameters:
+            target_index (int): Integer >= 0 corresponding to the index of the list of sentence words where the target
+                sense can be found.
+            sentence (list): List of words in the current sentence from the SemCor corpus.
+        Returns:
+            (list) A list of word sense disambiguation sense guesses.
+        """
         max_score = -float("inf")
         max_senses = None
         target_sense = sentence[target_index]
@@ -64,80 +148,66 @@ class AgentCooccurrenceCorpus(AgentCooccurrence):
                 max_senses.append(target_sense_candidate)
         return max_senses
 
-    def get_count(self, *events):
-        """ Gets the counts of a single returned element, or two different elements for computing the conditional
-        probability"""
-        if len(events) == 0:
-            raise ValueError(events)
-        if len(events) == 1:
-            event = events[0]
-            if type(event) == tuple:  # Context type = sense
-                return self.sense_counts[event]
-            else:  # Context type = word
-                return self.word_counts[event]
-        elif len(events) == 2:
-            event1 = events[0]
-            event2 = events[1]
-            if type(event1) == tuple and type(event2) == tuple:  # Context type = sense
-                if (event1, event2) not in self.sense_sense_cooccurrences.keys():
-                    return 0
-                return self.sense_sense_cooccurrences[(event1, event2)]
-            elif type(event1) == tuple and type(event2) != tuple:
-                if (event1, event2) not in self.sense_word_cooccurrences.keys():
-                    return 0
-                return self.sense_word_cooccurrences[(event1, event2)]
-            elif type(event1) != tuple and type(event2) == tuple:
-                if (event2, event1) not in self.sense_word_cooccurrences.keys():
-                    return 0
-                return self.sense_word_cooccurrences[(event2, event1)]
-            else:
-                if (event1, event2) not in self.word_word_cooccurrences.keys():
-                    return 0
-                return self.word_word_cooccurrences[(event1, event2)]
-        else:
-            raise ValueError(events)
-
-    def get_conditional_probability(self, target, base):
-        """ Assumes that target is a sense (aka is formatted as a (word, sense) tuple"""
-        joint_count = self.get_count(base, target)
-        base_count = self.get_count(base, target[0])
-        if base_count == 0:
-            return 0
-        return joint_count / base_count
-
-
 class AgentCooccurrenceNGrams(AgentCooccurrence):
     """ Cooccurrence agent for a ngrams cooccurrence source. """
 
     def __init__(self, stopwords, ngrams=GoogleNGram('~/ngram')):
         """
-        stopwords is a python list of stopwords from a downloaded file.
+        Parameters:
+            stopwords (list): A list of stopwords - common words to not include semantic relations to.
+            ngrams (class): Instance of the GoogleNGram class.
         """
         super().__init__()
         self.ngrams = ngrams
         self.stopwords = stopwords
 
     def get_word_counts(self, word):
-        """ Returns the number of times the word occurred in the ngrams corpus.
-            Assumes merge_variants (whether different capilizations should be considered the same word) to be true"""
+        """
+        Returns the number of times the word occurred in the ngrams corpus.
+        Assumes merge_variants (whether different capitilizations should be considered the same word) to be true.
+        Parameters:
+            word (string): Word to get the counts of.
+        Returns:
+            (int): counts
+        """
         return self.ngrams.get_ngram_counts(word)[word]
 
     def get_all_word_cooccurrences(self, word):
-        """ Returns an ordered list (most to least # of times word occurs) of tuples formatted as
-         (word, # times word occcurred) for words that cooccur with the input word"""
+        """
+        Finds all words that cooccur with a word of interest.
+        Parameters:
+            word (string): word of interest.
+        Returns:
+            (list) ordered list (most to least # of times word occurs) of tuples formatted as
+        (word, # times word occcurred) for words that cooccur with the input word.
+         """
         return self.ngrams.get_max_probability(word)
 
     def get_conditional_probability(self, word, context):
-        """ Assumes that the context is only one word (acting as the base parameter for the Google ngrams class)"""
+        """
+        Gets the conditional probability of seeing a particular word given the context.
+        Parameters:
+            target (varies): The word of interest.
+            base (varies): The context.
+        Returns:
+            (float) decimal conditional probability.
+        """
         return self.ngrams.get_conditional_probability(base=context, target=word)
 
     def do_rat(self, context1, context2, context3):
+        """
+        Completes one trial of the RAT.
+        Parameters:
+            context1, context2, context3 (string): Context words to be used in the RAT task.
+        Returns:
+            A list of RAT guesses. Returns [] if there are no viable guesses.
+        """
         cooc_set1 = set([elem[0] for elem in self.ngrams.get_max_probability(context1)])
         cooc_set2 = set([elem[0] for elem in self.ngrams.get_max_probability(context2)])
         cooc_set3 = set([elem[0] for elem in self.ngrams.get_max_probability(context3)])
         joint_cooc_set = cooc_set1 & cooc_set2 & cooc_set3
         if len(joint_cooc_set) == 0:
-            return None
+            return []
         elif len(joint_cooc_set) == 1:
             return joint_cooc_set.pop()
         else:

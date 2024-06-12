@@ -1,9 +1,9 @@
 import random
 import datetime
 from sentence_long_term_memory import sentenceLTM
-from sentence_long_term_memory import SentenceCooccurrenceActivation
+from sentence_cooccurrence_activation import SentenceCooccurrenceActivation
 from wsd_nltk_importer import *
-#import wsd_task
+import wsd_task
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
@@ -134,19 +134,15 @@ def adjust_sem_rel_dict(sem_rel_dict, sent_list, context_type, whole_corpus=True
         word_rel_dict = sem_rel_dict[word_key]  # has all different relations to target word
         for cat in word_rel_dict.keys():  # looping through each relation category
             rels = word_rel_dict[cat]  # getting the relations in that category
+            new_rels = []
             for rel in rels:  # going through words corresponding to each relation
-                old_sem_rels = sem_rel_dict[word_key][cat]
-                # print("sem rels", old_sem_rels)
-                # print("cooc dict", cooc_rel_dict[word_key])
                 if context_type == "sense":
-                    if rel not in list(cooc_rel_dict[word_key]):
-                        sem_rel_dict[word_key][cat].remove(rel)  # removing un-cooccurrenced relation
+                    if rel in list(cooc_rel_dict[word_key]):
+                        new_rels.append(rel)
                 else:
-                    if rel[0] not in list(cooc_rel_dict[word_key]):
-                        sem_rel_dict[word_key][cat].remove(rel)
-                # if old_sem_rels != sem_rel_dict[word_key][cat]:
-                #     print("old", old_sem_rels)
-                #     print("new", sem_rel_dict[word_key][cat])
+                    if rel[0] in list(cooc_rel_dict[word_key]):
+                        new_rels.append(rel)
+            sem_rel_dict[word_key][cat] = new_rels
     return sem_rel_dict
 
 
@@ -183,7 +179,7 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=False, acti
                             constant_offset=constant_offset,
                             decay_parameter=decay_parameter
                         )))
-    relations_keys = list(semantic_relations_dict.keys())
+    relations_keys = sorted(list(set(semantic_relations_dict.keys())))
     for word_index in range(len(relations_keys)):
         word_key = relations_keys[word_index]
         val_dict = semantic_relations_dict[word_key]
@@ -203,71 +199,6 @@ def create_sem_network(sentence_list, spreading=True, outside_corpus=False, acti
                       similar_tos=val_dict['similar_tos'])
     return network
 
-
-# def create_sem_network(sentence_list, spreading=True, outside_corpus=False, activation_base=2, decay_parameter=0.05,
-#                        constant_offset=0, partition=1, cooc_thresh=False, context="word"):
-#     """
-#     Builds a semantic network with each word in the Semcor corpus and its corresponding synonyms, hypernyms, hyponyms,
-#         holonyms, meronyms, attributes, entailments, causes, also_sees, verb_groups, and similar_tos. Note that all words
-#         are stored at time 1.
-#     Parameters:
-#         sentence_list (Nested String List): A list of the sentences or the first n sentences in the Semcor corpus
-#             with each word represented by a tuple: (lemma, lemma synset).
-#         spreading (bool): Whether to include the effects of spreading in creating the semantic network.
-#         activation_base (float): A parameter in the activation equation.
-#         decay_parameter (float): A parameter in the activation equation.
-#         constant_offset (float): A parameter in the activation equation.
-#         partition (int): The subset of sentences to consider. i.e. if n=5000, and partition = 2, we would be looking at
-#             sentences 10000 - 14999.
-#     Returns:
-#         network (sentenceLTM): Semantic network with all words and co-occurrence relations in the Semcor corpus.
-#     """
-#     spread_depth = -1
-#     if not spreading:
-#         spread_depth = 0
-#     semantic_relations_dict = get_semantic_relations_dict(sentence_list, partition, outside_corpus)
-#     network = sentenceLTM(
-#         activation_cls=(lambda ltm:
-#                         SentenceCooccurrenceActivation(
-#                             ltm,
-#                             activation_base=activation_base,
-#                             constant_offset=constant_offset,
-#                             decay_parameter=decay_parameter
-#                         )))
-#     relations_keys = list(semantic_relations_dict.keys())
-#     if cooc_thresh:
-#         all_sents_list, all_ws_dict = extract_sentences(-1)
-#         cooc_rel_dict = create_cooc_relations_dict(all_sents_list, context=context)
-#     for word_index in range(len(relations_keys)):
-#         word_key = relations_keys[word_index]
-#         val_dict = semantic_relations_dict[word_key]
-#         print("current", val_dict.items())
-#         if cooc_thresh:
-#             for cat in val_dict.keys():
-#                 rels = val_dict[cat]
-#                 for rel in rels:
-#                     if context == "sense":
-#                         if rel not in cooc_rel_dict[word_key]:
-#                             val_dict[cat].remove(rel)
-#                     else:
-#                         if rel[0] not in cooc_rel_dict[word_key]:
-#                             val_dict[cat].remove(rel)
-#         print("revised", val_dict.items())
-#         network.store(mem_id=word_key,
-#                       time=1,
-#                       spread_depth=spread_depth,
-#                       synonyms=val_dict['synonyms'],
-#                       hypernyms=val_dict['hypernyms'],
-#                       hyponyms=val_dict['hyponyms'],
-#                       holynyms=val_dict['holonyms'],
-#                       meronyms=val_dict['meronyms'],
-#                       attributes=val_dict['attributes'],
-#                       entailments=val_dict['entailments'],
-#                       causes=val_dict['causes'],
-#                       also_sees=val_dict['also_sees'],
-#                       verb_groups=val_dict['verb_groups'],
-#                       similar_tos=val_dict['similar_tos'])
-#     return network
 
 
 def create_cooc_relations_dict(sentence_list, context="word"):
@@ -353,7 +284,9 @@ def clear_sem_network(sem_network, start_time):
     activations = sem_network.activation.activations
     activated_words = activations.keys()
     for word in activated_words:
-        activations[word] = [act for act in activations[word] if act[0] <= start_time]
+        old_acts = activations[word]
+        new_acts = [act for act in activations[word] if act[0] <= start_time]
+        activations[word] = new_acts
     return sem_network
 
 
@@ -468,7 +401,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
         timer_word = 2
         timer_sentence = 2
     elif guess_method == "cooc_thresh_sem":
-        sem_network = create_sem_network(sentence_list, spreading=False, activation_base=activation_base,
+        sem_network = create_sem_network(sentence_list, spreading=True, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset,
                                          partition=partition, outside_corpus=outside_corpus, cooc_thresh=True,
                                          context=context)
@@ -600,7 +533,7 @@ def get_corpus_accuracy(guess_method, sentence_list, word_sense_dict, input_sem_
                         temp_sense_accuracies.append(False)
                 if index_info:
                     accuracy_dict[target_sense].append(
-                        [tuple([sentence_index, target_index, target_sense, guesses]), temp_sense_accuracies])
+                        [tuple([sentence_index, target_index, target_sense]), temp_sense_accuracies])
                 else:
                     accuracy_dict[target_sense].append(temp_sense_accuracies)
         accuracy_list = []
@@ -901,18 +834,47 @@ def get_uniform_random_accuracy():
 #                        clear_network="sentence", whole_corpus=True))
 # print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
 #                        clear_network="word", whole_corpus=True))
-# print("old, sem")
-# print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-#               clear_network="never"))
-# print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
-#               clear_network="sentence"))
-# print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
-#               clear_network="word"))
-# print("new, sem")
-# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-#                        clear_network="never", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-#                        clear_network="sentence", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-#                        clear_network="word", whole_corpus=True))
-#
+print("old, sem")
+print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+              clear_network="never"))
+print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+              clear_network="sentence"))
+print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+              clear_network="word"))
+print("new, sem")
+print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+                       clear_network="never", whole_corpus=True))
+print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+                       clear_network="sentence", whole_corpus=True))
+print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+                       clear_network="word", whole_corpus=True))
+
+
+# checking corpus accuracy
+# print("old")
+# sentence_list, word_sense_dict = extract_sentences(500, 1)
+# # old = get_corpus_accuracy(guess_method="naive_semantic_spreading", sentence_list=sentence_list,
+# #                           word_sense_dict=word_sense_dict,  outside_corpus=False, context="sense",
+# #                           clear_network="sentence", index_info=True)[0]
+# old = print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
+#                clear_network="sentence"))
+# print("new")
+# corpus_utils = wsd_task.CorpusUtilities(500, 1)
+# # new = wsd_task.get_corpus_accuracy(guess_method="naive_semantic_spreading", corpus_utilities=corpus_utils,
+# #                                    outside_corpus=False, clear_network="sentence", index_info=True, whole_corpus=True)[0]
+# new = wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+#                         clear_network="sentence", whole_corpus=True)
+# for key in new.keys():
+#     if new[key] != old[key]:
+#         print("new", new[key])
+#         print("old", old[key])
+    # elif new[key][0][1].count(True) != old[key][0][1].count(True):
+    #     print("new", new[key])
+    #     print("old", old[key])
+    # elif new[key][0][1].count(False) != old[key][0][1].count(False):
+    #     print("new", new[key])
+    #     print("old", old[key])
+    # elif len(new[key][0][1]) != len(old[key][0][1]):
+    #     print("new", new[key])
+    #     print("old", old[key])
+
