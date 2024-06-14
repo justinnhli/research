@@ -120,9 +120,10 @@ def make_combined_dict(swowen_link, sffan_link):
 
 
 # Testing.... ______________________________________________________________________________________________________
-sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading_sample.json'
-swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading_sample.json'
-rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
+sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading.json'
+swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading.json'
+make_combined_dict(swowen_link, sffan_link)
+# rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
 
 # results, accuracy = run_rat(guess_type="sem_thresh_cooc", rat_file_link=rat_link, sem_rel_link=swowen_link,
 #                             stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
@@ -131,13 +132,13 @@ rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.
 # json.dump(results, file)
 # file.close()
 
-
-results, accuracy = run_rat(guess_type="cooccurrence", rat_file_link=rat_link, sem_rel_link=swowen_link,
-                            stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
-print("cooccurrence", results)
-# file = open("rat_test_results_cooc.txt", mode="w")
-# json.dump(results, file)
-# file.close()
-print(accuracy)
-
+#
+# results, accuracy = run_rat(guess_type="cooccurrence", rat_file_link=rat_link, sem_rel_link=swowen_link,
+#                             stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
+# print("cooccurrence", results)
+# # file = open("rat_test_results_cooc.txt", mode="w")
+# # json.dump(results, file)
+# # file.close()
+# print(accuracy)
+#
 

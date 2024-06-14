@@ -26,7 +26,7 @@ def extract_sentences(num_sentences=-1, partition=1):
     else:
         sentence_list_path = "./sentence_list/sentence_list_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
         word_sense_dict_path = "./word_sense_dict/word_sense_dict_" + str(num_sentences) + "_partition_" + str(partition) + ".json"
-    if not (os.path.isfile(sentence_list_path) or os.path.isfile(word_sense_dict_path)):
+    if (not os.path.isfile(sentence_list_path)) or (not os.path.isfile(word_sense_dict_path)):
         # Checking that file exists
         sentence_list = []
         word_sense_dict = defaultdict(set)
@@ -60,7 +60,6 @@ def extract_sentences(num_sentences=-1, partition=1):
         sent_list_file = open(sentence_list_path, 'w')
         json.dump(sentence_list, sent_list_file)
         sent_list_file.close()
-        word_sense_dict_file = open(word_sense_dict_path, 'w')
         # Making word sense list from word sense dict
         word_sense_list = []
         for word in word_sense_dict.keys():
@@ -71,6 +70,7 @@ def extract_sentences(num_sentences=-1, partition=1):
                 temp_val_list.append(list(val))
             temp_sense_list.append(temp_val_list)
             word_sense_list.append(temp_sense_list)
+        word_sense_dict_file = open(word_sense_dict_path, 'w')
         json.dump(word_sense_list, word_sense_dict_file, indent=4)
         word_sense_dict_file.close()
     else:

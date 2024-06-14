@@ -805,7 +805,7 @@ def get_uniform_random_accuracy():
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-
+#
 # print("old, thresh, sense context")
 # print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
 #               clear_network="never"))
@@ -814,11 +814,11 @@ def get_uniform_random_accuracy():
 # print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
 #               clear_network="word"))
 # print("new, thresh, sense_context ")
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="sense",
 #                        clear_network="never", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="sense",
 #                        clear_network="sentence", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="sense",
 #                        clear_network="word", whole_corpus=True))
 # print("old, thresh, word context")
 # print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
@@ -828,53 +828,63 @@ def get_uniform_random_accuracy():
 # print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
 #               clear_network="word"))
 # print("new, thresh, word context ")
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="word",
 #                        clear_network="never", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="word",
 #                        clear_network="sentence", whole_corpus=True))
-# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="word",
+# print(wsd_task.run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context_type="word",
 #                        clear_network="word", whole_corpus=True))
-print("old, sem")
-print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-              clear_network="never"))
-print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-              clear_network="sentence"))
-print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-              clear_network="word"))
-print("new, sem")
-print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-                       clear_network="never", whole_corpus=True))
-print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-                       clear_network="sentence", whole_corpus=True))
-print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-                       clear_network="word", whole_corpus=True))
-
-
+# print("old, sem")
+# print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+#               clear_network="never"))
+# print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+#               clear_network="sentence"))
+# print(run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
+#               clear_network="word"))
+# print("new, sem")
+# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context_type="sense",
+#                        clear_network="never", whole_corpus=True))
+# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context_type="sense",
+#                        clear_network="sentence", whole_corpus=True))
+# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context_type="sense",
+#                        clear_network="word", whole_corpus=True))
+#
+# print("new, oracle")
+# print(wsd_task.run_wsd(guess_method="oracle", num_sentences=500, outside_corpus=False))
 # checking corpus accuracy
 # print("old")
-# sentence_list, word_sense_dict = extract_sentences(500, 1)
-# # old = get_corpus_accuracy(guess_method="naive_semantic_spreading", sentence_list=sentence_list,
-# #                           word_sense_dict=word_sense_dict,  outside_corpus=False, context="sense",
-# #                           clear_network="sentence", index_info=True)[0]
-# old = print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=500, outside_corpus=False, context="sense",
+# import time
+# start = time.time()
+# sentence_list, word_sense_dict = extract_sentences(5000, 1)
+# old = get_corpus_accuracy(guess_method="cooc_thresh_sem", sentence_list=sentence_list,
+#                           word_sense_dict=word_sense_dict,  outside_corpus=False, context="sense",
+#                           clear_network="never", index_info=True)[0]
+# end = time.time()
+# print("old run time", end - start)
+# print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=5000, outside_corpus=False, context="sense",
 #                clear_network="sentence"))
 # print("new")
-# corpus_utils = wsd_task.CorpusUtilities(500, 1)
-# # new = wsd_task.get_corpus_accuracy(guess_method="naive_semantic_spreading", corpus_utilities=corpus_utils,
-# #                                    outside_corpus=False, clear_network="sentence", index_info=True, whole_corpus=True)[0]
-# new = wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=500, outside_corpus=False, context="sense",
-#                         clear_network="sentence", whole_corpus=True)
+# start = time.time()
+# corpus_utils = wsd_task.CorpusUtilities(5000, 1)
+# new = wsd_task.get_corpus_accuracy(guess_method="cooc_thresh_sem", corpus_utilities=corpus_utils, context_type="sense",
+#                                     outside_corpus=False, clear_network="never", index_info=True, whole_corpus=True)[0]
+# end = time.time()
+# print("new run time", end - start)
+# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=5000, outside_corpus=False, context_type="sense",
+                       # clear_network="sentence", whole_corpus=True))
 # for key in new.keys():
-#     if new[key] != old[key]:
+#     if new[key][0][1].count(True) != old[key][0][1].count(True):
 #         print("new", new[key])
 #         print("old", old[key])
-    # elif new[key][0][1].count(True) != old[key][0][1].count(True):
-    #     print("new", new[key])
-    #     print("old", old[key])
-    # elif new[key][0][1].count(False) != old[key][0][1].count(False):
-    #     print("new", new[key])
-    #     print("old", old[key])
-    # elif len(new[key][0][1]) != len(old[key][0][1]):
-    #     print("new", new[key])
-    #     print("old", old[key])
+#     elif new[key][0][1].count(False) != old[key][0][1].count(False):
+#         print("new", new[key])
+#         print("old", old[key])
+#     elif len(new[key][0][1]) != len(old[key][0][1]):
+#         print("new", new[key])
+#         print("old", old[key])
+
+
+
+
+
 

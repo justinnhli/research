@@ -1,5 +1,6 @@
 from sentence_long_term_memory import sentenceLTM
 from nltk.corpus import wordnet as wn_corpus
+import nltk
 from corpus_utilities import *
 from sentence_cooccurrence_activation import SentenceCooccurrenceActivation
 from n_gram_cooccurrence.google_ngrams import *

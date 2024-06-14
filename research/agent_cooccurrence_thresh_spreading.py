@@ -125,9 +125,8 @@ class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
 
 class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
     """ Agent to implement cooccurrence thresholded spreading on google ngrams """
-    def __init__(self, sem_rel_dict, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never", activation_base=2,
+    def __init__(self, sem_rel_dict, stopwords, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never", activation_base=2,
                  decay_parameter=0.05, constant_offset=0):
-        # FIXME need to add stopwords to this!
         """
         Parameters:
             sem_rel_dict (dictionary): A dictionary containing all semantic relations (the values) for each word
@@ -141,7 +140,7 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
             decay_parameter (float): A parameter in the activation equation.
             constant_offset (float): A parameter in the activation equation.
         """
-        super().__init__(spreading=spreading, clear=clear, activation_base=activation_base,
+        super().__init__(spreading=spreading, clear=clear, activation_base=activation_base, stopwords=stopwords,
                          decay_parameter=decay_parameter, constant_offset=constant_offset, ngrams=ngrams)
         self.sem_rel_dict = self.adjust_sem_rel_dict(sem_rel_dict)
 
@@ -154,7 +153,7 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
              (list) ordered list (most to least # of times word occurs) of tuples formatted as
              (word, # times word occcurred) for words that cooccur with the input word"""
         cooc_words_counts = self.ngrams.get_max_probability(word)
-        cooc_words = [word[0] for word in cooc_words_counts]
+        cooc_words = [word[0] for word in cooc_words_counts if word not in self.stopwords]
         return cooc_words
 
     def adjust_sem_rel_dict(self, sem_rel_dict):
@@ -171,7 +170,7 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
             for cat in word_rel_dict.keys():  # looping through each relation category
                 rels = word_rel_dict[cat]  # getting the relations in that category
                 for rel in rels:  # going through words corresponding to each relation
-                    if rel.upper() not in cooc_words:
+                    if rel.upper() not in cooc_words or rel.upper() in self.stopwords:
                         sem_rel_dict[word_key][cat].remove(rel)
         return sem_rel_dict
 

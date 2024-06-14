@@ -79,7 +79,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
                                           outside_corpus=outside_corpus)
     elif guess_method == "oracle":
         guess_dicts = get_corpus_accuracy("oracle",
-                                          context=context_type,
+                                          context_type=context_type,
                                           corpus_utilities=corpus_utilities,
                                           clear_network=clear_network,
                                           activation_base=activation_base,
@@ -444,3 +444,13 @@ def get_word_activations(word, time, word_sense_dict, network):
         print("Sense=", sense, ", Activation =", network.activation.get_activation(sense, time))
 
 # Testing --------------------------------------------------------------------------------------------------------------
+# import time
+
+for part in range(1, 7):
+    for clear in ["never", "word", "sentence"]:
+        for context in ["sense", "word"]:
+            for cooc in [True, False]:
+                print("new", part, clear, context, cooc,
+                      run_wsd("cooc_thresh_sem", iterations=1, num_sentences=5000, clear_network=clear,
+                                       partition=part, context_type=context, outside_corpus=False, whole_corpus=cooc), flush=True)
+
