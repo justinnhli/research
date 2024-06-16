@@ -140,7 +140,7 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
             decay_parameter (float): A parameter in the activation equation.
             constant_offset (float): A parameter in the activation equation.
         """
-        super().__init__(spreading=spreading, clear=clear, activation_base=activation_base, stopwords=stopwords,
+        super().__init__(sem_rel_dict=sem_rel_dict, spreading=spreading, clear=clear, activation_base=activation_base, stopwords=stopwords,
                          decay_parameter=decay_parameter, constant_offset=constant_offset, ngrams=ngrams)
         self.sem_rel_dict = self.adjust_sem_rel_dict(sem_rel_dict)
 
@@ -166,12 +166,10 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
         """
         for word_key in sem_rel_dict.keys():
             cooc_words = self.get_cooccurring_words(word_key.upper())
-            word_rel_dict = sem_rel_dict[word_key]  # has all different relations to target word
-            for cat in word_rel_dict.keys():  # looping through each relation category
-                rels = word_rel_dict[cat]  # getting the relations in that category
-                for rel in rels:  # going through words corresponding to each relation
-                    if rel.upper() not in cooc_words or rel.upper() in self.stopwords:
-                        sem_rel_dict[word_key][cat].remove(rel)
+            rels = sem_rel_dict[word_key]  # has all different relations to target word
+            for rel in rels:  # going through words corresponding to each relation
+                if rel.upper() not in cooc_words or rel.lower() in self.stopwords:
+                    sem_rel_dict[word_key].remove(rel)
         return sem_rel_dict
 
     def create_sem_network(self):

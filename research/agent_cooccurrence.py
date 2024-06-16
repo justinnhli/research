@@ -3,6 +3,7 @@
 from collections import defaultdict
 from n_gram_cooccurrence.google_ngrams import *
 
+
 class AgentCooccurrence:
     """ General cooccurrence agent superclass. """
 
@@ -113,11 +114,10 @@ class AgentCooccurrenceCorpus(AgentCooccurrence):
             (float) Decimal conditional probability
         """
         joint_count = self.get_count(base, target)  # How many times target SENSE & context cooccur
-        base_count = self.get_count(base, target[0]) # How many times target WORD & context cooccur
+        base_count = self.get_count(base, target[0])  # How many times target WORD & context cooccur
         if base_count == 0:
             return 0
         return joint_count / base_count
-
 
     def do_wsd(self, target_index, sentence):
         """
@@ -147,6 +147,7 @@ class AgentCooccurrenceCorpus(AgentCooccurrence):
             elif candidate_conditional_probability == max_score:
                 max_senses.append(target_sense_candidate)
         return max_senses
+
 
 class AgentCooccurrenceNGrams(AgentCooccurrence):
     """ Cooccurrence agent for a ngrams cooccurrence source. """
@@ -228,4 +229,3 @@ class AgentCooccurrenceNGrams(AgentCooccurrence):
             return max_elems
 
 # Testing ... ----------------------------------------------------------------------------------------------------------
-

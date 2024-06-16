@@ -11,6 +11,7 @@ from agent_cooccurrence import AgentCooccurrenceCorpus
 from agent_spreading_thresh_cooccurrence import AgentSpreadingThreshCoocCorpus
 from agent_cooccurrence_thresh_spreading import AgentCoocThreshSpreadingCorpus
 from agent_spreading import AgentSpreadingCorpus
+from agent_joint_probability import AgentJointProbabilityCorpus
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
@@ -103,6 +104,16 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
                                           outside_corpus=outside_corpus,
                                           context_type=context_type,
                                           whole_corpus=whole_corpus)
+    elif guess_method == "joint_probability":
+        guess_dicts = get_corpus_accuracy("joint_probability",
+                                          corpus_utilities=corpus_utilities,
+                                          clear_network=clear_network,
+                                          activation_base=activation_base,
+                                          decay_parameter=decay_parameter,
+                                          constant_offset=constant_offset,
+                                          iterations=iterations,
+                                          outside_corpus=outside_corpus,
+                                          context_type=context_type)
     else:
         raise ValueError(guess_method)
     accuracies = []
@@ -215,6 +226,18 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                                                                corpus_utilities=corpus_utilities,
                                                                context_type=context_type,
                                                                outside_corpus=outside_corpus)
+    elif guess_method == "joint_probability":
+        joint_prob_agent = AgentJointProbabilityCorpus(num_sentences=corpus_utilities.num_sentences,
+                                                       partition=corpus_utilities.partition,
+                                                       corpus_utilities=corpus_utilities,
+                                                       context_type=context_type,
+                                                       outside_corpus=outside_corpus,
+                                                       spreading=True,
+                                                       clear=clear_network,
+                                                       activation_base=activation_base,
+                                                       decay_parameter=decay_parameter,
+                                                       constant_offset=constant_offset)
+        timer = 2
     elif guess_method == "frequency":
         sense_counts = corpus_utilities.get_sense_counts()
     # Checking for valid inputs to clear_network and context_type
@@ -237,6 +260,9 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
             oracle_agent.sem_never_agent.clear_sem_network(oracle_agent.sem_never_network, 1)
             oracle_agent.sem_nospread_agent.clear_sem_network(oracle_agent.sem_nospread_network, 1)
             timer_never = 2
+        elif guess_method == "joint_probability" and iter > 1:
+            joint_prob_agent.clear_sem_network()
+            timer = 2
         # Looping through each sentence in the corpus.
         for sentence_index in range(len(sentence_list)):
             sentence = sentence_list[sentence_index]
@@ -251,6 +277,9 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
             elif guess_method == "cooc_thresh_sem" and clear_network == "sentence":
                 sem_network = cooc_thresh_sem_agent.clear_sem_network(sem_network, 1)
                 timer = 2
+            elif guess_method == "joint_probability" and clear_network == "sentence":
+                joint_prob_agent.clear_sem_network()
+                timer = 2
             # Looping through each word in each sentence
             for target_index in range(len(sentence)):
                 word = sentence[target_index]
@@ -263,6 +292,9 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                     timer_word = 2
                 elif guess_method == "cooc_thresh_sem" and clear_network == "word":
                     sem_network = cooc_thresh_sem_agent.clear_sem_network(sem_network, 1)
+                    timer = 2
+                elif guess_method == "joint_probability" and clear_network == "word":
+                    joint_prob_agent.clear_sem_network()
                     timer = 2
                 # Getting the guesses of the sense of each word for each guessing mechanism.
                 if guess_method == "cooc":
@@ -297,6 +329,11 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                                                            context=word_sense_dict[word[0]],
                                                            time=timer,
                                                            network=sem_network)
+                    timer += 1
+                elif guess_method == "joint_probability":
+                    guesses = joint_prob_agent.do_wsd(target_index=target_index,
+                                                      sentence=sentence,
+                                                      time=timer)
                     timer += 1
                 else:
                     raise ValueError(guess_method)
@@ -445,12 +482,10 @@ def get_word_activations(word, time, word_sense_dict, network):
 
 # Testing --------------------------------------------------------------------------------------------------------------
 # import time
-
-for part in range(1, 7):
-    for clear in ["never", "word", "sentence"]:
+for partition in range(1,7):
+    for clear in ["never", "sentence", "word"]:
         for context in ["sense", "word"]:
-            for cooc in [True, False]:
-                print("new", part, clear, context, cooc,
-                      run_wsd("cooc_thresh_sem", iterations=1, num_sentences=5000, clear_network=clear,
-                                       partition=part, context_type=context, outside_corpus=False, whole_corpus=cooc), flush=True)
+            print("part", partition, "context type",  context, "clear network", clear, "results",
+                  run_wsd("joint_probability", iterations=1, num_sentences=5000, clear_network=clear,
+                    partition=partition, context_type=context, outside_corpus=False), flush=True)
 

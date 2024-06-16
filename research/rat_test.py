@@ -29,7 +29,8 @@ def run_rat(guess_type, rat_file_link, sem_rel_link, stopwords_link, spreading=T
             stopwords.append(l[:-1])
     if guess_type == "semantic":
         sem_rel_dict = json.load(open(sem_rel_link))
-        sem_agent = AgentSpreadingNGrams(sem_rel_dict=sem_rel_dict)
+        sem_agent = AgentSpreadingNGrams(sem_rel_dict=sem_rel_dict, stopwords=stopwords)
+        network = sem_agent.create_sem_network()
         if spreading:
             spread_depth = -1
         else:
@@ -42,11 +43,13 @@ def run_rat(guess_type, rat_file_link, sem_rel_link, stopwords_link, spreading=T
     elif guess_type == "cooc_thresh_sem":
         sem_rel_dict = json.load(open(sem_rel_link))
         cooc_thresh_sem_agent = AgentCoocThreshSpreadingNGrams(sem_rel_dict,
+                                                               stopwords,
                                                                spreading=spreading,
                                                                clear=clear,
                                                                activation_base=activation_base,
                                                                decay_parameter=decay_parameter,
                                                                constant_offset=constant_offset)
+        network = cooc_thresh_sem_agent.create_sem_network()
     guesses = []
     count = 0
     for trial in rat_file:
@@ -60,11 +63,11 @@ def run_rat(guess_type, rat_file_link, sem_rel_link, stopwords_link, spreading=T
             guess = guess_rat_dummy(context)
         elif guess_type == "semantic":
             network = sem_agent.clear_sem_network(network, 0)
-            guess = sem_agent.do_rat(context[0], context[1], context[2], spread_depth)
+            guess = sem_agent.do_rat(context[0], context[1], context[2], network)
         elif guess_type == "cooccurrence":
             guess = cooc_agent.do_rat(context[0], context[1], context[2])
         elif guess_type == "cooc_thresh_sem":
-            guess = cooc_thresh_sem_agent.do_rat(context[0], context[1], context[2])
+            guess = cooc_thresh_sem_agent.do_rat(context[0], context[1], context[2], network)
         elif guess_type == "sem_thresh_cooc":
             guess = sem_thresh_cooc_agent.do_rat(context[0], context[1], context[2])
         else:
@@ -120,25 +123,14 @@ def make_combined_dict(swowen_link, sffan_link):
 
 
 # Testing.... ______________________________________________________________________________________________________
-sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading.json'
-swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading.json'
-make_combined_dict(swowen_link, sffan_link)
-# rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
-
-# results, accuracy = run_rat(guess_type="sem_thresh_cooc", rat_file_link=rat_link, sem_rel_link=swowen_link,
-#                             stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
+sffan_link = '/Users/lilygebhart/Downloads/south_florida_free_assoc_norms/sf_spreading_sample.json'
+swowen_link = '/Users/lilygebhart/Downloads/SWOWEN_data/SWOWEN_spreading_sample.json'
+rat_link = '/Users/lilygebhart/Documents/GitHub/research/research/RAT/RAT_items.txt'
+results, accuracy = run_rat(guess_type="cooc_thresh_sem", rat_file_link=rat_link, sem_rel_link=swowen_link,
+                            stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
 # print("thresh", results)
 # file = open("rat_test_results_semantic.txt", mode="w")
 # json.dump(results, file)
 # file.close()
 
-#
-# results, accuracy = run_rat(guess_type="cooccurrence", rat_file_link=rat_link, sem_rel_link=swowen_link,
-#                             stopwords_link="/Users/lilygebhart/nltk_data/corpora/stopwords/nltk_english_stopwords")
-# print("cooccurrence", results)
-# # file = open("rat_test_results_cooc.txt", mode="w")
-# # json.dump(results, file)
-# # file.close()
-# print(accuracy)
-#
 

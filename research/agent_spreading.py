@@ -250,7 +250,7 @@ class AgentSpreadingCorpus(AgentSpreading):
 
 class AgentSpreadingNGrams(AgentSpreading):
     """ Implements spreading on google ngrams. """
-    def __init__(self, sem_rel_dict, stopwords, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never", activation_base=2,
+    def __init__(self, sem_rel_dict, stopwords, spreading=True, clear="never", activation_base=2,
                  decay_parameter=0.05, constant_offset=0):
         """
         Parameters:
@@ -266,9 +266,8 @@ class AgentSpreadingNGrams(AgentSpreading):
             constant_offset (float): A parameter in the activation equation.
         """
         super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
-        self.ngrams = ngrams
-        self.sem_rel_dict = self.filter_sem_rel_dict(sem_rel_dict)
         self.stopwords = stopwords
+        self.sem_rel_dict = self.filter_sem_rel_dict(sem_rel_dict)
 
 
     def filter_sem_rel_dict(self, sem_rel_dict):
@@ -329,7 +328,7 @@ class AgentSpreadingNGrams(AgentSpreading):
         guesses = []
         elements = sorted(set(network.knowledge.keys()))
         for elem in elements:
-            if elem in context:
+            if elem in [context1, context2, context3]:
                 continue
             elem_act = network.get_activation(mem_id=elem, time=3)
             if elem_act is None:
