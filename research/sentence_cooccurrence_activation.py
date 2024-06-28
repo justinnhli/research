@@ -1,5 +1,5 @@
 import math
-from research import ActivationDynamics
+from long_term_memory import ActivationDynamics
 from collections import defaultdict
 
 
@@ -16,7 +16,7 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
             constant_offset (float): A parameter in the activation equation.
         """
         super().__init__(ltm, **kwargs)
-        self.activations = defaultdict(lambda: list())
+        self.activations = defaultdict(list)
         self.constant_offset = constant_offset
         self.activation_base = activation_base
         self.decay_parameter = decay_parameter
@@ -32,35 +32,37 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
         Returns:
             True: If completed.
         """
+        if mem_id not in self.activations:
+            self.activations[mem_id] = []
         self.activations[mem_id].append([time, 1])
         prev_act_candidates = set([mem_id]) # Candidates that have been activated before (prevents infinite looping)
         # Candidates to activate next (for spreading)
         curr_act_candidates = [list(element)[1] for element in list(self.ltm.knowledge.get(mem_id))]
         if spread_depth != 0:  # if spreading is allowed...
-            graph_units = 1 # distance from originally activated node
-            while curr_act_candidates: # checking that spreading still needs to be done
-                next_act_candidates = []
+            graph_units = 1  # distance from originally activated node
+            while curr_act_candidates:  # checking that spreading still needs to be done
+                next_act_candidates = set()
                 for element in curr_act_candidates:
                     if element is not None:
-                        # activate element
+                        if element not in self.activations:
+                            self.activations[element] = []
                         self.activations[element].append([time, self.activation_base ** (-graph_units)])
                         # Add to next things to activate, the connections of the element we just activated
-                        new_links = list(self.ltm.knowledge.get(element))
-                        for link in new_links:
-                            if type(link) == list:
-                                for item in link:
-                                    if item not in next_act_candidates:
-                                        next_act_candidates.append(list(item)[1])
-                            else:
-                                if link not in next_act_candidates:
-                                    next_act_candidates.append(list(link)[1])
+                        new_links = self.ltm.knowledge.get(element)
+                        if new_links is not None:
+                            for link in list(new_links):
+                                if type(link) == list:
+                                    for item in link:
+                                        next_act_candidates.update([list(item)[1]])
+                                else:
+                                    next_act_candidates.update([list(link)[1]])
                 # If we don't want to spread farther - stop going through connections and activating them
                 if graph_units == spread_depth:
                     break
-                graph_units = graph_units + 1 # Moving to the next "round" of connections
+                graph_units += 1  # Moving to the next "round" of connections
                 prev_act_candidates.update(curr_act_candidates)
                 # Making sure that we haven't already activated the elements we are to "spread" to next...
-                curr_act_candidates = [x for x in next_act_candidates if x not in prev_act_candidates]
+                curr_act_candidates = next_act_candidates.difference(prev_act_candidates)
                 # If there's no more elements to activate, done!
                 if curr_act_candidates == [] or curr_act_candidates is None:
                     break
@@ -74,14 +76,16 @@ class SentenceCooccurrenceActivation(ActivationDynamics):
         Returns:
             float: The activation of the element.
         """
+        if mem_id not in self.activations:
+            return
         act_times_list = self.activations[mem_id]
         if act_times_list == [] or (len(act_times_list) == 1 and act_times_list[0][0] == 0):
             return None
         # We first create a nested list where each entry is a list: [time since last activation,
         # "graph distance multiplier"] where the "graph distance multiplier" is a previously calculated indicator of how
         # far away from the originally activated word the word being activated is.
-        time_since_last_act_list = [[time - time_spreading_pair[0], time_spreading_pair[1]] for time_spreading_pair
-                                    in act_times_list]
+        time_since_last_act_list = sorted([[time - time_spreading_pair[0], time_spreading_pair[1]] for time_spreading_pair
+                                    in act_times_list])
         base_act_sum_term = 0
         # For every activation...
         for retrieval_pair in range(len(time_since_last_act_list)):

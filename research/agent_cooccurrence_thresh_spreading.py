@@ -1,16 +1,21 @@
 from corpus_utilities import CorpusUtilities
 from sentence_cooccurrence_activation import SentenceCooccurrenceActivation
 from agent_spreading import AgentSpreadingCorpus, AgentSpreadingNGrams
+from agent_cooccurrence import AgentCooccurrenceCorpus
 from sentence_long_term_memory import sentenceLTM
 from n_gram_cooccurrence.google_ngrams import *
+import time
+import json
 
 
-class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
+class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus, AgentCooccurrenceCorpus):
     """
-    Implements cooccurrence thresholded spreading agent. Only allows spreading to occur for elements that also cooccur.
+    Implements cooccurrence thresholded spreading agent.
+    Only allows spreading to occur for elements that also cooccur.
      """
+
     def __init__(self, context_type, whole_corpus, corpus_utilities, outside_corpus, spreading=True, clear="never",
-                 activation_base=2, decay_parameter=0.05, constant_offset=0):
+                 activation_base=2, decay_parameter=0.05, constant_offset=0, threshold=0.0):
         """
         Parameters:
             context_type (string): Indicates for cooccurrence dependent corpus mechanisms, whether we know the sense of the
@@ -27,10 +32,15 @@ class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
         """
         super().__init__(corpus_utilities, outside_corpus, spreading, clear, activation_base, decay_parameter,
                          constant_offset)
+        self.sense_word_cooccurrences = corpus_utilities.get_sense_word_cooccurrences()
+        self.sense_sense_cooccurrences = corpus_utilities.get_sense_sense_cooccurrences()
+        self.word_counts = corpus_utilities.get_word_counts()
+        self.sense_counts = corpus_utilities.get_sense_counts()
         self.context_type = context_type
         self.whole_corpus = whole_corpus
+        self.threshold = threshold
 
-    def adjust_sem_rel_dict(self, sem_rel_dict):
+    def adjust_sem_rel_dict(self):
         """
         Adjusts the semantic relations dictionary to only include words that also cooccur with each word (as key).
         Parameters:
@@ -40,6 +50,7 @@ class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
         Returns:
             (dict) Cooccurrence adjusted semantic relations dictionary.
         """
+        link = "./semantic_relations_lists/semantic_relations_list"
         sent_list = self.corpus_utilities.get_sentence_list()
         if self.whole_corpus:
             whole_cu = CorpusUtilities()
@@ -54,10 +65,13 @@ class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
                 new_rels = []
                 for rel in rels:  # going through words corresponding to each relation
                     if self.context_type == "sense":
-                        if rel in list(cooc_rel_dict[word_key]):
-                            new_rels.append(rel)
+                        base = rel
                     else:
-                        if rel[0] in list(cooc_rel_dict[word_key]):
+                        base = rel[0]
+                    if base in list(cooc_rel_dict[word_key]):
+                        if self.threshold == 0:
+                            new_rels.append(rel)
+                        if self.get_conditional_probability(target=word_key, base=base) > self.threshold:
                             new_rels.append(rel)
                 sem_rel_dict[word_key][cat] = new_rels
         return sem_rel_dict
@@ -125,8 +139,11 @@ class AgentCoocThreshSpreadingCorpus(AgentSpreadingCorpus):
 
 class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
     """ Agent to implement cooccurrence thresholded spreading on google ngrams """
-    def __init__(self, sem_rel_dict, stopwords, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never", activation_base=2,
-                 decay_parameter=0.05, constant_offset=0):
+
+    def __init__(self, sem_rel_dict, stopwords, ngrams=GoogleNGram('~/ngram'), spreading=True, clear="never",
+                 activation_base=2,
+                 decay_parameter=0.05,
+                 constant_offset=0):
         """
         Parameters:
             sem_rel_dict (dictionary): A dictionary containing all semantic relations (the values) for each word
@@ -140,9 +157,12 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
             decay_parameter (float): A parameter in the activation equation.
             constant_offset (float): A parameter in the activation equation.
         """
-        super().__init__(sem_rel_dict=sem_rel_dict, spreading=spreading, clear=clear, activation_base=activation_base, stopwords=stopwords,
-                         decay_parameter=decay_parameter, constant_offset=constant_offset, ngrams=ngrams)
-        self.sem_rel_dict = self.adjust_sem_rel_dict(sem_rel_dict)
+        super().__init__(sem_rel_dict=sem_rel_dict, spreading=spreading, clear=clear, activation_base=activation_base,
+                         stopwords=stopwords,
+                         decay_parameter=decay_parameter, constant_offset=constant_offset)
+        self.ngrams = ngrams
+        # self.sem_rel_dict = self.adjust_sem_rel_dict(sem_rel_dict)
+        self.sem_rel_dict = sem_rel_dict
 
     def get_cooccurring_words(self, word):
         """
@@ -156,21 +176,43 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
         cooc_words = [word[0] for word in cooc_words_counts if word not in self.stopwords]
         return cooc_words
 
-    def adjust_sem_rel_dict(self, sem_rel_dict):
+
+    def adjust_sem_rel_dict(self, sem_rel_dict, save_dict=None):
         """
         Adjusts the semantic relations dictionary to only include words that also cooccur with each word (as key).
         Parameters:
             sem_rel_dict (dict): A dictionary with all semantic relations of interest - from SWOWEN, SFFAN, or both.
+            save_dict (str): A link to save the adjusted dictionary to. If none, nothing is saved.
         Returns:
             (dict) Cooccurrence adjusted semantic relations dictionary.
         """
-        for word_key in sem_rel_dict.keys():
-            cooc_words = self.get_cooccurring_words(word_key.upper())
+        thresh_sem_rel_dict = defaultdict(list)
+        total = len(list(sem_rel_dict.keys()))
+        counter = 0
+        for word_key in sorted(list(sem_rel_dict.keys())):
+            counter += 1
+            # if counter % 50 == 0:
+            #     print(counter, "out of", total)
+            if word_key.lower() in self.stopwords or word_key.count(" ") > 0:
+                # Making sure we're only looking at bigrams
+                continue
             rels = sem_rel_dict[word_key]  # has all different relations to target word
+            new_rels = []
             for rel in rels:  # going through words corresponding to each relation
-                if rel.upper() not in cooc_words or rel.lower() in self.stopwords:
-                    sem_rel_dict[word_key].remove(rel)
-        return sem_rel_dict
+                if rel.lower() in self.stopwords or rel.count(" ") != 0:
+                    # Making sure we're only looking at bigrams
+                    continue
+                counts = self.ngrams.get_ngram_counts(word_key + " " + rel)[word_key + " " + rel] + \
+                         self.ngrams.get_ngram_counts(rel + " " + word_key)[rel + " " + word_key]
+                if counts != 0:
+                    new_rels.append(rel.upper())
+            if new_rels:
+                thresh_sem_rel_dict[word_key.upper()] = new_rels
+        if save_dict:
+            file = open(save_dict, 'w')
+            json.dump(thresh_sem_rel_dict, file)
+            file.close()
+        return thresh_sem_rel_dict
 
     def create_sem_network(self):
         """ Builds a semantic network. """
@@ -187,10 +229,16 @@ class AgentCoocThreshSpreadingNGrams(AgentSpreadingNGrams):
                                 decay_parameter=self.decay_parameter
                             )))
         keys = sorted(list(self.sem_rel_dict.keys()))
+        key_length = len(keys)
+        counter = 0
         for word in keys:
+            counter += 1
+            # if counter % 50 == 0:
+            #     print(counter, "out of", key_length)
             assocs = self.sem_rel_dict[word]
             network.store(mem_id=word,
                           time=1,
                           spread_depth=spread_depth,
+                          activate=False,
                           assocs=assocs)
         return network

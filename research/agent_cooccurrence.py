@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from n_gram_cooccurrence.google_ngrams import *
-
+import json
 
 class AgentCooccurrence:
     """ General cooccurrence agent superclass. """
@@ -161,6 +161,22 @@ class AgentCooccurrenceNGrams(AgentCooccurrence):
         super().__init__()
         self.ngrams = ngrams
         self.stopwords = stopwords
+        self.cooc_cache = self.get_cooccurrence_cache_dict()
+
+
+    def get_cooccurrence_cache_dict(self):
+        cooc_cache = json.load(open("./n_gram_cooccurrence/ngrams_cooccurrence_cache.json"))
+        cooc_cache_dict = defaultdict(list)
+        for entry in cooc_cache:
+            key = tuple([entry[0][0].upper(), entry[0][1].upper(), entry[0][2].upper()])
+            cooc_elements = entry[1]
+            vals = []
+            for elem in cooc_elements:
+                val = elem[0]
+                counts = elem[1]
+                vals.append([val, counts])
+            cooc_cache_dict[key] = vals
+        return cooc_cache_dict
 
     def get_word_counts(self, word):
         """
@@ -203,29 +219,24 @@ class AgentCooccurrenceNGrams(AgentCooccurrence):
         Returns:
             A list of RAT guesses. Returns [] if there are no viable guesses.
         """
-        cooc_set1 = set([elem[0] for elem in self.ngrams.get_max_probability(context1)])
-        cooc_set2 = set([elem[0] for elem in self.ngrams.get_max_probability(context2)])
-        cooc_set3 = set([elem[0] for elem in self.ngrams.get_max_probability(context3)])
-        joint_cooc_set = cooc_set1 & cooc_set2 & cooc_set3
+        joint_cooc_set = self.cooc_cache[tuple([context1.upper(), context2.upper(), context3.upper()])]
         if len(joint_cooc_set) == 0:
             return []
         elif len(joint_cooc_set) == 1:
-            return joint_cooc_set.pop()
+            return list(joint_cooc_set)[0][0]
         else:
             max_cond_prob = -float("inf")
             max_elems = []
             for elem in list(joint_cooc_set):
-                if elem.lower() in self.stopwords:
+                cooc_word = elem[0]
+                if cooc_word.lower() in self.stopwords:
                     continue
-                cond_prob1 = self.ngrams.get_conditional_probability(base=context1, target=elem)
-                cond_prob2 = self.ngrams.get_conditional_probability(base=context2, target=elem)
-                cond_prob3 = self.ngrams.get_conditional_probability(base=context3, target=elem)
-                joint_cond_prob = cond_prob1 * cond_prob2 * cond_prob3
+                joint_cond_prob = elem[1]
                 if joint_cond_prob > max_cond_prob:
                     max_cond_prob = joint_cond_prob
-                    max_elems = [elem]
+                    max_elems = [cooc_word]
                 elif joint_cond_prob == max_cond_prob:
-                    max_elems.append(elem)
+                    max_elems.append(cooc_word)
             return max_elems
 
 # Testing ... ----------------------------------------------------------------------------------------------------------

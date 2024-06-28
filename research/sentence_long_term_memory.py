@@ -70,7 +70,7 @@ class sentenceLTM(NaiveDictLTM):
         self.store(word1, time, word1_ratio)
         self.store(word2, time, word2_ratio)
 
-    def store(self, mem_id=None, time=0, spread_depth=-1, **kwargs):
+    def store(self, mem_id=None, time=0, spread_depth=-1, activate=True, **kwargs):
         """
         Stores (or activates) an element added to the network.
         Parameters:
@@ -94,7 +94,8 @@ class sentenceLTM(NaiveDictLTM):
             elif val not in self.knowledge:
                 self.knowledge[val] = AVLTree()
                 self.knowledge[mem_id].add(AttrVal(attr, val))
-        self.activation.simple_activate(mem_id=mem_id, time=time, spread_depth=spread_depth)
+        if activate:
+            self.activation.simple_activate(mem_id=mem_id, time=time, spread_depth=spread_depth)
         return True
 
 

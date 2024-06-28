@@ -26,10 +26,18 @@ class AgentSpreading:
             Returns:
                 sentenceLTM: Cleared semantic network.
             """
+
         activations = network.activation.activations
-        activated_words = activations.keys()
-        for word in activated_words:
-            activations[word] = [act for act in activations[word] if act[0] <= start_time]
+        if start_time > 0:
+            activated_words = activations.keys()
+            for word in activated_words:
+                activations[word] = [act for act in activations[word] if act[0] <= start_time]
+            network.activation.activations = activations
+        elif start_time == 0:
+            #network.activation.activations = network.activation.activations.fromkeys(network.activation.activations, [])
+            network.activation.activations = defaultdict(list)
+        else:
+            raise ValueError(start_time)
         return network
 
     def do_wsd(self, word, context, time, network):
@@ -61,6 +69,7 @@ class AgentSpreadingCorpus(AgentSpreading):
         self.corpus_utilities = corpus_utilities
         self.sentence_list = corpus_utilities.get_sentence_list()
         self.outside_corpus = outside_corpus
+        self.network = self.create_sem_network()
 
     def get_semantic_relations_dict(self, outside_corpus):
         """
@@ -74,7 +83,7 @@ class AgentSpreadingCorpus(AgentSpreading):
             Returns:
                 (dict) A dictionary with the semantic relations for every unique word in sentence_list
         """
-        sem_rel_path = "./semantic_relations/semantic_relations_list"
+        sem_rel_path = "./semantic_relations_lists/semantic_relations_list"
         if not outside_corpus:
             sem_rel_path = sem_rel_path + "_inside_corpus"
         if len(self.sentence_list) == 30195:
@@ -250,8 +259,8 @@ class AgentSpreadingCorpus(AgentSpreading):
 
 class AgentSpreadingNGrams(AgentSpreading):
     """ Implements spreading on google ngrams. """
-    def __init__(self, sem_rel_dict, stopwords, spreading=True, clear="never", activation_base=2,
-                 decay_parameter=0.05, constant_offset=0):
+    def __init__(self, sem_rel_dict, stopwords, spreading=True, clear="never", activation_base=2.0,
+                 decay_parameter=0.05, constant_offset=0.0):
         """
         Parameters:
             sem_rel_dict (dictionary): A dictionary containing all semantic relations (the values) for each word
@@ -267,7 +276,7 @@ class AgentSpreadingNGrams(AgentSpreading):
         """
         super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
         self.stopwords = stopwords
-        self.sem_rel_dict = self.filter_sem_rel_dict(sem_rel_dict)
+        self.sem_rel_dict = sem_rel_dict
 
 
     def filter_sem_rel_dict(self, sem_rel_dict):
@@ -302,11 +311,17 @@ class AgentSpreadingNGrams(AgentSpreading):
                                 decay_parameter=self.decay_parameter
                             )))
         keys = list(self.sem_rel_dict.keys())
+        num_keys = len(keys)
+        counter = 0
         for word in keys:
-            assocs = self.sem_rel_dict[word]
-            network.store(mem_id=word,
+            counter += 1
+            # if counter % 50 == 0:
+            #     print(counter, "out of", num_keys)
+            assocs = [elem.upper() for elem in self.sem_rel_dict[word]]
+            network.store(mem_id=word.upper(),
                           time=1,
                           spread_depth=spread_depth,
+                          activate=False,
                           assocs=assocs)
         return network
 
@@ -322,13 +337,14 @@ class AgentSpreadingNGrams(AgentSpreading):
             spread_depth = -1
         else:
             spread_depth = 0
-        for context in [context1, context2, context3]:
-            network.store(mem_id=context, time=2, spread_depth=spread_depth)
+        context_list = [context1.upper(), context2.upper(), context3.upper()]
+        for context in context_list:
+            network.store(mem_id=context.upper(), time=2, spread_depth=spread_depth)
         max_act = -float("inf")
         guesses = []
-        elements = sorted(set(network.knowledge.keys()))
+        elements = sorted(set(network.activation.activations.keys()))
         for elem in elements:
-            if elem in [context1, context2, context3]:
+            if elem in context_list:
                 continue
             elem_act = network.get_activation(mem_id=elem, time=3)
             if elem_act is None:

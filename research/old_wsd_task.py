@@ -863,15 +863,15 @@ def get_uniform_random_accuracy():
 # print("old run time", end - start)
 # print(run_wsd(guess_method="cooc_thresh_sem", num_sentences=5000, outside_corpus=False, context="sense",
 #                clear_network="sentence"))
+import time
 # print("new")
-# start = time.time()
 # corpus_utils = wsd_task.CorpusUtilities(5000, 1)
-# new = wsd_task.get_corpus_accuracy(guess_method="cooc_thresh_sem", corpus_utilities=corpus_utils, context_type="sense",
+# new = wsd_task.get_corpus_accuracy(guess_method="naive_semantic_spreading", corpus_utilities=corpus_utils,
 #                                     outside_corpus=False, clear_network="never", index_info=True, whole_corpus=True)[0]
-# end = time.time()
-# print("new run time", end - start)
-# print(wsd_task.run_wsd(guess_method="naive_semantic_spreading", num_sentences=5000, outside_corpus=False, context_type="sense",
-                       # clear_network="sentence", whole_corpus=True))
+# print("old")
+# sent_list, wsd = extract_sentences(5000, 1)
+# old = get_corpus_accuracy(guess_method="naive_semantic_spreading", sentence_list=sent_list, word_sense_dict=wsd,
+#                           outside_corpus=False, clear_network="never", index_info=True)[0]
 # for key in new.keys():
 #     if new[key][0][1].count(True) != old[key][0][1].count(True):
 #         print("new", new[key])
