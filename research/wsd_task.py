@@ -10,12 +10,14 @@ from agent_oracle import AgentOracleCorpus
 from agent_cooccurrence import AgentCooccurrenceCorpus
 from agent_spreading_thresh_cooccurrence import AgentSpreadingThreshCoocCorpus
 from agent_cooccurrence_thresh_spreading import AgentCoocThreshSpreadingCorpus
+from agent_cooccurrence_thresh_spreading_soft import AgentSoftCoocThreshSpreadingCorpus
 from agent_spreading import AgentSpreadingCorpus
-from agent_joint_probability import AgentJointProbabilityCorpus, AgentJointVarianceCorpus
+from agent_joint_probability import AgentJointProbabilityCorpus, AgentJointVarianceCorpus, AgentAdditiveProbabilityCorpus
 
 
 def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offset=0, iterations=1, num_sentences=-1,
-            partition=1, outside_corpus=False, clear_network="never", context_type="word", whole_corpus=True):
+            partition=1, outside_corpus=False, clear_network="never", context_type="word", whole_corpus=True,
+            threshold=0.0, index_info=False):
     """
     Runs the word sense disambiguation task over the Semcor corpus (or a subset of it).
     Parameters:
@@ -42,90 +44,18 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
         (float): The raw percent accuracy of the guesses of context_sense_predict_word_sense.
     """
     corpus_utilities = CorpusUtilities(num_sentences, partition)
-    if guess_method == "cooc" and context_type == "word":
-        # The guess_dict is a dictionary with keys the sense of each word in the corpus and values a list of boolean
-        # values indicating whether the sense was guessed correctly each time it appears in the corpus.
-        guess_dicts = get_corpus_accuracy(guess_method="cooc",
-                                          context_type="word",
-                                          corpus_utilities=corpus_utilities,
-                                          iterations=iterations,
-                                          whole_corpus=whole_corpus)
-    elif guess_method == "cooc" and context_type == "sense":
-        guess_dicts = get_corpus_accuracy(guess_method="cooc",
-                                          context_type="sense",
-                                          corpus_utilities=corpus_utilities,
-                                          iterations=iterations,
-                                          whole_corpus=whole_corpus)
-    elif guess_method == "frequency":
-        guess_dicts = get_corpus_accuracy(guess_method="frequency",
-                                          corpus_utilities=corpus_utilities,
-                                          iterations=iterations)
-    elif guess_method == "naive_semantic":
-        guess_dicts = get_corpus_accuracy("naive_semantic",
+    guess_dicts = get_corpus_accuracy(guess_method,
                                           corpus_utilities=corpus_utilities,
                                           clear_network=clear_network,
-                                          activation_base=activation_base,
-                                          decay_parameter=decay_parameter,
-                                          constant_offset=constant_offset,
-                                          iterations=iterations,
-                                          outside_corpus=outside_corpus)
-    elif guess_method == "naive_semantic_spreading":
-        guess_dicts = get_corpus_accuracy("naive_semantic_spreading",
-                                          corpus_utilities=corpus_utilities,
-                                          clear_network=clear_network,
-                                          activation_base=activation_base,
-                                          decay_parameter=decay_parameter,
-                                          constant_offset=constant_offset,
-                                          iterations=iterations,
-                                          outside_corpus=outside_corpus)
-    elif guess_method == "oracle":
-        guess_dicts = get_corpus_accuracy("oracle",
                                           context_type=context_type,
-                                          corpus_utilities=corpus_utilities,
-                                          clear_network=clear_network,
-                                          activation_base=activation_base,
-                                          decay_parameter=decay_parameter,
-                                          constant_offset=constant_offset,
-                                          iterations=iterations,
-                                          outside_corpus=outside_corpus)
-    elif guess_method == "sem_thresh_cooc":
-        guess_dicts = get_corpus_accuracy("sem_thresh_cooc",
-                                          corpus_utilities=corpus_utilities,
-                                          iterations=iterations,
-                                          context_type=context_type)
-    elif guess_method == "cooc_thresh_sem":
-        guess_dicts = get_corpus_accuracy("cooc_thresh_sem",
-                                          corpus_utilities=corpus_utilities,
-                                          clear_network=clear_network,
                                           activation_base=activation_base,
                                           decay_parameter=decay_parameter,
                                           constant_offset=constant_offset,
                                           iterations=iterations,
                                           outside_corpus=outside_corpus,
-                                          context_type=context_type,
-                                          whole_corpus=whole_corpus)
-    elif guess_method == "joint_probability":
-        guess_dicts = get_corpus_accuracy("joint_probability",
-                                          corpus_utilities=corpus_utilities,
-                                          clear_network=clear_network,
-                                          activation_base=activation_base,
-                                          decay_parameter=decay_parameter,
-                                          constant_offset=constant_offset,
-                                          iterations=iterations,
-                                          outside_corpus=outside_corpus,
-                                          context_type=context_type)
-    elif "joint_variance" in guess_method:
-        guess_dicts = get_corpus_accuracy(guess_method,
-                                          corpus_utilities=corpus_utilities,
-                                          clear_network=clear_network,
-                                          context_type=context_type,
-                                          activation_base=activation_base,
-                                          decay_parameter=decay_parameter,
-                                          constant_offset=constant_offset,
-                                          iterations=iterations,
-                                          outside_corpus=outside_corpus)
-    else:
-        raise ValueError(guess_method)
+                                          whole_corpus=whole_corpus,
+                                          threshold=threshold,
+                                          index_info=index_info)
     accuracies = []
     # Calculating the upper and lower accuracy bounds for each iteration (normally only one)
     for guess_dict in guess_dicts:
@@ -145,7 +75,7 @@ def run_wsd(guess_method, activation_base=2, decay_parameter=0.05, constant_offs
 
 def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", activation_base=2,
                         decay_parameter=0.05, constant_offset=0, iterations=1, outside_corpus=False,
-                        context_type="word", whole_corpus=False, index_info=False):
+                        context_type="word", whole_corpus=False, index_info=False, threshold=0.0):
     """
     Guesses the word sense for every word in the corpus based on a specified guess method.
     Parameters:
@@ -180,11 +110,15 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
         path = "./results/" + guess_method + "_"
     else:
         path = "./results/" + guess_method + "_iter_"
-    if "semantic" in guess_method:
+    if guess_method == "cooc" or guess_method == "sem_thresh_cooc" or guess_method == "cooc_thresh_sem" or guess_method == "soft_cooc_thresh_sem" or guess_method == "joint_probability" or "joint_variance" in guess_method or guess_method == "additive_probability":
+        path += "context_" + context_type + "_"
+    if "semantic" in guess_method or guess_method == "cooc_thresh_sem" or guess_method == "soft_cooc_thresh_sem" or guess_method == "joint_probability" or "joint_variance" in guess_method or guess_method == "additive_probability":
         path += str(len(sentence_list)) + "_sents_" + clear_network + "_clear_" + str(outside_corpus) + \
                 "_outside_corpus_" + str(corpus_utilities.partition) + "_partition"
     else:
         path += str(len(sentence_list)) + "_sents_" + str(corpus_utilities.partition) + "_partition"
+    if guess_method == "cooc_thresh_sem":
+        path += "_thresh_" + str(threshold) + "_whole_corpus_" + str(whole_corpus)
     if index_info:
         path += "_index"
     path += "_accuracy_list_" + curr_time + ".json"
@@ -204,13 +138,11 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
         sem_agent = AgentSpreadingCorpus(corpus_utilities, outside_corpus=outside_corpus, spreading=True,
                                          clear=clear_network, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset)
-        sem_network = sem_agent.create_sem_network()
         timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
     elif guess_method == "naive_semantic":
         sem_agent = AgentSpreadingCorpus(corpus_utilities, outside_corpus=outside_corpus, spreading=False,
                                          clear=clear_network, activation_base=activation_base,
                                          decay_parameter=decay_parameter, constant_offset=constant_offset)
-        sem_network = sem_agent.create_sem_network()
         timer = 2  # All semantic connections stored at time 1, so start the timer at the next timestep.
     elif guess_method == "oracle":
         # The oracle needs different timers for its semantic mechanisms because they're reset at different stages of
@@ -227,8 +159,17 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                                                                outside_corpus=outside_corpus, spreading=True,
                                                                clear=clear_network, activation_base=activation_base,
                                                                decay_parameter=decay_parameter,
-                                                               constant_offset=constant_offset)
-        sem_network = cooc_thresh_sem_agent.create_sem_network()
+                                                               constant_offset=constant_offset,
+                                                               threshold=threshold)
+        timer = 2
+    elif guess_method == "soft_cooc_thresh_sem":
+        soft_cooc_thresh_sem_agent = AgentSoftCoocThreshSpreadingCorpus(context_type=context_type,
+                                                                        corpus_utilities=corpus_utilities,
+                                                                        outside_corpus=outside_corpus,
+                                                                        spreading=True,
+                                                                        activation_base=activation_base,
+                                                                        decay_parameter=decay_parameter,
+                                                                        constant_offset=constant_offset)
         timer = 2
     elif guess_method == "sem_thresh_cooc":
         sem_thresh_cooc_agent = AgentSpreadingThreshCoocCorpus(num_sentences=corpus_utilities.num_sentences,
@@ -248,14 +189,24 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                                                        decay_parameter=decay_parameter,
                                                        constant_offset=constant_offset)
         timer = 2
+    elif guess_method == "additive_probability":
+        add_prob_agent = AgentAdditiveProbabilityCorpus(num_sentences=corpus_utilities.num_sentences,
+                                                       partition=corpus_utilities.partition,
+                                                       corpus_utilities=corpus_utilities,
+                                                       context_type=context_type,
+                                                       outside_corpus=outside_corpus,
+                                                       spreading=True,
+                                                       clear=clear_network,
+                                                       activation_base=activation_base,
+                                                       decay_parameter=decay_parameter,
+                                                       constant_offset=constant_offset)
+        timer = 2
     elif guess_method == "joint_variance_stdev" or guess_method == "joint_variance_maxdiff":
         if guess_method == "joint_variance_stdev":
             var_type = "stdev"
         else:
             var_type = "maxdiff"
-        joint_var_agent = AgentJointVarianceCorpus(num_sentences=corpus_utilities.num_sentences,
-                                                   partition=corpus_utilities.partition,
-                                                   corpus_utilities=corpus_utilities,
+        joint_var_agent = AgentJointVarianceCorpus(corpus_utilities=corpus_utilities,
                                                    outside_corpus=outside_corpus,
                                                    context_type=context_type,
                                                    clear=clear_network,
@@ -277,38 +228,53 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
         accuracy_dict = defaultdict(list)
         # Clear semantic network each iteration if > 1, so you don't have to remake the network (expensive)
         if "naive_semantic" in guess_method and iter > 1:
-            sem_network = sem_agent.clear_sem_network(sem_network, 1)
+            sem_agent.clear_sem_network(1)
             timer = 2  # reset timer
         elif guess_method == "cooc_thresh_sem" and iter > 1:
-            sem_network = cooc_thresh_sem_agent.clear_sem_network(sem_network, 1)
+            cooc_thresh_sem_agent.clear_sem_network(1)
+            timer = 2
+        elif guess_method == "soft_cooc_thresh_sem" and iter > 1:
+            soft_cooc_thresh_sem_agent.clear_sem_network(1)
             timer = 2
         elif guess_method == "oracle" and iter > 1:
             oracle_agent.sem_never_agent.clear_sem_network(oracle_agent.sem_never_network, 1)
             oracle_agent.sem_nospread_agent.clear_sem_network(oracle_agent.sem_nospread_network, 1)
             timer_never = 2
         elif guess_method == "joint_probability" and iter > 1:
-            joint_prob_agent.clear_sem_network()
+            joint_prob_agent.clear_sem_network(1)
+            timer = 2
+        elif guess_method == "additive_probability" and iter > 1:
+            add_prob_agent.clear_sem_network(1)
             timer = 2
         elif "joint_variance" in guess_method and iter > 1:
             joint_var_agent.clear_sem_network(1)
             timer_never = 2
-        # Looping through each sentence in the corpus.
         num_sents = len(sentence_list)
+        counter = 0
+        # Looping through each sentence in the corpus.
         for sentence_index in range(len(sentence_list)):
+            counter += 1
+            if counter % 50 == 0:
+                print(counter, "out of", num_sents, "run")
             sentence = sentence_list[sentence_index]
             # Resetting semantic networks if clear_network == "sentence"
             if "naive_semantic" in guess_method and clear_network == "sentence":
-                sem_network = sem_agent.clear_sem_network(sem_network, 1)
+                sem_agent.clear_sem_network(1)
                 timer = 2
             elif guess_method == "oracle" and clear_network == "sentence":
-                sem_sentence_network = oracle_agent.sem_sentence_agent.clear_sem_network(
-                    oracle_agent.sem_sentence_network, 1)
+                sem_sentence_network = oracle_agent.sem_sentence_agent.clear_sem_network(1)
                 timer_sentence = 2
             elif guess_method == "cooc_thresh_sem" and clear_network == "sentence":
-                sem_network = cooc_thresh_sem_agent.clear_sem_network(sem_network, 1)
+                cooc_thresh_sem_agent.clear_sem_network(1)
+                timer = 2
+            elif guess_method == "soft_cooc_thresh_sem" and clear_network == "sentence":
+                soft_cooc_thresh_sem_agent.clear_sem_network(1)
                 timer = 2
             elif guess_method == "joint_probability" and clear_network == "sentence":
-                joint_prob_agent.clear_sem_network()
+                joint_prob_agent.clear_sem_network(1)
+                timer = 2
+            elif guess_method == "additive_probability" and clear_network == "sentence":
+                add_prob_agent.clear_sem_network(1)
                 timer = 2
             elif "joint_variance" in guess_method and clear_network == "sentence":
                 joint_var_agent.clear_sem_network(1)
@@ -318,16 +284,22 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                 word = sentence[target_index]
                 # Clearing semantic networks if clear_network == "word"
                 if "naive_semantic" in guess_method and clear_network == "word":
-                    sem_network = sem_agent.clear_sem_network(sem_network, 1)
+                    sem_agent.clear_sem_network(1)
                     timer = 2  # reset timer.
                 elif guess_method == "oracle" and clear_network == "word":
                     oracle_agent.sem_word_agent.clear_sem_network(oracle_agent.sem_word_network, 1)
                     timer_word = 2
                 elif guess_method == "cooc_thresh_sem" and clear_network == "word":
-                    sem_network = cooc_thresh_sem_agent.clear_sem_network(sem_network, 1)
+                    cooc_thresh_sem_agent.clear_sem_network(1)
+                    timer = 2
+                elif guess_method == "soft_cooc_thresh_sem" and clear_network == "word":
+                    soft_cooc_thresh_sem_agent.clear_sem_network(1)
                     timer = 2
                 elif guess_method == "joint_probability" and clear_network == "word":
-                    joint_prob_agent.clear_sem_network()
+                    joint_prob_agent.clear_sem_network(1)
+                    timer = 2
+                elif guess_method == "additive_probability" and clear_network == "word":
+                    add_prob_agent.clear_sem_network(1)
                     timer = 2
                 elif "joint_variance" in guess_method and clear_network == "word":
                     joint_var_agent.clear_sem_network(1)
@@ -343,14 +315,12 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                 elif guess_method == "naive_semantic":
                     guesses = sem_agent.do_wsd(word=sentence[target_index],
                                                context=word_sense_dict[word[0]],
-                                               time=timer,
-                                               network=sem_network)
+                                               time=timer)
                     timer += 1
                 elif guess_method == "naive_semantic_spreading":
                     guesses = sem_agent.do_wsd(word=sentence[target_index],
                                                context=word_sense_dict[word[0]],
-                                               time=timer,
-                                               network=sem_network)
+                                               time=timer)
                     timer += 1
                 elif guess_method == "oracle":
                     guesses = oracle_agent.do_wsd(target_index, sentence, timer_word, timer_sentence, timer_never)
@@ -360,22 +330,30 @@ def get_corpus_accuracy(guess_method, corpus_utilities, clear_network="never", a
                 elif guess_method == "sem_thresh_cooc":
                     guesses = sem_thresh_cooc_agent.do_wsd(target_index,
                                                            sentence)
-
                 elif guess_method == "cooc_thresh_sem":
                     guesses = cooc_thresh_sem_agent.do_wsd(word=sentence[target_index],
                                                            context=word_sense_dict[word[0]],
-                                                           time=timer,
-                                                           network=sem_network)
+                                                           time=timer)
+                    timer += 1
+                elif guess_method == "soft_cooc_thresh_sem":
+                    guesses = soft_cooc_thresh_sem_agent.do_wsd(word=sentence[target_index],
+                                                                context=word_sense_dict[word[0]],
+                                                                time=timer)
                     timer += 1
                 elif guess_method == "joint_probability":
                     guesses = joint_prob_agent.do_wsd(target_index=target_index,
                                                       sentence=sentence,
                                                       time=timer)
                     timer += 1
+                elif guess_method == "additive_probability":
+                    guesses = add_prob_agent.do_wsd(target_index=target_index,
+                                                      sentence=sentence,
+                                                      time=timer)
+                    timer += 1
                 elif "joint_variance" in guess_method:
                     guesses = joint_var_agent.do_wsd(target_index=target_index,
                                                      sentence=sentence,
-                                                     timer=timer)
+                                                     time=timer)
                     timer += 1
                 else:
                     raise ValueError(guess_method)
@@ -524,11 +502,3 @@ def get_word_activations(word, time, word_sense_dict, network):
 
 
 # Testing --------------------------------------------------------------------------------------------------------------
-import time
-
-for partition in range(1, 7):
-    for context_type in ["sense", "word"]:
-        for clear in ["never", "word", "sentence"]:
-            print("part:", partition, "context type:", context_type, "clear:", clear,
-                  run_wsd("joint_probability", iterations=1, num_sentences=5000, context_type=context_type,
-                          clear_network=clear, partition=partition, outside_corpus=False), flush=True)

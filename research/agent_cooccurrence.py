@@ -240,3 +240,4 @@ class AgentCooccurrenceNGrams(AgentCooccurrence):
             return max_elems
 
 # Testing ... ----------------------------------------------------------------------------------------------------------
+

@@ -31,7 +31,7 @@ class AgentSpreadingThreshCoocCorpus(AgentCooccurrenceCorpus, AgentSpreadingCorp
                          corpus_utilities=corpus_utilities, context_type=context_type)
         self.outside_corpus = outside_corpus
         self.spreading_agent = AgentSpreadingCorpus(corpus_utilities, outside_corpus)
-        self.sem_rel_dict = self.get_semantic_relations_dict(False)
+        self.sem_rel_dict = self.get_semantic_relations_dict()
         if context_type == "word":
             self.sem_rel_dict = self.get_word_adjusted_sem_rel_dict(self.sem_rel_dict)
         self.sense_sense_cooccurrences = corpus_utilities.get_sense_sense_cooccurrences()

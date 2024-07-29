@@ -1,6 +1,5 @@
 from sentence_long_term_memory import sentenceLTM
 from nltk.corpus import wordnet as wn_corpus
-import nltk
 from corpus_utilities import *
 from sentence_cooccurrence_activation import SentenceCooccurrenceActivation
 from n_gram_cooccurrence.google_ngrams import *
@@ -15,8 +14,12 @@ class AgentSpreading:
         self.activation_base = activation_base
         self.decay_parameter = decay_parameter
         self.constant_offset = constant_offset
+        self.network = None
 
-    def clear_sem_network(self, network, start_time=1):
+    def create_sem_network(self):
+        raise NotImplementedError
+
+    def clear_sem_network(self, start_time=1):
         """
             Clears the semantic network by resetting activations to a certain "starting time".
             Parameters:
@@ -26,25 +29,22 @@ class AgentSpreading:
             Returns:
                 sentenceLTM: Cleared semantic network.
             """
-
-        activations = network.activation.activations
+        activations = self.network.activation.activations
         if start_time > 0:
             activated_words = activations.keys()
             for word in activated_words:
                 activations[word] = [act for act in activations[word] if act[0] <= start_time]
-            network.activation.activations = activations
+            self.network.activation.activations = activations
         elif start_time == 0:
-            #network.activation.activations = network.activation.activations.fromkeys(network.activation.activations, [])
-            network.activation.activations = defaultdict(list)
+            self.network.activation.activations = defaultdict(list)
         else:
             raise ValueError(start_time)
-        return network
 
-    def do_wsd(self, word, context, time, network):
+    def do_wsd(self, word, context, time):
         """ Finds guesses for the WSD task."""
         raise NotImplementedError
 
-    def do_rat(self, context1, context2, context3, network):
+    def do_rat(self, context1, context2, context3):
         """ Finds guesses for the RAT test."""
         raise NotImplementedError
 
@@ -71,7 +71,7 @@ class AgentSpreadingCorpus(AgentSpreading):
         self.outside_corpus = outside_corpus
         self.network = self.create_sem_network()
 
-    def get_semantic_relations_dict(self, outside_corpus):
+    def get_semantic_relations_dict(self):
         """
             Gets the words related to each word in sentence_list and builds a dictionary to make the semantic network
             Parameters:
@@ -84,7 +84,7 @@ class AgentSpreadingCorpus(AgentSpreading):
                 (dict) A dictionary with the semantic relations for every unique word in sentence_list
         """
         sem_rel_path = "./semantic_relations_lists/semantic_relations_list"
-        if not outside_corpus:
+        if not self.outside_corpus:
             sem_rel_path = sem_rel_path + "_inside_corpus"
         if len(self.sentence_list) == 30195:
             sem_rel_path = sem_rel_path + ".json"
@@ -118,7 +118,7 @@ class AgentSpreadingCorpus(AgentSpreading):
                         # Getting the lemmas in each of the synset_relations synsets.
                         syn_lemmas = synset_relations[relation][syn].lemmas()
                         # Checking that lemmas from relations are in the corpus if outside_corpus=False
-                        if not outside_corpus:
+                        if not self.outside_corpus:
                             syn_lemmas = [lemma for lemma in syn_lemmas if lemma in semcor_words]
                         # Adding each lemma to the list
                         for syn_lemma in syn_lemmas:
@@ -199,7 +199,7 @@ class AgentSpreadingCorpus(AgentSpreading):
         spread_depth = -1
         if not self.spreading:
             spread_depth = 0
-        semantic_relations_dict = self.get_semantic_relations_dict(self.outside_corpus)
+        semantic_relations_dict = self.get_semantic_relations_dict()
         network = sentenceLTM(
             activation_cls=(lambda ltm:
                             SentenceCooccurrenceActivation(
@@ -214,7 +214,7 @@ class AgentSpreadingCorpus(AgentSpreading):
             val_dict = semantic_relations_dict[word_key]
             network.store(mem_id=word_key,
                           time=1,
-                          spread_depth=spread_depth,
+                          spread_depth = spread_depth,
                           synonyms=val_dict['synonyms'],
                           hypernyms=val_dict['hypernyms'],
                           hyponyms=val_dict['hyponyms'],
@@ -228,7 +228,7 @@ class AgentSpreadingCorpus(AgentSpreading):
                           similar_tos=val_dict['similar_tos'])
         return network
 
-    def do_wsd(self, word, context, time, network):
+    def do_wsd(self, word, context, time):
         """
         Gets guesses for a trial of the WSD.
         Parameters:
@@ -245,21 +245,21 @@ class AgentSpreadingCorpus(AgentSpreading):
         max_act = float('-inf')
         max_guess = []
         for candidate in context:
-            candidate_act = network.get_activation(mem_id=candidate, time=time)
+            candidate_act = self.network.get_activation(mem_id=candidate, time=time)
             if candidate_act > max_act:
                 max_act = candidate_act
                 max_guess = [candidate]
             elif candidate_act == max_act:
                 max_guess.append(candidate)
-        network.store(mem_id=word, time=time, spread_depth=spread_depth)
+        self.network.store(mem_id=word, time=time, spread_depth=spread_depth)
         for elem in max_guess:
-            network.store(mem_id=elem, time=time, spread_depth=spread_depth)
+            self.network.store(mem_id=elem, time=time, spread_depth=spread_depth)
         return max_guess
 
 
 class AgentSpreadingNGrams(AgentSpreading):
     """ Implements spreading on google ngrams. """
-    def __init__(self, sem_rel_dict, stopwords, spreading=True, clear="never", activation_base=2.0,
+    def __init__(self, stopwords, source, spreading=True, clear="never", activation_base=2.0,
                  decay_parameter=0.05, constant_offset=0.0):
         """
         Parameters:
@@ -274,9 +274,21 @@ class AgentSpreadingNGrams(AgentSpreading):
             decay_parameter (float): A parameter in the activation equation.
             constant_offset (float): A parameter in the activation equation.
         """
-        super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
+        self.source = source
         self.stopwords = stopwords
-        self.sem_rel_dict = sem_rel_dict
+        self.sem_rel_dict = self.get_sem_rel_dict()
+        super().__init__(spreading, clear, activation_base, decay_parameter, constant_offset)
+        self.network = self.create_sem_network()
+
+    def get_sem_rel_dict(self):
+        """ Gets dictionary of semantic relations from file."""
+        sem_rel_link = "./semantic_relations_lists/" + self.source + "_sem_rel_dict.json"
+        if os.path.isfile(sem_rel_link):
+            sem_rel_file = open(sem_rel_link, "r")
+            sem_rel_dict = json.load(sem_rel_file)
+        else:
+            raise ValueError()
+        return sem_rel_dict
 
 
     def filter_sem_rel_dict(self, sem_rel_dict):
@@ -298,10 +310,6 @@ class AgentSpreadingNGrams(AgentSpreading):
 
     def create_sem_network(self):
         """ Creates a semantic network from the semantic relations list. """
-        if self.spreading:
-            spread_depth = -1
-        else:
-            spread_depth = 0
         network = sentenceLTM(
             activation_cls=(lambda ltm:
                             SentenceCooccurrenceActivation(
@@ -311,21 +319,15 @@ class AgentSpreadingNGrams(AgentSpreading):
                                 decay_parameter=self.decay_parameter
                             )))
         keys = list(self.sem_rel_dict.keys())
-        num_keys = len(keys)
-        counter = 0
         for word in keys:
-            counter += 1
-            # if counter % 50 == 0:
-            #     print(counter, "out of", num_keys)
             assocs = [elem.upper() for elem in self.sem_rel_dict[word]]
             network.store(mem_id=word.upper(),
                           time=1,
-                          spread_depth=spread_depth,
                           activate=False,
                           assocs=assocs)
         return network
 
-    def do_rat(self, context1, context2, context3, network):
+    def do_rat(self, context1, context2, context3):
         """
         Completes one trial of the RAT.
         Parameters:
@@ -339,14 +341,14 @@ class AgentSpreadingNGrams(AgentSpreading):
             spread_depth = 0
         context_list = [context1.upper(), context2.upper(), context3.upper()]
         for context in context_list:
-            network.store(mem_id=context.upper(), time=2, spread_depth=spread_depth)
+            self.network.store(mem_id=context.upper(), time=2, spread_depth=spread_depth)
         max_act = -float("inf")
         guesses = []
-        elements = sorted(set(network.activation.activations.keys()))
+        elements = sorted(set(self.network.activation.activations.keys()))
         for elem in elements:
             if elem in context_list:
                 continue
-            elem_act = network.get_activation(mem_id=elem, time=3)
+            elem_act = self.network.get_activation(mem_id=elem, time=3)
             if elem_act is None:
                 continue
             elif elem_act > max_act:
