@@ -6,7 +6,7 @@ SPARQLWrapper==2.0.0
 gensim==4.3.0
 # NLP packages
 spacy==3.4.4
-nltk==3.8.1
+nltk==3.9
 git+https://github.com/justinnhli/PyDictionary.git#egg=pydictionary # a less chatty fork of pydictionary
 # jupyter notebook packages
 jupyter==1.0.0
