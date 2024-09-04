@@ -15,7 +15,7 @@ pandas==1.5.2
 numpy==1.24.1
 # utility packages
 SQLAlchemy==1.4.46
-requests==2.31.0
+requests==2.32.2
 networkx==2.8.8
 # experiment packages
 git+https://github.com/justinnhli/permspace.git#egg=permspace
