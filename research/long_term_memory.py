@@ -119,6 +119,44 @@ class RecencyActivation(ActivationDynamics):
         return self.activations[mem_id]
 
 
+class BaseLevelActivation(ActivationDynamics):
+    """Base-level activation."""
+
+    def __init__(self, ltm, decay=0.5, **kwargs):
+        """Initialize the ActivationDynamics.
+
+        Parameters:
+            ltm (LongTermMemory): The LongTermMemory that will be using this activation.
+        """
+        super().__init__(ltm, **kwargs)
+        self.accesses = defaultdict(list)
+        self.decay = decay
+
+    def activate(self, mem_id, time):
+        """Activation the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the element to activate.
+            time (int): The time of activation. Optional.
+        """
+        self.accesses[mem_id].append(time)
+
+    def get_activation(self, mem_id, time):
+        """Get the activation of the element with the given ID.
+
+        Parameters:
+            mem_id (any): The ID of the desired element.
+            time (int): The time of activation. Optional.
+
+        Returns:
+            float: The activation of the element.
+        """
+        activation = 0
+        for access_time in self.accesses[mem_id]:
+            activation += (time - access_time) ** self.decay
+        return activation
+
+
 class LongTermMemory:
     """Generic interface to a knowledge base."""
 
