@@ -10,7 +10,7 @@ nltk==3.9
 git+https://github.com/justinnhli/PyDictionary.git#egg=pydictionary # a less chatty fork of pydictionary
 # jupyter notebook packages
 jupyter==1.0.0
-bokeh==3.0.3
+bokeh==3.8.2
 pandas==1.5.2
 numpy==1.24.1
 # utility packages
